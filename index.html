@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=50p3">
+<link rel="stylesheet" href="style.css?v=50p4">
 </head>
 <body>
 <header>
@@ -101,6 +101,31 @@
     <div class="director-stats"><div><span>年末売上予測</span><strong id="yearSalesForecast">0円</strong></div><div><span>年末利益予測</span><strong id="yearProfitForecast">0円</strong></div><div><span>過去最高月商</span><strong id="bestMonthSales">0円</strong></div></div>
     <p class="director-note">個人経営のため、税引前の事業利益を「年収の目安」として表示します。</p>
   </div>
+  <div class="insight-grid">
+    <article class="card score-card reveal-card">
+      <div class="score-copy">
+        <span class="eyebrow">BUSINESS SCORE</span>
+        <h3>経営スコア</h3>
+        <p id="scoreSummary">年間データから総合評価します。</p>
+        <div class="score-breakdown">
+          <span><i></i>売上 <b id="scoreSales">0</b>/35</span>
+          <span><i></i>利益 <b id="scoreProfit">0</b>/30</span>
+          <span><i></i>成長 <b id="scoreGrowth">0</b>/15</span>
+          <span><i></i>診療KPI <b id="scoreClinical">0</b>/20</span>
+        </div>
+      </div>
+      <div id="scoreRing" class="score-ring" style="--score:0"><div><strong id="businessScore">0</strong><small>/100</small></div></div>
+    </article>
+    <article class="card year-ai-card reveal-card">
+      <div class="ai-orb" aria-hidden="true">✦</div>
+      <div>
+        <span class="eyebrow">AI MANAGEMENT NOTE</span>
+        <h3 id="yearAiTitle">年間データを分析中</h3>
+        <p id="yearAiComment">データが揃うと、今いちばん大切な経営ポイントを表示します。</p>
+        <div id="yearAiTags" class="ai-tags"></div>
+      </div>
+    </article>
+  </div>
   <div class="metrics apple-metrics">
     <article class="kpi-primary"><span>年間売上</span><strong id="yearSales">0円</strong><small id="yearSalesSub">集計中</small></article>
     <article><span>年間利益</span><strong id="yearProfit">0円</strong><small id="yearProfitSub">売上 − 支出</small></article>
@@ -148,6 +173,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=50p3"></script>
+<script src="app.js?v=50p4"></script>
 </body>
 </html>

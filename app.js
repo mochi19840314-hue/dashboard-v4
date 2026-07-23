@@ -86,6 +86,48 @@ function renderYearChart(rows){
   el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',()=>select(g));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});
   select(el.querySelector('.chart-hit:last-of-type'));
 }
+
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function animateNumber(el,to,formatter,duration=650){
+  if(!el)return;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const from=Number(el.dataset.value)||0,target=Number(to)||0;
+  el.dataset.value=String(target);
+  if(reduce||Math.abs(target-from)<1){el.textContent=formatter(target);return}
+  const start=performance.now(),ease=t=>1-Math.pow(1-t,3);
+  const tick=now=>{const t=clamp((now-start)/duration,0,1),v=from+(target-from)*ease(t);el.textContent=formatter(v);if(t<1)requestAnimationFrame(tick)};
+  requestAnimationFrame(tick)
+}
+function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast){
+  const activeRows=rows.filter(r=>r.sales>0||r.expense>0);
+  const avgSales=active?total.sales/active:0;
+  const salesScore=Math.round(clamp(avgSales/MONTHLY_TARGET*35,0,35));
+  const profitScore=Math.round(clamp(rate/25*30,0,30));
+  const recent=activeRows.slice(-3),previous=activeRows.slice(-6,-3);
+  const recentAvg=recent.length?recent.reduce((a,r)=>a+r.sales,0)/recent.length:0;
+  const previousAvg=previous.length?previous.reduce((a,r)=>a+r.sales,0)/previous.length:recentAvg;
+  const growthRate=previousAvg?(recentAvg-previousAvg)/previousAvg*100:0;
+  const growthScore=Math.round(clamp(8+growthRate*.7,0,15));
+  const patientRatio=total.patients?total.newPatients/total.patients:0;
+  const newScore=total.patients?Math.round(clamp(patientRatio/.08*10,0,10)):5;
+  const checkupScore=total.patients?Math.round(clamp(total.checkups/Math.max(1,active*4)*10,0,10)):5;
+  const clinicalScore=newScore+checkupScore;
+  const score=clamp(salesScore+profitScore+growthScore+clinicalScore,0,100);
+  animateNumber($('businessScore'),score,v=>String(Math.round(v)),700);
+  $('scoreRing').style.setProperty('--score',score);
+  $('scoreSales').textContent=salesScore;$('scoreProfit').textContent=profitScore;$('scoreGrowth').textContent=growthScore;$('scoreClinical').textContent=clinicalScore;
+  const grade=score>=85?'非常に好調':score>=70?'好調':score>=55?'安定':score>=40?'改善余地あり':'要確認';
+  $('scoreSummary').textContent=`${grade}。売上・利益・成長性・診療KPIを総合評価しています。`;
+  let title='現在のペースを維持',comment='',tags=[];
+  if(!active){title='データを入力してください';comment='月間売上と支出が登録されると、年間の経営コメントを自動生成します。';tags=['データ待ち']}
+  else if(rate<10){title='利益率の立て直しを優先';comment=`年間利益率は${rate.toFixed(1)}%です。売上を追う前に、検査原価・薬品原価・人件費・単発支出を月別に確認すると改善点を見つけやすくなります。`;tags=['利益率','支出確認']}
+  else if(avgSales<MONTHLY_TARGET*.9){title='500万円への差を小さくする';comment=`平均月商は${yen(avgSales)}です。年末売上予測は${yen(salesForecast)}。健診・予防・再診フォローを毎月1つずつ定例化すると、無理なく底上げしやすい状態です。`;tags=['売上目標','再診','健診']}
+  else if(growthRate<-5){title='直近3か月の減速を確認';comment=`直近3か月の平均売上は、その前の3か月より約${Math.abs(growthRate).toFixed(1)}%低下しています。季節要因か予約枠の問題かを切り分け、来院件数と客単価のどちらが動いたか確認しましょう。`;tags=['トレンド','来院件数','客単価']}
+  else if(rate>=20&&avgSales>=MONTHLY_TARGET){title='質の高い成長を維持';comment=`平均月商は${yen(avgSales)}、年間利益率は${rate.toFixed(1)}%です。売上と利益の両方が良好なので、新しい設備投資よりも診療負荷とスタッフ体制の安定を優先する局面です。`;tags=['好調','利益確保','負荷管理']}
+  else{title='売上は順調、利益をもう一段';comment=`年末利益予測は${yen(profitForecast)}、年間利益率は${rate.toFixed(1)}%です。高単価施策を増やすより、既存の健診・画像検査・再診提案を漏れなく行うほうが安定した改善につながります。`;tags=['安定成長','利益率','既存施策']}
+  $('yearAiTitle').textContent=title;$('yearAiComment').textContent=comment;$('yearAiTags').innerHTML=tags.map(t=>`<span>${t}</span>`).join('');
+}
+
 function year(){
   const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`));
   const total=rows.reduce((a,r)=>{["sales","patients","newPatients","surgeries","checkups","trimmings"].forEach(k=>a[k]+=Number(r[k])||0);a.expense+=Number(r.expense)||0;return a},{sales:0,expense:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0});
@@ -93,11 +135,12 @@ function year(){
   const annualFactor=active?12/active:0,salesForecast=total.sales*annualFactor,profitForecast=profit*annualFactor;
   const best=activeRows.reduce((a,r)=>r.sales>a.sales?r:a,{sales:0});
   const incomeTarget=Number(data.finance.incomeTarget)||0;
-  $("yearSales").textContent=yen(total.sales);$("yearProfit").textContent=yen(profit);$("yearProfitRate").textContent=pct(rate);$("yearAvg").textContent=yen(active?total.sales/active:0);
+  animateNumber($("yearSales"),total.sales,yen);animateNumber($("yearProfit"),profit,yen);animateNumber($("yearProfitRate"),rate,pct);animateNumber($("yearAvg"),active?total.sales/active:0,yen);
   $("yearSalesSub").textContent=`${active}か月分の集計`;$("yearProfitSub").textContent=`年間支出 ${yen(total.expense)}`;$("yearProfitRateSub").textContent=rate>=20?'良好な水準':rate>=10?'安定圏':'要確認';$("yearAvgSub").textContent=`月平均利益 ${yen(active?profit/active:0)}`;
-  $("estimatedIncome").textContent=yen(profitForecast);$("estimatedIncomeSub").textContent=active?`${active}か月の実績から年換算`:'データ入力後に表示';
-  $("yearSalesForecast").textContent=yen(salesForecast);$("yearProfitForecast").textContent=yen(profitForecast);$("bestMonthSales").textContent=yen(best.sales);
+  animateNumber($("estimatedIncome"),profitForecast,yen);$("estimatedIncomeSub").textContent=active?`${active}か月の実績から年換算`:'データ入力後に表示';
+  animateNumber($("yearSalesForecast"),salesForecast,yen);animateNumber($("yearProfitForecast"),profitForecast,yen);animateNumber($("bestMonthSales"),best.sales,yen);
   if(incomeTarget>0){const progress=Math.max(0,Math.min(100,profitForecast/incomeTarget*100));$("incomeProgressText").textContent=`目標 ${yen(incomeTarget)}に対して ${progress.toFixed(0)}%`;$("incomeProgressBar").style.width=`${progress}%`}else{$("incomeProgressText").textContent='目標年収は財務タブで設定できます';$("incomeProgressBar").style.width='0%'}
+  renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast);
   renderYearChart(rows)
 }
 function finance(){const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},expense=Number(mf.monthlyExpense ?? hist.expense ?? (m===monthNow()?f.monthlyExpense:0))||0;$("balance").value=f.balance||"";$("monthlyExpense").value=expense||"";$("loan").value=f.loan||"";$("repayment").value=f.repayment||"";$("incomeTarget").value=f.incomeTarget||"";const s=monthSummary(m),profit=s.sales-expense;$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(s.sales?profit/s.sales*100:0);$("netAssets").textContent=yen(f.balance-f.loan)}
