@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=50p1">
 </head>
 <body>
 <header>
@@ -95,13 +95,17 @@
 
 <section id="year" class="page">
   <div class="row"><div><h2>年間集計</h2></div><select id="yearPicker"></select></div>
-  <div class="metrics">
-    <article><span>年間売上</span><strong id="yearSales">0円</strong></article>
-    <article><span>年間来院件数</span><strong id="yearPatients">0件</strong></article>
-    <article><span>年間新患数</span><strong id="yearNew">0件</strong></article>
-    <article><span>平均月商</span><strong id="yearAvg">0円</strong></article>
+  <div class="metrics apple-metrics">
+    <article class="kpi-primary"><span>年間売上</span><strong id="yearSales">0円</strong><small id="yearSalesSub">集計中</small></article>
+    <article><span>年間利益</span><strong id="yearProfit">0円</strong><small id="yearProfitSub">売上 − 支出</small></article>
+    <article><span>年間利益率</span><strong id="yearProfitRate">0%</strong><small id="yearProfitRateSub">概算</small></article>
+    <article><span>平均月商</span><strong id="yearAvg">0円</strong><small id="yearAvgSub">データ月平均</small></article>
   </div>
-  <div class="card chart-card"><div class="chart-heading"><div><h3>月別売上・利益</h3><p>売上、利益、月商目標500万円を比較します。</p></div><div class="chart-legend"><span><i class="legend-sales"></i>売上</span><span><i class="legend-profit"></i>利益</span><span><i class="legend-target"></i>目標</span></div></div><div id="yearChart" class="year-chart" role="img" aria-label="月別売上と利益の折れ線グラフ"></div></div>
+  <div class="card chart-card apple-chart-card">
+    <div class="chart-heading"><div><span class="eyebrow">ANNUAL PERFORMANCE</span><h3>月別売上・利益</h3><p>入力済みの月までを表示します。</p></div><div class="chart-legend"><span><i class="legend-sales"></i>売上</span><span><i class="legend-profit"></i>利益</span><span><i class="legend-target"></i>目標</span></div></div>
+    <div id="chartDetail" class="chart-detail" aria-live="polite"><span>月をタップすると詳細を表示</span></div>
+    <div id="yearChart" class="year-chart" role="img" aria-label="月別売上と利益の折れ線グラフ"></div>
+  </div>
 </section>
 
 <section id="finance" class="page">
@@ -137,6 +141,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=46"></script>
+<script src="app.js?v=50p1"></script>
 </body>
 </html>
