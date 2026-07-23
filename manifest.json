@@ -1,0 +1,11 @@
+{
+  "name": "院長 Dashboard Pro",
+  "short_name": "院長Dashboard",
+  "description": "動物病院の経営管理ダッシュボード",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7f8",
+  "theme_color": "#009f91",
+  "lang": "ja"
+}

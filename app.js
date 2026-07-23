@@ -1,82 +1,36 @@
-// 院長 Dashboard Pro
-
-// 今日の日付
-document.getElementById("todayDate").textContent =
-new Date().toLocaleDateString("ja-JP");
-
-// 保存ボタン
-const saveButton = document.getElementById("saveToday");
-
-saveButton.addEventListener("click", saveToday);
-
-// 保存処理
-function saveToday(){
-
-const sales =
-Number(document.getElementById("todaySales").value) || 0;
-
-const patients =
-Number(document.getElementById("todayPatients").value) || 0;
-
-const expense =
-Number(document.getElementById("todayExpense").value) || 0;
-
-const profit = sales - expense;
-
-const rate =
-sales === 0 ? 0 :
-(profit / sales * 100);
-
-const unit =
-patients === 0 ? 0 :
-(sales / patients);
-
-// 表示
-
-document.getElementById("salesView").textContent =
-sales.toLocaleString()+"円";
-
-document.getElementById("profitView").textContent =
-profit.toLocaleString()+"円";
-
-document.getElementById("rateView").textContent =
-rate.toFixed(1)+"%";
-
-document.getElementById("unitView").textContent =
-Math.round(unit).toLocaleString()+"円";
-
-// 保存
-
-localStorage.setItem(
-"todaySales",
-sales
-);
-
-localStorage.setItem(
-"todayPatients",
-patients
-);
-
-localStorage.setItem(
-"todayExpense",
-expense
-);
-
-}
-
-// 起動時読込
-
-window.onload=function(){
-
-document.getElementById("todaySales").value =
-localStorage.getItem("todaySales") || "";
-
-document.getElementById("todayPatients").value =
-localStorage.getItem("todayPatients") || "";
-
-document.getElementById("todayExpense").value =
-localStorage.getItem("todayExpense") || "";
-
-saveToday();
-
-}
+(()=>{"use strict";
+const K="keitaDashboardV4",D={entries:[],monthSettings:{},finance:{balance:0,loan:0,lease:0,fixedCost:0,repayment:0},memo:""};
+let data=load(),deferredPrompt=null,memoTimer=null;
+const $=id=>document.getElementById(id),yen=v=>`${Math.round(Number(v)||0).toLocaleString("ja-JP")}円`,pct=v=>`${(Number(v)||0).toFixed(1)}%`;
+const today=()=>{const d=new Date(),l=new Date(d.getTime()-d.getTimezoneOffset()*60000);return l.toISOString().slice(0,10)},monthNow=()=>today().slice(0,7),num=id=>Math.max(0,Number($(id).value)||0);
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function load(){try{const s=JSON.parse(localStorage.getItem(K));return {...clone(D),...(s||{}),finance:{...D.finance,...((s||{}).finance||{})}}}catch{return clone(D)}}
+function save(){localStorage.setItem(K,JSON.stringify(data));storage()}
+function toast(m){const n=$("toast");n.textContent=m;n.classList.add("show");clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove("show"),1800)}
+function preview(){const s=num("todaySales"),p=num("todayPatients"),e=num("todayExpense"),pr=s-e;$("salesView").textContent=yen(s);$("profitView").textContent=yen(pr);$("rateView").textContent=pct(s?pr/s*100:0);$("unitView").textContent=yen(p?s/p:0)}
+function saveEntry(){const date=$("entryDate").value;if(!date)return toast("日付を入力してください");const entry={date,sales:num("todaySales"),patients:num("todayPatients"),expense:num("todayExpense"),note:$("todayNote").value.trim()},i=data.entries.findIndex(x=>x.date===date);i>=0?data.entries[i]=entry:data.entries.push(entry);data.entries.sort((a,b)=>a.date.localeCompare(b.date));save();renderAll();toast(i>=0?"記録を更新しました":"記録を保存しました")}
+function clearForm(){$("entryDate").value=today();["todaySales","todayPatients","todayExpense","todayNote"].forEach(id=>$(id).value="");preview()}
+function edit(date){const e=data.entries.find(x=>x.date===date);if(!e)return;$("entryDate").value=e.date;$("todaySales").value=e.sales;$("todayPatients").value=e.patients;$("todayExpense").value=e.expense;$("todayNote").value=e.note||"";preview();window.scrollTo({top:0,behavior:"smooth"})}
+function del(date){if(!confirm(`${date} の記録を削除しますか？`))return;data.entries=data.entries.filter(x=>x.date!==date);save();renderAll();toast("削除しました")}
+function recent(){const b=$("recentEntries"),r=[...data.entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);$("entryCountBadge").textContent=`${data.entries.length}件`;b.innerHTML=r.length?r.map(e=>`<tr><td><button class="edit-link" data-edit="${e.date}">${e.date}</button></td><td>${yen(e.sales)}</td><td>${e.patients}件</td><td>${yen(e.patients?e.sales/e.patients:0)}</td><td><button class="icon-button" data-delete="${e.date}">削除</button></td></tr>`).join(""):'<tr><td colspan="5" class="subtle">まだ記録がありません。</td></tr>';b.querySelectorAll("[data-edit]").forEach(x=>{x.style.cssText="border:0;background:transparent;color:#007d73;font-weight:800;padding:0";x.onclick=()=>edit(x.dataset.edit)});b.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>del(x.dataset.delete))}
+function summary(es){const t=es.reduce((a,e)=>(a.sales+=+e.sales||0,a.expense+=+e.expense||0,a.patients+=+e.patients||0,a),{sales:0,expense:0,patients:0});t.profit=t.sales-t.expense;t.rate=t.sales?t.profit/t.sales*100:0;t.unit=t.patients?t.sales/t.patients:0;return t}
+function monthEntries(m){return data.entries.filter(e=>e.date.slice(0,7)===m)}
+function renderMonth(){const m=$("monthPicker").value||monthNow(),set=data.monthSettings[m]||{target:4500000,businessDays:26},t=summary(monthEntries(m)),target=+set.target||0,days=Math.max(1,+set.businessDays||26),elapsed=Math.min(new Set(monthEntries(m).map(e=>e.date)).size,days),remain=Math.max(0,days-elapsed),left=Math.max(0,target-t.sales),need=remain?left/remain:left,prog=target?t.sales/target*100:0;$("monthlyTarget").value=set.target||"";$("businessDays").value=set.businessDays||26;$("monthSales").textContent=yen(t.sales);$("monthExpense").textContent=yen(t.expense);$("monthProfit").textContent=yen(t.profit);$("monthRate").textContent=pct(t.rate);$("monthPatients").textContent=`${t.patients.toLocaleString()}件`;$("monthUnit").textContent=yen(t.unit);$("monthProgress").textContent=pct(prog);$("needSales").textContent=yen(need);$("monthProgressBar").style.width=`${Math.min(100,prog)}%`;$("monthComment").textContent=!target?`営業記録 ${elapsed}日。月間目標を入力してください。`:prog>=100?`営業記録 ${elapsed}日／${days}日。目標を達成しています。`:`営業記録 ${elapsed}日／${days}日。残り${remain}営業日で、1日あたり${yen(need)}が目安です。`}
+function saveMonth(){const m=$("monthPicker").value||monthNow();data.monthSettings[m]={target:num("monthlyTarget"),businessDays:Math.max(1,num("businessDays")||26)};save();renderMonth();toast("月間目標を保存しました")}
+function years(){const ys=new Set(data.entries.map(e=>e.date.slice(0,4)));ys.add(String(new Date().getFullYear()));const old=$("yearPicker").value||String(new Date().getFullYear());$("yearPicker").innerHTML=[...ys].sort().reverse().map(y=>`<option value="${y}">${y}年</option>`).join("");$("yearPicker").value=ys.has(old)?old:String(new Date().getFullYear())}
+function renderYear(){const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>({month:i+1,...summary(monthEntries(`${y}-${String(i+1).padStart(2,"0")}`))})),tot=summary(data.entries.filter(e=>e.date.startsWith(y))),active=rows.filter(r=>r.sales||r.expense||r.patients).length,max=Math.max(1,...rows.map(r=>r.sales));$("yearSales").textContent=yen(tot.sales);$("yearProfit").textContent=yen(tot.profit);$("yearPatients").textContent=`${tot.patients.toLocaleString()}件`;$("yearMonthlyAverage").textContent=yen(active?tot.sales/active:0);$("yearChart").innerHTML=rows.map(r=>`<div class="bar-item" title="${r.month}月 ${yen(r.sales)}"><span class="bar-value">${r.sales?yen(r.sales):""}</span><div class="bar-track"><div class="bar-fill" style="height:${Math.max(r.sales?4:0,r.sales/max*100)}%"></div></div><span class="bar-label">${r.month}月</span></div>`).join("");$("yearTable").innerHTML=rows.map(r=>`<tr><td>${r.month}月</td><td>${yen(r.sales)}</td><td>${yen(r.expense)}</td><td>${yen(r.profit)}</td><td>${r.patients}件</td></tr>`).join("")}
+function renderFinance(){Object.entries(data.finance).forEach(([k,v])=>{if($(k))$(k).value=v||""});const f=data.finance;$("netPosition").textContent=yen((f.balance||0)-(f.loan||0));$("fixedOutflow").textContent=yen((f.lease||0)+(f.fixedCost||0)+(f.repayment||0))}
+function saveFinance(){data.finance={balance:num("balance"),loan:num("loan"),lease:num("lease"),fixedCost:num("fixedCost"),repayment:num("repayment")};save();renderFinance();toast("財務情報を保存しました")}
+function memo(){data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"}
+function download(name,text,type){const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function exportJson(){download(`dashboard-backup-${today()}.json`,JSON.stringify(data,null,2),"application/json");toast("バックアップを書き出しました")}
+function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,rows=data.entries.map(e=>[e.date,e.sales,e.patients,e.expense,e.note].map(esc).join(","));download(`dashboard-entries-${today()}.csv`,"\uFEFFdate,sales,patients,expense,note\n"+rows.join("\n"),"text/csv;charset=utf-8");toast("CSVを書き出しました")}
+async function importJson(f){try{const p=JSON.parse(await f.text());if(!p||!Array.isArray(p.entries))throw 0;data={...clone(D),...p,finance:{...D.finance,...(p.finance||{})}};save();renderAll();toast("バックアップを復元しました")}catch{alert("このバックアップは読み込めませんでした")}}
+function csvLine(l){const r=[];let c="",q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"'){if(q&&l[i+1]==='"'){c+='"';i++}else q=!q}else if(ch===","&&!q){r.push(c);c=""}else c+=ch}r.push(c);return r}
+async function importCsv(f){try{const ls=(await f.text()).replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean),h=csvLine(ls.shift()).map(x=>x.trim()),ix=Object.fromEntries(h.map((x,i)=>[x,i])),imp=ls.map(l=>{const r=csvLine(l);return{date:r[ix.date],sales:+r[ix.sales]||0,patients:+r[ix.patients]||0,expense:+r[ix.expense]||0,note:r[ix.note]||""}}).filter(e=>/^\d{4}-\d{2}-\d{2}$/.test(e.date));imp.forEach(e=>{const i=data.entries.findIndex(x=>x.date===e.date);i>=0?data.entries[i]=e:data.entries.push(e)});data.entries.sort((a,b)=>a.date.localeCompare(b.date));save();renderAll();toast(`${imp.length}件を読み込みました`)}catch{alert("CSVを読み込めませんでした")}}
+function storage(){const bytes=new Blob([JSON.stringify(data)]).size,last=[...data.entries].sort((a,b)=>b.date.localeCompare(a.date))[0];$("storageSummary").textContent=`日別記録 ${data.entries.length}件、使用容量 約${(bytes/1024).toFixed(1)}KB。${last?` 最新記録は${last.date}です。`:""}`}
+function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));if(id==="month")renderMonth();if(id==="year"){years();renderYear()}if(id==="finance")renderFinance();if(id==="data")storage();window.scrollTo({top:0,behavior:"smooth"})}
+function renderAll(){recent();renderMonth();years();renderYear();renderFinance();$("memoText").value=data.memo||"";$("memoStatus").textContent="保存済み";storage()}
+function bind(){document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["todaySales","todayPatients","todayExpense"].forEach(id=>$(id).oninput=preview);$("saveToday").onclick=saveEntry;$("clearToday").onclick=clearForm;$("monthPicker").onchange=renderMonth;$("saveMonthSettings").onclick=saveMonth;$("yearPicker").onchange=renderYear;$("saveFinance").onclick=saveFinance;$("memoText").oninput=()=>{$("memoStatus").textContent="保存中…";clearTimeout(memoTimer);memoTimer=setTimeout(memo,500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("importCsv").onchange=e=>e.target.files[0]&&importCsv(e.target.files[0]);$("deleteAll").onclick=()=>{if(confirm("全データを削除しますか？")&&confirm("本当に削除しますか？")){data=clone(D);save();clearForm();renderAll();toast("全データを削除しました")}};window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("installButton").classList.remove("hidden")});$("installButton").onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("installButton").classList.add("hidden")}}}
+function init(){$("todayDate").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=today();$("monthPicker").value=monthNow();bind();renderAll();preview();if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+init()})();
