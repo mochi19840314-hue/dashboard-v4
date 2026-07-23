@@ -1,106 +1,150 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#009f91">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>院長 Dashboard Pro</title>
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#009f91">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>院長 Dashboard Pro</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="app-header">
-<div><p class="eyebrow">横浜都筑どうぶつ病院</p><h1>院長 Dashboard Pro</h1><p id="todayDate" class="subtle"></p></div>
-<button id="installButton" class="ghost small hidden">ホーム画面へ追加</button>
+<header>
+  <small>横浜都筑どうぶつ病院</small>
+  <h1>院長 Dashboard Pro</h1>
+  <div id="todayDate"></div>
 </header>
-<nav class="tabs">
-<button class="tab active" data-page="today">今日</button>
-<button class="tab" data-page="month">月間</button>
-<button class="tab" data-page="year">年間</button>
-<button class="tab" data-page="finance">財務</button>
-<button class="tab" data-page="memo">メモ</button>
-<button class="tab" data-page="data">データ</button>
+
+<nav>
+  <button class="tab active" data-page="today">今日</button>
+  <button class="tab" data-page="month">月間</button>
+  <button class="tab" data-page="year">年間</button>
+  <button class="tab" data-page="finance">財務</button>
+  <button class="tab" data-page="memo">メモ</button>
+  <button class="tab" data-page="data">データ</button>
 </nav>
-<main class="container">
+
+<main>
 <section id="today" class="page active">
-<div class="section-heading"><div><h2>今日の入力</h2><p>日ごとの売上・件数・支出を保存します。</p></div></div>
-<div class="card form-card">
-<div class="field"><label for="entryDate">日付</label><input type="date" id="entryDate"></div>
-<div class="field"><label for="todaySales">売上（円）</label><input type="number" id="todaySales" inputmode="numeric" min="0" placeholder="例：180000"></div>
-<div class="field"><label for="todayPatients">来院件数</label><input type="number" id="todayPatients" inputmode="numeric" min="0" placeholder="例：18"></div>
-<div class="field"><label for="todayExpense">当日の変動支出（円）</label><input type="number" id="todayExpense" inputmode="numeric" min="0" placeholder="例：25000"></div>
-<div class="field full"><label for="todayNote">ひとことメモ</label><input type="text" id="todayNote" maxlength="120" placeholder="手術、健診、混雑など"></div>
-<div class="actions full"><button id="saveToday" class="primary">保存する</button><button id="clearToday" class="secondary">入力をクリア</button></div>
-</div>
-<div class="metric-grid">
-<article class="metric-card"><span>売上</span><strong id="salesView">0円</strong></article>
-<article class="metric-card"><span>粗利益</span><strong id="profitView">0円</strong></article>
-<article class="metric-card"><span>粗利益率</span><strong id="rateView">0%</strong></article>
-<article class="metric-card"><span>客単価</span><strong id="unitView">0円</strong></article>
-</div>
-<div class="card"><div class="card-title-row"><h3>最近の記録</h3><span class="badge" id="entryCountBadge">0件</span></div>
-<div class="table-wrap"><table><thead><tr><th>日付</th><th>売上</th><th>件数</th><th>客単価</th><th></th></tr></thead><tbody id="recentEntries"></tbody></table></div></div>
+  <h2>今日の入力</h2>
+  <p class="lead">売上内訳・犬猫件数・診療実績を保存します。</p>
+
+  <div class="card form">
+    <label>日付<input type="date" id="entryDate"></label>
+    <label>現金売上（円）<input type="number" id="cashSales" min="0" inputmode="numeric"></label>
+    <label>カード売上（円）<input type="number" id="cardSales" min="0" inputmode="numeric"></label>
+    <label>その他売上（円）<input type="number" id="otherSales" min="0" inputmode="numeric"></label>
+    <label>当日の変動支出（円）<input type="number" id="expense" min="0" inputmode="numeric"></label>
+    <label>犬の件数<input type="number" id="dogs" min="0" inputmode="numeric"></label>
+    <label>猫の件数<input type="number" id="cats" min="0" inputmode="numeric"></label>
+    <label>手術件数<input type="number" id="surgeries" min="0" inputmode="numeric"></label>
+    <label>健診件数<input type="number" id="checkups" min="0" inputmode="numeric"></label>
+    <label>トリミング件数<input type="number" id="trimmings" min="0" inputmode="numeric"></label>
+    <label>緊急対応件数<input type="number" id="emergencies" min="0" inputmode="numeric"></label>
+    <label class="full">ひとことメモ<input type="text" id="note" maxlength="160"></label>
+    <div class="actions full">
+      <button id="saveToday" class="primary">保存する</button>
+      <button id="clearToday" class="secondary">入力をクリア</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div><span>総売上</span><strong id="salesView">0円</strong></div>
+    <div><span>来院件数</span><strong id="patientsView">0件</strong></div>
+    <div><span>粗利益</span><strong id="profitView">0円</strong></div>
+    <div><span>粗利益率</span><strong id="rateView">0%</strong></div>
+    <div><span>客単価</span><strong id="unitView">0円</strong></div>
+    <div><span>犬：猫</span><strong id="speciesView">0：0</strong></div>
+  </div>
+
+  <div class="card">
+    <h3>最近の記録</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日付</th><th>売上</th><th>犬</th><th>猫</th><th>客単価</th><th></th></tr></thead>
+        <tbody id="recentEntries"></tbody>
+      </table>
+    </div>
+  </div>
 </section>
+
 <section id="month" class="page">
-<div class="section-heading"><div><h2>月間集計</h2><p>選択した月の進捗を自動計算します。</p></div><input type="month" id="monthPicker" class="compact-input"></div>
-<div class="card form-card compact">
-<div class="field"><label for="monthlyTarget">月間売上目標（円）</label><input type="number" id="monthlyTarget" min="0" placeholder="例：4500000"></div>
-<div class="field"><label for="businessDays">月の営業日数</label><input type="number" id="businessDays" min="1" max="31" placeholder="例：26"></div>
-<div class="actions"><button id="saveMonthSettings" class="primary">目標を保存</button></div>
-</div>
-<div class="metric-grid">
-<article class="metric-card"><span>月間売上</span><strong id="monthSales">0円</strong></article>
-<article class="metric-card"><span>月間支出</span><strong id="monthExpense">0円</strong></article>
-<article class="metric-card"><span>粗利益</span><strong id="monthProfit">0円</strong></article>
-<article class="metric-card"><span>粗利益率</span><strong id="monthRate">0%</strong></article>
-<article class="metric-card"><span>来院件数</span><strong id="monthPatients">0件</strong></article>
-<article class="metric-card"><span>平均客単価</span><strong id="monthUnit">0円</strong></article>
-<article class="metric-card accent"><span>目標達成率</span><strong id="monthProgress">0%</strong></article>
-<article class="metric-card accent"><span>残り必要日商</span><strong id="needSales">0円</strong></article>
-</div>
-<div class="card"><h3>目標進捗</h3><div class="progress"><div id="monthProgressBar"></div></div><p id="monthComment" class="comment"></p></div>
+  <div class="heading">
+    <div><h2>月間集計</h2><p class="lead">選択月の進捗を自動計算します。</p></div>
+    <input type="month" id="monthPicker">
+  </div>
+
+  <div class="card form compact">
+    <label>月間売上目標（円）<input type="number" id="monthlyTarget" min="0"></label>
+    <label>月の営業日数<input type="number" id="businessDays" min="1" max="31"></label>
+    <button id="saveMonthSettings" class="primary">目標を保存</button>
+  </div>
+
+  <div class="metrics">
+    <div><span>月間売上</span><strong id="monthSales">0円</strong></div>
+    <div><span>月間支出</span><strong id="monthExpense">0円</strong></div>
+    <div><span>粗利益</span><strong id="monthProfit">0円</strong></div>
+    <div><span>粗利益率</span><strong id="monthRate">0%</strong></div>
+    <div><span>来院件数</span><strong id="monthPatients">0件</strong></div>
+    <div><span>平均客単価</span><strong id="monthUnit">0円</strong></div>
+    <div><span>手術</span><strong id="monthSurgeries">0件</strong></div>
+    <div><span>健診</span><strong id="monthCheckups">0件</strong></div>
+    <div><span>トリミング</span><strong id="monthTrimmings">0件</strong></div>
+    <div><span>緊急対応</span><strong id="monthEmergencies">0件</strong></div>
+    <div class="accent"><span>目標達成率</span><strong id="monthProgress">0%</strong></div>
+    <div class="accent"><span>残り必要日商</span><strong id="needSales">0円</strong></div>
+  </div>
+  <div class="card">
+    <div class="progress"><div id="progressBar"></div></div>
+    <p id="monthComment" class="lead"></p>
+  </div>
 </section>
+
 <section id="year" class="page">
-<div class="section-heading"><div><h2>年間集計</h2><p>月別売上と粗利益を確認します。</p></div><select id="yearPicker" class="compact-input"></select></div>
-<div class="metric-grid">
-<article class="metric-card"><span>年間売上</span><strong id="yearSales">0円</strong></article>
-<article class="metric-card"><span>年間粗利益</span><strong id="yearProfit">0円</strong></article>
-<article class="metric-card"><span>年間来院件数</span><strong id="yearPatients">0件</strong></article>
-<article class="metric-card"><span>平均月商</span><strong id="yearMonthlyAverage">0円</strong></article>
-</div>
-<div class="card"><div class="card-title-row"><h3>月別売上</h3><span class="subtle">単位：円</span></div><div id="yearChart" class="bar-chart"></div></div>
-<div class="card"><div class="table-wrap"><table><thead><tr><th>月</th><th>売上</th><th>支出</th><th>粗利益</th><th>件数</th></tr></thead><tbody id="yearTable"></tbody></table></div></div>
+  <div class="heading"><h2>年間集計</h2><select id="yearPicker"></select></div>
+  <div class="metrics">
+    <div><span>年間売上</span><strong id="yearSales">0円</strong></div>
+    <div><span>年間粗利益</span><strong id="yearProfit">0円</strong></div>
+    <div><span>年間来院件数</span><strong id="yearPatients">0件</strong></div>
+    <div><span>平均月商</span><strong id="yearAverage">0円</strong></div>
+  </div>
+  <div class="card"><div id="chart" class="chart"></div></div>
 </section>
+
 <section id="finance" class="page">
-<div class="section-heading"><div><h2>財務</h2><p>毎月の固定的な数字を保存します。</p></div></div>
-<div class="card form-card">
-<div class="field"><label for="balance">口座残高（円）</label><input id="balance" type="number" min="0"></div>
-<div class="field"><label for="loan">借入残高（円）</label><input id="loan" type="number" min="0"></div>
-<div class="field"><label for="lease">月間リース支払（円）</label><input id="lease" type="number" min="0"></div>
-<div class="field"><label for="fixedCost">月間固定費（円）</label><input id="fixedCost" type="number" min="0"></div>
-<div class="field"><label for="repayment">月間返済額（円）</label><input id="repayment" type="number" min="0"></div>
-<div class="actions full"><button id="saveFinance" class="primary">財務情報を保存</button></div>
-</div>
-<div class="metric-grid"><article class="metric-card"><span>実質純資産目安</span><strong id="netPosition">0円</strong></article><article class="metric-card"><span>固定支出合計</span><strong id="fixedOutflow">0円</strong></article></div>
+  <h2>財務</h2>
+  <div class="card form">
+    <label>口座残高（円）<input type="number" id="balance" min="0"></label>
+    <label>借入残高（円）<input type="number" id="loan" min="0"></label>
+    <label>月間リース支払（円）<input type="number" id="lease" min="0"></label>
+    <label>月間固定費（円）<input type="number" id="fixedCost" min="0"></label>
+    <label>月間返済額（円）<input type="number" id="repayment" min="0"></label>
+    <button id="saveFinance" class="primary full">財務情報を保存</button>
+  </div>
+  <div class="metrics">
+    <div><span>実質純資産目安</span><strong id="netPosition">0円</strong></div>
+    <div><span>固定支出合計</span><strong id="fixedOutflow">0円</strong></div>
+  </div>
 </section>
+
 <section id="memo" class="page">
-<div class="section-heading"><div><h2>院長メモ</h2><p>自動保存されます。</p></div><span id="memoStatus" class="badge">未保存</span></div>
-<div class="card"><textarea id="memoText" class="memo-area" placeholder="今日の振り返り、スタッフへの共有事項、経営アイデアなど"></textarea></div>
+  <h2>院長メモ</h2>
+  <div class="card"><textarea id="memoText" placeholder="今日の振り返り、経営アイデア、スタッフへの共有事項など"></textarea></div>
 </section>
+
 <section id="data" class="page">
-<div class="section-heading"><div><h2>データ管理</h2><p>バックアップを定期的に保存してください。</p></div></div>
-<div class="card data-actions">
-<button id="exportJson" class="primary">完全バックアップを書き出す</button>
-<label class="file-button secondary">バックアップを復元<input id="importJson" type="file" accept=".json,application/json"></label>
-<button id="exportCsv" class="secondary">日別データをCSV出力</button>
-<label class="file-button secondary">CSVを読み込む<input id="importCsv" type="file" accept=".csv,text/csv"></label>
-<button id="deleteAll" class="danger">全データを削除</button>
-</div>
-<div class="card"><h3>保存状況</h3><p id="storageSummary" class="comment"></p></div>
+  <h2>データ管理</h2>
+  <div class="card data-buttons">
+    <button id="exportJson" class="primary">完全バックアップを書き出す</button>
+    <label class="file-button secondary">バックアップを復元<input id="importJson" type="file" accept=".json"></label>
+    <button id="exportCsv" class="secondary">CSVを書き出す</button>
+    <button id="deleteAll" class="danger">全データを削除</button>
+  </div>
 </section>
 </main>
-<div id="toast" class="toast"></div>
+
+<div id="toast"></div>
 <script src="app.js"></script>
 </body>
 </html>
