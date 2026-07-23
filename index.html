@@ -1,0 +1,117 @@
+ <!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>院長 Dashboard Pro</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header class="header">
+
+<h1>院長 Dashboard Pro</h1>
+
+<p id="todayDate"></p>
+
+</header>
+
+<nav class="tabs">
+
+<button class="tab active" data-page="today">今日</button>
+
+<button class="tab" data-page="month">月間</button>
+
+<button class="tab" data-page="year">年間</button>
+
+<button class="tab" data-page="finance">財務</button>
+
+<button class="tab" data-page="memo">メモ</button>
+
+</nav>
+
+<main>
+
+<section id="today" class="page active">
+
+<h2>今日の入力</h2>
+
+<label>売上（円）</label>
+
+<input type="number" id="todaySales">
+
+<label>来院件数</label>
+
+<input type="number" id="todayPatients">
+
+<label>支出（円）</label>
+
+<input type="number" id="todayExpense">
+
+<button id="saveToday">
+保存
+</button>
+
+<div class="result">
+
+<p>売上：<span id="salesView">0円</span></p>
+
+<p>利益：<span id="profitView">0円</span></p>
+
+<p>利益率：<span id="rateView">0%</span></p>
+
+<p>客単価：<span id="unitView">0円</span></p>
+
+</div>
+
+</section>
+
+<section id="month" class="page">
+
+<h2>月間集計</h2>
+
+<div class="card">
+
+<p>月間売上：<span id="monthSales">0円</span></p>
+
+<p>月間利益：<span id="monthProfit">0円</span></p>
+
+<p>利益率：<span id="monthRate">0%</span></p>
+
+</div>
+
+</section>
+
+<section id="year" class="page">
+
+<h2>年間集計</h2>
+
+<p>（次回追加）</p>
+
+</section>
+
+<section id="finance" class="page">
+
+<h2>財務</h2>
+
+<p>（次回追加）</p>
+
+</section>
+
+<section id="memo" class="page">
+
+<h2>メモ</h2>
+
+<textarea id="memoText" rows="10"></textarea>
+
+</section>
+
+</main>
+
+<script src="app.js"></script>
+
+</body>
+</html>
