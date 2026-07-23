@@ -37,11 +37,13 @@ function saveSettings(){const m=$("monthPicker").value||monthNow();data.settings
 function years(){const ys=new Set([...data.entries.map(e=>e.date.slice(0,4)),...Object.keys(data.historical).map(m=>m.slice(0,4))]);ys.add(String(new Date().getFullYear()));$("yearPicker").innerHTML=[...ys].sort().reverse().map(y=>`<option>${y}</option>`).join("")}
 function smoothPath(points){
   if(!points.length)return "";
-  if(points.length===1)return `M${points[0][0]},${points[0][1]}`;
-  let d=`M${points[0][0]},${points[0][1]}`;
-  for(let i=0;i<points.length-1;i++){
-    const [x0,y0]=points[i],[x1,y1]=points[i+1],mid=(x0+x1)/2;
-    d+=` C${mid},${y0} ${mid},${y1} ${x1},${y1}`;
+  const n=points.map(([px,py])=>[Number(px),Number(py)]);
+  if(n.length===1)return `M${n[0][0].toFixed(1)},${n[0][1].toFixed(1)}`;
+  let d=`M${n[0][0].toFixed(1)},${n[0][1].toFixed(1)}`;
+  for(let i=0;i<n.length-1;i++){
+    const [x0,y0]=n[i],[x1,y1]=n[i+1];
+    const mid=(x0+x1)/2;
+    d+=` C${mid.toFixed(1)},${y0.toFixed(1)} ${mid.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
   }
   return d;
 }
@@ -62,8 +64,8 @@ function renderYearChart(rows){
   const plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;
   const x=i=>visible.length===1?pad.l+plotW/2:pad.l+i*plotW/(visible.length-1);
   const y=v=>pad.t+plotH*(max-v)/(max-min);
-  const salesPts=visible.map((r,i)=>[x(i).toFixed(1),y(r.sales).toFixed(1)]);
-  const profitPts=visible.map((r,i)=>[x(i).toFixed(1),y(r.sales-r.expense).toFixed(1)]);
+  const salesPts=visible.map((r,i)=>[x(i),y(r.sales)]);
+  const profitPts=visible.map((r,i)=>[x(i),y(r.sales-r.expense)]);
   let grid='';
   for(let v=min;v<=max;v+=step){
     const yy=y(v),label=v===0?'0':`${Math.round(v/10000)}万`;
@@ -78,7 +80,8 @@ function renderYearChart(rows){
     return `<g class="chart-hit" tabindex="0" data-month="${i+1}" data-sales="${r.sales}" data-profit="${profit}" data-rate="${rate.toFixed(1)}"><rect x="${left}" y="${pad.t}" width="${Math.max(24,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="5" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(profit)}" r="4.5" class="chart-dot profit-dot"/></g>`;
   }).join('');
   const targetMarkup=target>=min&&target<=max?`<line x1="${pad.l}" y1="${y(target)}" x2="${w-pad.r}" y2="${y(target)}" class="target-line"/><text x="${w-pad.r}" y="${y(target)-8}" text-anchor="end" class="target-label">500万円</text>`:'';
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".20"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient><filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${grid}${targetMarkup}<path d="${area}" class="sales-area"/><path d="${smoothPath(salesPts)}" class="sales-line" filter="url(#softGlow)"/><path d="${smoothPath(profitPts)}" class="profit-line"/>${months}${hitAreas}</svg>`;
+  const salesPath=smoothPath(salesPts),profitPath=smoothPath(profitPts);
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="月別売上と利益の推移"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".18"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient></defs>${grid}${targetMarkup}<path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line"/><path d="${profitPath}" class="profit-line"/>${months}${hitAreas}</svg>`;
   const select=g=>{el.querySelectorAll('.chart-hit').forEach(x=>x.classList.toggle('selected',x===g));detail.innerHTML=`<strong>${g.dataset.month}月</strong><span>売上 ${yen(g.dataset.sales)}</span><span>利益 ${yen(g.dataset.profit)}</span><span>利益率 ${g.dataset.rate}%</span>`};
   el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',()=>select(g));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});
   select(el.querySelector('.chart-hit:last-of-type'));
