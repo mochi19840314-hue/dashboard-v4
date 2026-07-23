@@ -17,7 +17,7 @@
   <small id="todayLabel"></small>
 </header>
 
-<nav>
+<nav id="tabs">
   <button class="tab active" data-page="today">今日</button>
   <button class="tab" data-page="month">月間</button>
   <button class="tab" data-page="year">年間</button>
@@ -25,8 +25,9 @@
   <button class="tab" data-page="memo">メモ</button>
   <button class="tab" data-page="data">データ</button>
 </nav>
+<div id="pageIndicator" class="page-indicator" aria-label="ページ位置"></div>
 
-<main>
+<main id="pageContainer">
 <section id="today" class="page active">
   <h2>今日の入力</h2>
   <p class="lead">30秒で入力できる6項目です。</p>
@@ -57,7 +58,7 @@
 </section>
 
 <section id="month" class="page">
-  <div class="row"><div><h2>月間集計</h2><p class="lead">売上と主要KPIを自動集計します。</p></div><input id="monthPicker" type="month"></div>
+  <div class="row month-nav"><div><h2>月間集計</h2><p class="lead">売上と主要KPIを自動集計します。</p></div><div class="month-controls"><button id="prevMonth" type="button" aria-label="前月">‹</button><input id="monthPicker" type="month"><button id="nextMonth" type="button" aria-label="翌月">›</button></div></div>
   <div class="card form compact">
     <label>月間売上目標（円）<input id="target" type="number" min="0"></label>
     <label>営業日数<input id="businessDays" type="number" min="1" max="31"></label>
@@ -100,7 +101,7 @@
     <article><span>年間新患数</span><strong id="yearNew">0件</strong></article>
     <article><span>平均月商</span><strong id="yearAvg">0円</strong></article>
   </div>
-  <div class="card"><h3>月別売上</h3><div id="bars" class="bars"></div></div>
+  <div class="card chart-card"><div class="chart-heading"><div><h3>月別売上・利益</h3><p>売上、利益、月商目標500万円を比較します。</p></div><div class="chart-legend"><span><i class="legend-sales"></i>売上</span><span><i class="legend-profit"></i>利益</span><span><i class="legend-target"></i>目標</span></div></div><div id="yearChart" class="year-chart" role="img" aria-label="月別売上と利益の折れ線グラフ"></div></div>
 </section>
 
 <section id="finance" class="page">
