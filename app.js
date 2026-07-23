@@ -16,7 +16,79 @@ function edit(date){const e=data.entries.find(x=>x.date===date);if(!e)return;["s
 function del(date){if(!confirm(`${date}の記録を削除しますか？`))return;data.entries=data.entries.filter(x=>x.date!==date);save();render();toast("削除しました")}
 function sum(entries){return entries.reduce((a,e)=>{["sales","patients","newPatients","surgeries","checkups","trimmings"].forEach(k=>a[k]+=(Number(e[k])||0));return a},{sales:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0})}
 function recent(){const t=$("recent");const rows=[...data.entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);t.innerHTML=rows.length?rows.map(e=>`<tr><td><button data-edit="${e.date}">${e.date}</button></td><td>${yen(e.sales)}</td><td>${e.patients}件</td><td>${e.newPatients||0}件</td><td><button data-del="${e.date}">削除</button></td></tr>`).join(""):'<tr><td colspan="5">まだ記録がありません。</td></tr>';t.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(b.dataset.edit));t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>del(b.dataset.del))}
-function month(){const m=$("monthPicker").value||monthNow(),entries=data.entries.filter(e=>e.date.startsWith(m)),s=sum(entries),set=data.settings[m]||{target:4500000,businessDays:26};$("target").value=set.target;$("businessDays").value=set.businessDays;$("monthSales").textContent=yen(s.sales);$("monthPatients").textContent=`${s.patients}件`;$("monthUnit").textContent=yen(s.patients?s.sales/s.patients:0);$("monthNew").textContent=`${s.newPatients}件`;$("monthSurgery").textContent=`${s.surgeries}件`;$("monthCheckup").textContent=`${s.checkups}件`;$("monthTrim").textContent=`${s.trimmings}件`;const days=Math.max(1,set.businessDays||26),done=new Set(entries.map(e=>e.date)).size,left=Math.max(0,days-done),progress=set.target?s.sales/set.target*100:0,need=left?Math.max(0,set.target-s.sales)/left:Math.max(0,set.target-s.sales),forecast=done?s.sales/done*days:0;$("progressText").textContent=pct(progress);$("needDaily").textContent=yen(need);$("forecast").textContent=yen(forecast);$("progressBar").style.width=`${Math.min(100,progress)}%`;$("monthComment").textContent=`記録 ${done}営業日／設定 ${days}営業日。残り${left}営業日です。`}
+function month(){
+  const m=$("monthPicker").value||monthNow(),
+        entries=data.entries.filter(e=>e.date.startsWith(m)),
+        s=sum(entries),
+        set=data.settings[m]||{target:4500000,businessDays:26};
+
+  $("target").value=set.target;
+  $("businessDays").value=set.businessDays;
+  $("monthSales").textContent=yen(s.sales);
+  $("monthPatients").textContent=`${s.patients}件`;
+  $("monthUnit").textContent=yen(s.patients?s.sales/s.patients:0);
+  $("monthNew").textContent=`${s.newPatients}件`;
+  $("monthSurgery").textContent=`${s.surgeries}件`;
+  $("monthCheckup").textContent=`${s.checkups}件`;
+  $("monthTrim").textContent=`${s.trimmings}件`;
+
+  const days=Math.max(1,set.businessDays||26),
+        done=new Set(entries.map(e=>e.date)).size,
+        left=Math.max(0,days-done),
+        progress=set.target?s.sales/set.target*100:0,
+        need=left?Math.max(0,set.target-s.sales)/left:Math.max(0,set.target-s.sales),
+        avgDaily=done?s.sales/done:0,
+        forecast=done?avgDaily*days:0,
+        gap=set.target-forecast;
+
+  $("progressText").textContent=pct(progress);
+  $("needDaily").textContent=yen(need);
+  $("forecast").textContent=yen(forecast);
+  $("progressBar").style.width=`${Math.min(100,progress)}%`;
+  $("monthComment").textContent=`記録 ${done}営業日／設定 ${days}営業日。残り${left}営業日です。`;
+
+  // 月末売上予測
+  $("aiForecastValue").textContent=yen(forecast);
+  let forecastComment="記録を入力すると予測を表示します。";
+  if(done===0){
+    forecastComment="まだ今月の記録がありません。1日分入力すると予測が始まります。";
+  }else if(forecast>=set.target){
+    forecastComment=`現在の日商${yen(avgDaily)}を維持すると、目標を約${yen(forecast-set.target)}上回る見込みです。`;
+  }else{
+    forecastComment=`現在のペースでは目標まで約${yen(Math.max(0,gap))}不足する見込みです。残り${left}営業日の必要日商は${yen(need)}です。`;
+  }
+  $("aiForecastComment").textContent=forecastComment;
+
+  // 経営提案：優先度順に1つだけ表示
+  let title="データ待ち";
+  let text="記録を入力すると、優先度の高い提案を1つ表示します。";
+
+  if(done>0){
+    const checkupPace=s.checkups/done;
+    const newPatientPace=s.newPatients/done;
+    const unit=s.patients?s.sales/s.patients:0;
+
+    if(s.checkups<Math.max(2,Math.ceil(done*0.25))){
+      title="健診の案内を優先";
+      text=`今月の健診は${s.checkups}件です。現在の診療日数に対して少なめなので、LINEで健康診断のお知らせを配信するのがおすすめです。`;
+    }else if(forecast<set.target && left>0){
+      title="目標との差を確認";
+      text=`月末予測は${yen(forecast)}です。目標との差は約${yen(Math.max(0,gap))}。健診・予防・再診フォローの案内を1つ実行しましょう。`;
+    }else if(newPatientPace<0.08){
+      title="新患導線を見直し";
+      text=`新患は${s.newPatients}件です。Google口コミへの返信やInstagram更新など、来院前の接点を1つ整えるとよい時期です。`;
+    }else if(unit>0 && unit<9000){
+      title="客単価を確認";
+      text=`平均客単価は${yen(unit)}です。必要な血液検査・画像検査・予防提案が十分に伝わっているか、診療後に軽く振り返りましょう。`;
+    }else{
+      title="現在のペースを維持";
+      text=`売上予測は${yen(forecast)}、健診${s.checkups}件、新患${s.newPatients}件です。大きな弱点は見られないため、予約枠と術後フォローを優先しましょう。`;
+    }
+  }
+
+  $("aiSuggestionTitle").textContent=title;
+  $("aiSuggestionText").textContent=text;
+}
 function saveSettings(){const m=$("monthPicker").value||monthNow();data.settings[m]={target:num("target"),businessDays:Math.max(1,num("businessDays")||26)};save();month();toast("目標を保存しました")}
 function years(){const ys=new Set(data.entries.map(e=>e.date.slice(0,4)));ys.add(String(new Date().getFullYear()));$("yearPicker").innerHTML=[...ys].sort().reverse().map(y=>`<option>${y}</option>`).join("")}
 function year(){const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>sum(data.entries.filter(e=>e.date.startsWith(`${y}-${String(i+1).padStart(2,"0")}`)))),total=sum(data.entries.filter(e=>e.date.startsWith(y))),active=rows.filter(r=>r.sales).length,max=Math.max(1,...rows.map(r=>r.sales));$("yearSales").textContent=yen(total.sales);$("yearPatients").textContent=`${total.patients}件`;$("yearNew").textContent=`${total.newPatients}件`;$("yearAvg").textContent=yen(active?total.sales/active:0);$("bars").innerHTML=rows.map((r,i)=>`<div class="bar"><i style="height:${r.sales/max*100}%"></i><small>${i+1}月</small></div>`).join("")}
