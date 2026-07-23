@@ -1,19 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#009f91">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>院長 Dashboard Pro</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#009f91">
+<title>院長 Dashboard Pro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
-  <small>横浜都筑どうぶつ病院</small>
+  <p>横浜都筑どうぶつ病院</p>
   <h1>院長 Dashboard Pro</h1>
-  <div id="todayDate"></div>
+  <small id="todayLabel"></small>
 </header>
 
 <nav>
@@ -28,122 +27,98 @@
 <main>
 <section id="today" class="page active">
   <h2>今日の入力</h2>
-  <p class="lead">売上内訳・犬猫件数・診療実績を保存します。</p>
-
+  <p class="lead">30秒で入力できる6項目です。</p>
   <div class="card form">
-    <label>日付<input type="date" id="entryDate"></label>
-    <label>現金売上（円）<input type="number" id="cashSales" min="0" inputmode="numeric"></label>
-    <label>カード売上（円）<input type="number" id="cardSales" min="0" inputmode="numeric"></label>
-    <label>その他売上（円）<input type="number" id="otherSales" min="0" inputmode="numeric"></label>
-    <label>当日の変動支出（円）<input type="number" id="expense" min="0" inputmode="numeric"></label>
-    <label>犬の件数<input type="number" id="dogs" min="0" inputmode="numeric"></label>
-    <label>猫の件数<input type="number" id="cats" min="0" inputmode="numeric"></label>
-    <label>手術件数<input type="number" id="surgeries" min="0" inputmode="numeric"></label>
-    <label>健診件数<input type="number" id="checkups" min="0" inputmode="numeric"></label>
-    <label>トリミング件数<input type="number" id="trimmings" min="0" inputmode="numeric"></label>
-    <label>緊急対応件数<input type="number" id="emergencies" min="0" inputmode="numeric"></label>
-    <label class="full">ひとことメモ<input type="text" id="note" maxlength="160"></label>
-    <div class="actions full">
-      <button id="saveToday" class="primary">保存する</button>
-      <button id="clearToday" class="secondary">入力をクリア</button>
+    <label>日付<input id="entryDate" type="date"></label>
+    <label>売上（円）<input id="sales" type="number" inputmode="numeric" min="0"></label>
+    <label>来院件数<input id="patients" type="number" inputmode="numeric" min="0"></label>
+    <label>新患数<input id="newPatients" type="number" inputmode="numeric" min="0"></label>
+    <label>手術件数<input id="surgeries" type="number" inputmode="numeric" min="0"></label>
+    <label>健診件数<input id="checkups" type="number" inputmode="numeric" min="0"></label>
+    <label>トリミング件数<input id="trimmings" type="number" inputmode="numeric" min="0"></label>
+    <label class="wide">メモ<input id="note" type="text" maxlength="160"></label>
+    <div class="actions wide">
+      <button id="saveEntry" class="primary">保存する</button>
+      <button id="clearEntry">クリア</button>
     </div>
   </div>
-
   <div class="metrics">
-    <div><span>総売上</span><strong id="salesView">0円</strong></div>
-    <div><span>来院件数</span><strong id="patientsView">0件</strong></div>
-    <div><span>粗利益</span><strong id="profitView">0円</strong></div>
-    <div><span>粗利益率</span><strong id="rateView">0%</strong></div>
-    <div><span>客単価</span><strong id="unitView">0円</strong></div>
-    <div><span>犬：猫</span><strong id="speciesView">0：0</strong></div>
+    <article><span>売上</span><strong id="todaySales">0円</strong></article>
+    <article><span>来院件数</span><strong id="todayPatients">0件</strong></article>
+    <article><span>客単価</span><strong id="todayUnit">0円</strong></article>
+    <article><span>新患数</span><strong id="todayNew">0件</strong></article>
   </div>
-
   <div class="card">
     <h3>最近の記録</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>日付</th><th>売上</th><th>犬</th><th>猫</th><th>客単価</th><th></th></tr></thead>
-        <tbody id="recentEntries"></tbody>
-      </table>
-    </div>
+    <div class="table"><table><thead><tr><th>日付</th><th>売上</th><th>件数</th><th>新患</th><th></th></tr></thead><tbody id="recent"></tbody></table></div>
   </div>
 </section>
 
 <section id="month" class="page">
-  <div class="heading">
-    <div><h2>月間集計</h2><p class="lead">選択月の進捗を自動計算します。</p></div>
-    <input type="month" id="monthPicker">
-  </div>
-
+  <div class="row"><div><h2>月間集計</h2><p class="lead">売上と主要KPIを自動集計します。</p></div><input id="monthPicker" type="month"></div>
   <div class="card form compact">
-    <label>月間売上目標（円）<input type="number" id="monthlyTarget" min="0"></label>
-    <label>月の営業日数<input type="number" id="businessDays" min="1" max="31"></label>
-    <button id="saveMonthSettings" class="primary">目標を保存</button>
+    <label>月間売上目標（円）<input id="target" type="number" min="0"></label>
+    <label>営業日数<input id="businessDays" type="number" min="1" max="31"></label>
+    <button id="saveSettings" class="primary">目標を保存</button>
   </div>
-
   <div class="metrics">
-    <div><span>月間売上</span><strong id="monthSales">0円</strong></div>
-    <div><span>月間支出</span><strong id="monthExpense">0円</strong></div>
-    <div><span>粗利益</span><strong id="monthProfit">0円</strong></div>
-    <div><span>粗利益率</span><strong id="monthRate">0%</strong></div>
-    <div><span>来院件数</span><strong id="monthPatients">0件</strong></div>
-    <div><span>平均客単価</span><strong id="monthUnit">0円</strong></div>
-    <div><span>手術</span><strong id="monthSurgeries">0件</strong></div>
-    <div><span>健診</span><strong id="monthCheckups">0件</strong></div>
-    <div><span>トリミング</span><strong id="monthTrimmings">0件</strong></div>
-    <div><span>緊急対応</span><strong id="monthEmergencies">0件</strong></div>
-    <div class="accent"><span>目標達成率</span><strong id="monthProgress">0%</strong></div>
-    <div class="accent"><span>残り必要日商</span><strong id="needSales">0円</strong></div>
+    <article><span>月間売上</span><strong id="monthSales">0円</strong></article>
+    <article><span>来院件数</span><strong id="monthPatients">0件</strong></article>
+    <article><span>客単価</span><strong id="monthUnit">0円</strong></article>
+    <article><span>新患数</span><strong id="monthNew">0件</strong></article>
+    <article><span>手術件数</span><strong id="monthSurgery">0件</strong></article>
+    <article><span>健診件数</span><strong id="monthCheckup">0件</strong></article>
+    <article><span>トリミング</span><strong id="monthTrim">0件</strong></article>
+    <article class="accent"><span>目標達成率</span><strong id="progressText">0%</strong></article>
+    <article class="accent"><span>残り必要日商</span><strong id="needDaily">0円</strong></article>
+    <article><span>月末売上予測</span><strong id="forecast">0円</strong></article>
   </div>
-  <div class="card">
-    <div class="progress"><div id="progressBar"></div></div>
-    <p id="monthComment" class="lead"></p>
-  </div>
+  <div class="card"><div class="progress"><i id="progressBar"></i></div><p id="monthComment"></p></div>
 </section>
 
 <section id="year" class="page">
-  <div class="heading"><h2>年間集計</h2><select id="yearPicker"></select></div>
+  <div class="row"><div><h2>年間集計</h2></div><select id="yearPicker"></select></div>
   <div class="metrics">
-    <div><span>年間売上</span><strong id="yearSales">0円</strong></div>
-    <div><span>年間粗利益</span><strong id="yearProfit">0円</strong></div>
-    <div><span>年間来院件数</span><strong id="yearPatients">0件</strong></div>
-    <div><span>平均月商</span><strong id="yearAverage">0円</strong></div>
+    <article><span>年間売上</span><strong id="yearSales">0円</strong></article>
+    <article><span>年間来院件数</span><strong id="yearPatients">0件</strong></article>
+    <article><span>年間新患数</span><strong id="yearNew">0件</strong></article>
+    <article><span>平均月商</span><strong id="yearAvg">0円</strong></article>
   </div>
-  <div class="card"><div id="chart" class="chart"></div></div>
+  <div class="card"><h3>月別売上</h3><div id="bars" class="bars"></div></div>
 </section>
 
 <section id="finance" class="page">
   <h2>財務</h2>
   <div class="card form">
-    <label>口座残高（円）<input type="number" id="balance" min="0"></label>
-    <label>借入残高（円）<input type="number" id="loan" min="0"></label>
-    <label>月間リース支払（円）<input type="number" id="lease" min="0"></label>
-    <label>月間固定費（円）<input type="number" id="fixedCost" min="0"></label>
-    <label>月間返済額（円）<input type="number" id="repayment" min="0"></label>
-    <button id="saveFinance" class="primary full">財務情報を保存</button>
+    <label>口座残高（円）<input id="balance" type="number" min="0"></label>
+    <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
+    <label>借入残高（円）<input id="loan" type="number" min="0"></label>
+    <label>月間返済額（円）<input id="repayment" type="number" min="0"></label>
+    <button id="saveFinance" class="primary wide">保存する</button>
   </div>
   <div class="metrics">
-    <div><span>実質純資産目安</span><strong id="netPosition">0円</strong></div>
-    <div><span>固定支出合計</span><strong id="fixedOutflow">0円</strong></div>
+    <article><span>月間利益目安</span><strong id="monthProfit">0円</strong></article>
+    <article><span>利益率目安</span><strong id="profitRate">0%</strong></article>
+    <article><span>実質純資産目安</span><strong id="netAssets">0円</strong></article>
   </div>
 </section>
 
 <section id="memo" class="page">
   <h2>院長メモ</h2>
-  <div class="card"><textarea id="memoText" placeholder="今日の振り返り、経営アイデア、スタッフへの共有事項など"></textarea></div>
+  <div class="card"><textarea id="memoText" placeholder="振り返り、スタッフ共有、経営アイデアなど"></textarea><small id="memoStatus">保存済み</small></div>
 </section>
 
 <section id="data" class="page">
   <h2>データ管理</h2>
-  <div class="card data-buttons">
-    <button id="exportJson" class="primary">完全バックアップを書き出す</button>
-    <label class="file-button secondary">バックアップを復元<input id="importJson" type="file" accept=".json"></label>
-    <button id="exportCsv" class="secondary">CSVを書き出す</button>
-    <button id="deleteAll" class="danger">全データを削除</button>
+  <div class="card dataButtons">
+    <button id="exportJson" class="primary">完全バックアップ</button>
+    <label class="fileBtn">バックアップを復元<input id="importJson" type="file" accept=".json"></label>
+    <button id="exportCsv">CSV出力</button>
+    <button id="deleteAll" class="danger">全データ削除</button>
   </div>
+  <div class="card"><p id="storage"></p></div>
 </section>
 </main>
-
 <div id="toast"></div>
 <script src="app.js"></script>
 </body>
