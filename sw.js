@@ -1,5 +1,5 @@
-const C="keita-dashboard-v50-phase1";
-const A=["./","./index.html","./style.css?v=50p1","./app.js?v=50p1","./manifest.json","./icon-192.png","./icon-512.png"];
+const C="keita-dashboard-v50-phase2";
+const A=["./","./index.html","./style.css?v=50p2","./app.js?v=50p2","./manifest.json","./icon-192.png","./icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener("fetch",e=>{

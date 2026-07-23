@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=50p1">
+<link rel="stylesheet" href="style.css?v=50p2">
 </head>
 <body>
 <header>
@@ -95,6 +95,12 @@
 
 <section id="year" class="page">
   <div class="row"><div><h2>年間集計</h2></div><select id="yearPicker"></select></div>
+  <div class="director-card card">
+    <div class="director-heading"><div><span class="eyebrow">DIRECTOR DASHBOARD</span><h3>院長ダッシュボード</h3></div><span class="estimate-badge">概算</span></div>
+    <div class="director-main"><div><span>推定年収（事業所得目安）</span><strong id="estimatedIncome">0円</strong><small id="estimatedIncomeSub">年間利益をもとに算出</small></div><div class="income-progress"><span id="incomeProgressText">目標年収は未設定</span><div class="progress"><i id="incomeProgressBar"></i></div></div></div>
+    <div class="director-stats"><div><span>年末売上予測</span><strong id="yearSalesForecast">0円</strong></div><div><span>年末利益予測</span><strong id="yearProfitForecast">0円</strong></div><div><span>過去最高月商</span><strong id="bestMonthSales">0円</strong></div></div>
+    <p class="director-note">個人経営のため、税引前の事業利益を「年収の目安」として表示します。</p>
+  </div>
   <div class="metrics apple-metrics">
     <article class="kpi-primary"><span>年間売上</span><strong id="yearSales">0円</strong><small id="yearSalesSub">集計中</small></article>
     <article><span>年間利益</span><strong id="yearProfit">0円</strong><small id="yearProfitSub">売上 − 支出</small></article>
@@ -115,6 +121,7 @@
     <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
     <label>借入残高（円）<input id="loan" type="number" min="0"></label>
     <label>月間返済額（円）<input id="repayment" type="number" min="0"></label>
+    <label>目標年収（円・任意）<input id="incomeTarget" type="number" min="0" placeholder="例：12000000"></label>
     <button id="saveFinance" class="primary wide">保存する</button>
   </div>
   <div class="metrics">
@@ -141,6 +148,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=50p1"></script>
+<script src="app.js?v=50p2"></script>
 </body>
 </html>
