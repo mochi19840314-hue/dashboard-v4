@@ -213,15 +213,47 @@ function year(){
   renderYearChart(rows)
 }
 
-function calcBrandScore(s){
-  const patients=Math.max(0,Number(s.patients)||0),activeDays=new Set((s.entries||[]).map(e=>e.date)).size;
-  const newRate=patients?(Number(s.newPatients)||0)/patients:0;
-  const second=Number(s.secondOpinions)||0,checkups=Number(s.checkups)||0,surgeries=Number(s.surgeries)||0;
-  return Math.round(clamp(35+clamp(newRate/.08*25,0,25)+clamp(second/Math.max(1,activeDays*.3)*25,0,25)+clamp((checkups+surgeries)/Math.max(1,activeDays*.35)*15,0,15),0,100));
+function financeSnapshot(month){
+  const mf=data.financeByMonth[month]||{},f=data.finance;
+  return {
+    balance:Number(mf.balance ?? (month===monthNow()?f.balance:0))||0,
+    loan:Number(mf.loan ?? (month===monthNow()?f.loan:0))||0,
+    repayment:Number(mf.repayment ?? (month===monthNow()?f.repayment:0))||0
+  };
 }
+function calcManagementScore(s,month){
+  const setting=data.settings[month]||{},target=Number(setting.target)||MONTHLY_TARGET;
+  const sales=Number(s.sales)||0,patients=Number(s.patients)||0,newPatients=Number(s.newPatients)||0;
+  const second=Number(s.secondOpinions)||0,checkups=Number(s.checkups)||0;
+  const activeDays=new Set((s.entries||[]).map(e=>e.date)).size;
+  const expense=Number(s.expense)||0,profit=sales-expense,rate=sales?profit/sales*100:0;
+  const snap=financeSnapshot(month),prevSnap=financeSnapshot(monthShift(month,-1));
+  const netAssets=snap.balance-snap.loan,prevNetAssets=prevSnap.balance-prevSnap.loan;
+  const salesScore=Math.round(clamp(sales/Math.max(1,target)*25,0,25));
+  const profitScore=Math.round(clamp(rate/25*15,0,15));
+  const patientTarget=Math.max(1,activeDays*17.5);
+  const patientScore=Math.round(clamp(patients/patientTarget*15,0,15));
+  const newTarget=Math.max(1,activeDays*0.8);
+  const newScore=Math.round(clamp(newPatients/newTarget*10,0,10));
+  const secondTarget=Math.max(1,activeDays*0.3);
+  const secondScore=Math.round(clamp(second/secondTarget*10,0,10));
+  const checkupTarget=Math.max(1,activeDays*0.45);
+  const checkupScore=Math.round(clamp(checkups/checkupTarget*10,0,10));
+  let assetScore=0;
+  if(snap.balance||snap.loan){
+    assetScore=netAssets>0?5:Math.round(clamp((netAssets+5000000)/5000000*5,0,5));
+    if(prevSnap.balance||prevSnap.loan){assetScore+=Math.round(clamp((netAssets-prevNetAssets)/1000000*5+2.5,0,5))}
+    else assetScore+=netAssets>0?3:0;
+  }
+  const consistencyScore=activeDays>=20?5:activeDays>=12?4:activeDays>=6?3:activeDays>=3?2:activeDays?1:0;
+  const breakdown={sales:salesScore,profit:profitScore,patients:patientScore,newPatients:newScore,second:secondScore,checkups:checkupScore,assets:assetScore,consistency:consistencyScore};
+  const score=Math.round(clamp(Object.values(breakdown).reduce((a,b)=>a+b,0),0,100));
+  return {score,breakdown,rate,activeDays,netAssets,profit,target};
+}
+function calcBrandScore(s,month){return calcManagementScore(s,month).score}
 function monthShift(m,delta){const [y,mo]=m.split("-").map(Number),d=new Date(y,mo-1+delta,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function renderBrandSparkline(month,score){
-  const months=Array.from({length:6},(_,i)=>monthShift(month,i-5)),values=months.map(x=>calcBrandScore(monthSummary(x)));values[5]=score;
+  const months=Array.from({length:6},(_,i)=>monthShift(month,i-5)),values=months.map(x=>calcBrandScore(monthSummary(x),x));values[5]=score;
   const svg=$("brandSparkline"),w=190,h=72,p=6,min=Math.min(...values,30),max=Math.max(...values,70),range=Math.max(1,max-min);
   const pts=values.map((v,i)=>[p+i*(w-p*2)/(values.length-1),h-p-(v-min)/range*(h-p*2)]);
   const line=smoothPath(pts),area=`${line} L${pts.at(-1)[0]},${h-p} L${pts[0][0]},${h-p} Z`;
@@ -229,25 +261,33 @@ function renderBrandSparkline(month,score){
   return values.at(-2)||0;
 }
 function renderBrandScore(s,m){
-  const patients=Math.max(0,Number(s.patients)||0),activeDays=new Set((s.entries||[]).map(e=>e.date)).size;
-  const newRate=patients?(Number(s.newPatients)||0)/patients:0,second=Number(s.secondOpinions)||0;
-  const score=calcBrandScore(s),prev=renderBrandSparkline(m,score),delta=score-prev;
+  const result=calcManagementScore(s,m),score=result.score,prev=renderBrandSparkline(m,score),delta=score-prev,b=result.breakdown;
   animateNumber($("brandScore"),score,v=>String(Math.round(v)),600);
   $("brandDelta").textContent=`${delta>0?"+":delta<0?"−":"±"}${Math.abs(delta)}`;
   $("brandDelta").className=delta>0?"positive":delta<0?"negative":"";
-  let comment="新患・健診・手術・セカンドオピニオンから算出します。";
-  if(activeDays){if(second>=Math.max(3,activeDays*.3))comment=`セカンドオピニオン${second}件。専門的な相談先としての認知が強まっています。`;else if(newRate>=.08)comment=`新患比率は${(newRate*100).toFixed(1)}%。地域での新しい接点が順調です。`;else comment="安定して推移しています。月ごとの変化を確認しましょう。"}
+  const rank=score>=95?"S":score>=90?"A+":score>=80?"A":score>=70?"B":score>=60?"C":"D";
+  $("managementRank").textContent=rank;
+  $("managementBreakdown").innerHTML=[
+    ["売上",b.sales,25],["利益",b.profit,15],["来院",b.patients,15],["新患",b.newPatients,10],
+    ["SO",b.second,10],["健診",b.checkups,10],["純資産",b.assets,10],["継続入力",b.consistency,5]
+  ].map(x=>`<span>${x[0]} <b>${x[1]}</b>/${x[2]}</span>`).join("");
+  let comment="日次記録と財務情報を入力すると、病院経営を100点満点で評価します。";
+  if(result.activeDays){
+    const weak=Object.entries(b).sort((a,c)=>a[1]/({sales:25,profit:15,patients:15,newPatients:10,second:10,checkups:10,assets:10,consistency:5}[a[0]])-c[1]/({sales:25,profit:15,patients:15,newPatients:10,second:10,checkups:10,assets:10,consistency:5}[c[0]]))[0]?.[0];
+    const labels={sales:"売上目標",profit:"利益率",patients:"来院件数",newPatients:"新患数",second:"セカンドオピニオン",checkups:"健診件数",assets:"実質純資産",consistency:"入力日数"};
+    comment=`${rank}ランク。現在は「${labels[weak]}」が最も改善余地の大きい項目です。`;
+  }
   $("brandComment").textContent=comment;
 }
 function finance(){
   const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},expense=Number(mf.monthlyExpense ?? hist.expense ?? (m===monthNow()?f.monthlyExpense:0))||0;
-  $("balance").value=f.balance||"";$("monthlyExpense").value=expense||"";$("loan").value=f.loan||"";$("repayment").value=f.repayment||"";$("incomeTarget").value=f.incomeTarget||"";
+  const snap=financeSnapshot(m);$("balance").value=snap.balance||"";$("monthlyExpense").value=expense||"";$("loan").value=snap.loan||"";$("repayment").value=snap.repayment||"";$("incomeTarget").value=f.incomeTarget||"";
   const s=monthSummary(m),profit=s.sales-expense,rate=s.sales?profit/s.sales*100:0,prevM=monthShift(m,-1),prevS=monthSummary(prevM),prevProfit=prevS.sales-prevS.expense,prevRate=prevS.sales?prevProfit/prevS.sales*100:0;
-  renderBrandScore(s,m);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("netAssets").textContent=yen(f.balance-f.loan);
+  renderBrandScore(s,m);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("netAssets").textContent=yen(snap.balance-snap.loan);
   const pd=profit-prevProfit,rd=rate-prevRate;$("profitDelta").textContent=prevS.sales?`前月比 ${pd>=0?"+":"−"}${yen(Math.abs(pd))}`:"前月比 —";$("rateDelta").textContent=prevS.sales?`前月比 ${rd>=0?"+":"−"}${Math.abs(rd).toFixed(1)}pt`:"前月比 —";
   $("profitDelta").className=pd>0?"positive":pd<0?"negative":"";$("rateDelta").className=rd>0?"positive":rd<0?"negative":"";
 }
-function saveFinance(){const m=$("monthPicker").value||monthNow();data.finance={balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget")};data.financeByMonth[m]={monthlyExpense:num("monthlyExpense")};save();finance();month();year();toast(`${m}の財務情報を保存しました`)}
+function saveFinance(){const m=$("monthPicker").value||monthNow();data.finance={balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget")};data.financeByMonth[m]={...(data.financeByMonth[m]||{}),monthlyExpense:num("monthlyExpense"),balance:num("balance"),loan:num("loan"),repayment:num("repayment")};save();finance();month();year();toast(`${m}の財務情報を保存しました`)}
 function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage").textContent=`日別記録 ${data.entries.length}件、月間過去データ ${Object.keys(data.historical).length}か月、使用容量 約${(size/1024).toFixed(1)}KB`}
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(data,null,2),"application/json")}

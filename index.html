@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v6.2.3</title>
+<title>院長 Dashboard Pro v7.0</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=623">
+<link rel="stylesheet" href="style.css?v=700">
 </head>
 <body>
 <header class="app-header">
@@ -186,12 +186,13 @@
   <h2>財務</h2>
   <div class="brand-card finance-brand-card card">
     <div class="finance-brand-copy">
-      <span class="eyebrow">REGIONAL TRUST</span><h3>ブランドスコア</h3>
-      <div class="finance-score-row"><strong id="brandScore">0</strong><small>/100</small></div>
-      <p id="brandComment">新患・健診・手術・セカンドオピニオンから算出します。</p>
+      <span class="eyebrow">HOSPITAL PERFORMANCE</span><h3>病院経営スコア</h3>
+      <div class="finance-score-row"><strong id="brandScore">0</strong><small>/100</small><b id="managementRank" class="management-rank">—</b></div>
+      <p id="brandComment">売上・利益・来院・新患・専門相談・健診・純資産を総合評価します。</p>
+      <div id="managementBreakdown" class="management-breakdown"></div>
     </div>
     <div class="finance-score-visual">
-      <svg id="brandSparkline" viewBox="0 0 190 72" role="img" aria-label="ブランドスコア推移"></svg>
+      <svg id="brandSparkline" viewBox="0 0 190 72" role="img" aria-label="病院経営スコア推移"></svg>
       <div class="score-delta"><span>前月比</span><strong id="brandDelta">±0</strong><small>ポイント</small></div>
     </div>
   </div>
@@ -227,6 +228,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=623"></script>
+<script src="app.js?v=700"></script>
 </body>
 </html>
