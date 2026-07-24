@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v7.1.1</title>
+<title>院長 Dashboard Pro v7.1.2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -243,21 +243,20 @@
   <h2>データ管理</h2>
   <div class="card dataButtons">
     <button id="exportJson" class="primary">完全バックアップ</button>
-    <label class="fileBtn">バックアップを復元<input id="importJson" type="file" accept="application/json,.json,text/plain,*/*"></label>
-    <button id="showPasteImport" type="button">JSONを貼り付けて復元</button>
+    <label class="fileBtn">バックアップを復元<input id="importJson" type="file" accept=".json,application/json,text/plain"></label>
+    <p id="importStatus" class="import-status" aria-live="polite">JSONバックアップを選択してください。</p>
+    <details class="paste-restore">
+      <summary>ファイル選択で復元できない場合</summary>
+      <label>JSONを貼り付けて復元<textarea id="importPaste" class="small-textarea" placeholder="バックアップJSONの全文を貼り付けてください"></textarea></label>
+      <button id="restorePaste">貼り付けたJSONを復元</button>
+    </details>
     <button id="exportCsv">CSV出力</button>
     <button id="deleteAll" class="danger">全データ削除</button>
   </div>
-  <div id="pasteImportPanel" class="card paste-import-panel" hidden>
-    <h3>JSONバックアップを貼り付けて復元</h3>
-    <p class="muted">ファイル選択で読み込めない場合の予備手段です。</p>
-    <textarea id="pasteJson" class="paste-json" placeholder="{ &quot;entries&quot;: [...] }"></textarea>
-    <div class="paste-actions"><button id="restorePastedJson" class="primary" type="button">貼り付けたJSONを復元</button><button id="cancelPasteImport" type="button">閉じる</button></div>
-  </div>
-  <div class="card"><p id="storage"></p><p id="importStatus" class="muted"></p></div>
+  <div class="card"><p id="storage"></p></div>
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=713"></script>
+<script src="app.js?v=712"></script>
 </body>
 </html>
