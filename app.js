@@ -34,10 +34,15 @@ async function fetchWeather(force=false){
   if(!force&&cached&&age<30*60*1000){showWeather(cached);return}
   try{
     $("weatherCondition").textContent="天気を取得中";
-    const url="https://api.open-meteo.com/v1/forecast?latitude=35.544&longitude=139.570&current=temperature_2m,weather_code&daily=precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=1";
+    const url="https://api.open-meteo.com/v1/forecast?latitude=35.544&longitude=139.570&current=temperature_2m,weather_code&hourly=precipitation_probability&daily=weather_code,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=1";
     const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw new Error("weather");
     const j=await r.json(),code=Number(j.current?.weather_code||0),desc=WEATHER_CODES[code]||["天気","🌤️"];
-    const w={condition:desc[0],icon:desc[1],temperature:Number(j.current?.temperature_2m)||0,rainProbability:Number(j.daily?.precipitation_probability_max?.[0])||0,code,fetchedAt:Date.now()};
+    const times=Array.isArray(j.hourly?.time)?j.hourly.time:[],probs=Array.isArray(j.hourly?.precipitation_probability)?j.hourly.precipitation_probability:[];
+    const currentTime=String(j.current?.time||"").slice(0,13)+":00";
+    let hourIndex=times.indexOf(currentTime);
+    if(hourIndex<0&&times.length){const now=Date.now();hourIndex=times.reduce((best,t,i)=>Math.abs(new Date(t).getTime()-now)<Math.abs(new Date(times[best]).getTime()-now)?i:best,0)}
+    const dailyCode=Number(j.daily?.weather_code?.[0]??code),dailyDesc=WEATHER_CODES[dailyCode]||desc;
+    const w={condition:desc[0],icon:desc[1],temperature:Number(j.current?.temperature_2m)||0,rainProbability:Number(probs[hourIndex])||0,code,dailyCondition:dailyDesc[0],dailyCode,dailyRainMax:Number(j.daily?.precipitation_probability_max?.[0])||0,fetchedAt:Date.now()};
     data.weatherCache=w;save();showWeather(w);
   }catch(e){
     if(cached)showWeather(cached,true);else{$("weatherIcon").textContent="—";$("weatherTemp").textContent="--°";$("weatherCondition").textContent="取得できません";$("weatherRain").textContent="--%"}
@@ -45,7 +50,7 @@ async function fetchWeather(force=false){
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
 function clearForm(){$("entryDate").value=iso();["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).value="");$("note").value="";$("saveEntry").textContent="保存する";renderTodaySummary()}
-function saveEntry(){const date=$("entryDate").value;if(!date)return toast("日付を入力してください");const e={date,sales:num("sales"),patients:num("patients"),newPatients:num("newPatients"),surgeries:num("surgeries"),checkups:num("checkups"),trimmings:num("trimmings"),secondOpinions:num("secondOpinions"),weather:data.weatherCache?{condition:data.weatherCache.condition,temperature:data.weatherCache.temperature,rainProbability:data.weatherCache.rainProbability,code:data.weatherCache.code}:null,note:$("note").value.trim()};const i=data.entries.findIndex(x=>x.date===date);if(i>=0)data.entries[i]=e;else data.entries.push(e);data.entries.sort((a,b)=>a.date.localeCompare(b.date));save();render();clearForm();toast(i>=0?"更新しました":"保存しました")}
+function saveEntry(){const date=$("entryDate").value;if(!date)return toast("日付を入力してください");const e={date,sales:num("sales"),patients:num("patients"),newPatients:num("newPatients"),surgeries:num("surgeries"),checkups:num("checkups"),trimmings:num("trimmings"),secondOpinions:num("secondOpinions"),weather:data.weatherCache?{condition:data.weatherCache.condition,temperature:data.weatherCache.temperature,rainProbability:data.weatherCache.rainProbability,code:data.weatherCache.code,dailyCondition:data.weatherCache.dailyCondition,dailyCode:data.weatherCache.dailyCode,dailyRainMax:data.weatherCache.dailyRainMax}:null,note:$("note").value.trim()};const i=data.entries.findIndex(x=>x.date===date);if(i>=0)data.entries[i]=e;else data.entries.push(e);data.entries.sort((a,b)=>a.date.localeCompare(b.date));save();render();clearForm();toast(i>=0?"更新しました":"保存しました")}
 function edit(date){const e=data.entries.find(x=>x.date===date);if(!e)return;["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).value=e[id]||"");$("entryDate").value=e.date;$("note").value=e.note||"";$("saveEntry").textContent="更新する";preview();switchPage("today");setTimeout(()=>$("entryDate").scrollIntoView({behavior:"smooth",block:"center"}),150)}
 function del(date){if(!confirm(`${date}の記録を削除しますか？`))return;data.entries=data.entries.filter(x=>x.date!==date);save();render();toast("削除しました")}
 function sum(entries){return entries.reduce((a,e)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=(Number(e[k])||0));return a},{sales:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0})}
@@ -59,8 +64,8 @@ function recent(){const t=$("recent"),rows=[...data.entries].sort((a,b)=>b.date.
 const WEEKDAYS=["日","月","火","水","木","金","土"];
 const avg=(rows,key)=>rows.length?rows.reduce((a,e)=>a+(Number(e[key])||0),0)/rows.length:0;
 function weekdayName(date){return WEEKDAYS[new Date(`${date}T12:00:00`).getDay()]+"曜日"}
-function isRainy(e){const code=Number(e.weather?.code);return [51,53,55,61,63,65,80,81,82,95,96,99].includes(code)||(Number(e.weather?.rainProbability)||0)>=50||/雨|雷/.test(e.weather?.condition||"")}
-function isSunny(e){const code=Number(e.weather?.code);return [0,1].includes(code)||/快晴|晴れ/.test(e.weather?.condition||"")}
+function isRainy(e){const w=e.weather||{},code=Number(w.dailyCode??w.code),rain=Number(w.dailyRainMax??w.rainProbability)||0,condition=w.dailyCondition||w.condition||"";return [51,53,55,61,63,65,80,81,82,95,96,99].includes(code)||rain>=50||/雨|雷/.test(condition)}
+function isSunny(e){const w=e.weather||{},code=Number(w.dailyCode??w.code),condition=w.dailyCondition||w.condition||"";return [0,1].includes(code)||/快晴|晴れ/.test(condition)}
 function analysisFor(entries){
   const usable=entries.filter(e=>e.sales||e.patients||e.weather);
   const groups={};usable.forEach(e=>{const k=weekdayName(e.date);(groups[k]??=[]).push(e)});
