@@ -1,4 +1,4 @@
-院長 Dashboard Pro v7.1
+院長 Dashboard Pro v7.1.1
 
 変更点
 - 月曜日を休診日としてAI・経営スコア・曜日分析から除外

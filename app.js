@@ -321,7 +321,34 @@ function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage")
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(data,null,2),"application/json")}
 function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),monthly=[["month","sales","expense"],...Object.keys(data.historical).sort().map(m=>[m,data.historical[m].sales||0,data.financeByMonth[m]?.monthlyExpense??data.historical[m].expense??0])];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
-async function importJson(file){try{const x=JSON.parse(await file.text());if(!Array.isArray(x.entries))throw 0;data={...base,...x,finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})}};save();render();toast("復元しました")}catch{alert("読み込めませんでした")}}
+function normalizeBackup(raw){
+  let x=raw;
+  if(x&&typeof x==="object"&&!Array.isArray(x)){
+    if(x.data&&typeof x.data==="object")x=x.data;
+    else if(x.payload&&typeof x.payload==="object")x=x.payload;
+    else if(x.state&&typeof x.state==="object")x=x.state;
+    else if(x[KEY]){try{x=typeof x[KEY]==="string"?JSON.parse(x[KEY]):x[KEY]}catch{}}
+  }
+  if(Array.isArray(x))x={entries:x};
+  if(!x||typeof x!=="object")throw new Error("invalid backup");
+  const entries=Array.isArray(x.entries)?x.entries:Array.isArray(x.records)?x.records:Array.isArray(x.dailyEntries)?x.dailyEntries:Array.isArray(x.dailyRecords)?x.dailyRecords:[];
+  const hasRecognizedData=entries.length||Array.isArray(x.entries)||x.settings||x.finance||x.financeByMonth||x.historical||x.memo!==undefined;
+  if(!hasRecognizedData)throw new Error("unsupported backup");
+  return {...base,...x,entries,settings:{...(x.settings||{})},finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})},clinic:{...DEFAULT_CLINIC,...(x.clinic||{}),closedDates:Array.isArray(x.clinic?.closedDates)?x.clinic.closedDates:[]}};
+}
+async function importJson(file){
+  try{
+    const text=(await file.text()).replace(/^\uFEFF/,"").trim();
+    const parsed=JSON.parse(text);
+    const restored=normalizeBackup(parsed);
+    data=restored;save();render();toast(`復元しました（${data.entries.length}件）`);
+    $("importJson").value="";
+  }catch(err){
+    console.error("backup import failed",err);
+    alert("バックアップを読み込めませんでした。JSON形式の完全バックアップを選択してください。");
+    $("importJson").value="";
+  }
+}
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
 function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:0,behavior:"smooth"})}
