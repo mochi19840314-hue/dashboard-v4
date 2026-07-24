@@ -181,14 +181,6 @@
 
 <section id="finance" class="page">
   <h2>財務</h2>
-  <div class="card form">
-    <label>口座残高（円）<input id="balance" type="number" min="0"></label>
-    <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
-    <label>借入残高（円）<input id="loan" type="number" min="0"></label>
-    <label>月間返済額（円）<input id="repayment" type="number" min="0"></label>
-    <label>目標年収（円・任意）<input id="incomeTarget" type="number" min="0" placeholder="例：12000000"></label>
-    <button id="saveFinance" class="primary wide">保存する</button>
-  </div>
   <div class="brand-card card">
     <div><span class="eyebrow">REGIONAL TRUST</span><h3>ブランドスコア</h3><p id="brandComment">新患・健診・手術・セカンドオピニオンから算出します。</p></div>
     <div class="brand-score"><strong id="brandScore">0</strong><small>/100</small></div>
@@ -197,6 +189,14 @@
     <article><span>月間利益目安</span><strong id="monthProfit">0円</strong></article>
     <article><span>利益率目安</span><strong id="profitRate">0%</strong></article>
     <article><span>実質純資産目安</span><strong id="netAssets">0円</strong></article>
+  </div>
+  <div class="card form">
+    <label>口座残高（円）<input id="balance" type="number" min="0"></label>
+    <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
+    <label>借入残高（円）<input id="loan" type="number" min="0"></label>
+    <label>月間返済額（円）<input id="repayment" type="number" min="0"></label>
+    <label>目標年収（円・任意）<input id="incomeTarget" type="number" min="0" placeholder="例：12000000"></label>
+    <button id="saveFinance" class="primary wide">保存する</button>
   </div>
 </section>
 
@@ -217,6 +217,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=62ai1"></script>
+<script src="app.js?v=622finance"></script>
 </body>
 </html>
