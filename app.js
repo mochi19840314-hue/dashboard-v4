@@ -10,7 +10,7 @@ const HISTORICAL={
   "2026-05":{sales:4973297,expense:3746638},
   "2026-06":{sales:4727145,expense:3666032}
 };
-const base={entries:[],settings:{},finance:{balance:0,monthlyExpense:0,loan:0,repayment:0,incomeTarget:0},financeByMonth:{},historical:{...HISTORICAL},memo:""};
+const base={entries:[],settings:{},weatherCache:null,finance:{balance:0,monthlyExpense:0,loan:0,repayment:0,incomeTarget:0},financeByMonth:{},historical:{...HISTORICAL},memo:""};
 let data=load(),memoTimer;
 const $=id=>document.getElementById(id),num=id=>Math.max(0,Number($(id).value)||0);
 const yen=v=>`${Math.round(Number(v)||0).toLocaleString("ja-JP")}円`,pct=v=>`${(Number(v)||0).toFixed(1)}%`;
@@ -20,9 +20,31 @@ function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const 
 function save(){localStorage.setItem(KEY,JSON.stringify(data));storage()}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout($("toast").t);$("toast").t=setTimeout(()=>$("toast").classList.remove("show"),1600)}
 function preview(){const s=num("sales"),p=num("patients");$("todaySales").textContent=yen(s);$("todayPatients").textContent=`${p}件`;$("todayUnit").textContent=yen(p?s/p:0);$("todayNew").textContent=`${num("newPatients")}件`}
+const WEATHER_CODES={0:["快晴","☀️"],1:["晴れ","🌤️"],2:["一部曇り","⛅"],3:["曇り","☁️"],45:["霧","🌫️"],48:["霧","🌫️"],51:["弱い霧雨","🌦️"],53:["霧雨","🌦️"],55:["強い霧雨","🌧️"],61:["小雨","🌦️"],63:["雨","🌧️"],65:["強い雨","🌧️"],71:["小雪","🌨️"],73:["雪","🌨️"],75:["大雪","❄️"],80:["にわか雨","🌦️"],81:["にわか雨","🌧️"],82:["激しいにわか雨","⛈️"],95:["雷雨","⛈️"],96:["雷雨・ひょう","⛈️"],99:["強い雷雨・ひょう","⛈️"]};
+function showWeather(w,offline=false){
+  if(!w)return;
+  $("weatherIcon").textContent=w.icon||"🌤️";
+  $("weatherTemp").textContent=`${Math.round(Number(w.temperature)||0)}°`;
+  $("weatherCondition").textContent=w.condition+(offline?"（保存値）":"");
+  $("weatherRain").textContent=`${Math.round(Number(w.rainProbability)||0)}%`;
+}
+async function fetchWeather(force=false){
+  const cached=data.weatherCache,age=cached?Date.now()-Number(cached.fetchedAt||0):Infinity;
+  if(!force&&cached&&age<30*60*1000){showWeather(cached);return}
+  try{
+    $("weatherCondition").textContent="天気を取得中";
+    const url="https://api.open-meteo.com/v1/forecast?latitude=35.544&longitude=139.570&current=temperature_2m,weather_code&daily=precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=1";
+    const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw new Error("weather");
+    const j=await r.json(),code=Number(j.current?.weather_code||0),desc=WEATHER_CODES[code]||["天気","🌤️"];
+    const w={condition:desc[0],icon:desc[1],temperature:Number(j.current?.temperature_2m)||0,rainProbability:Number(j.daily?.precipitation_probability_max?.[0])||0,code,fetchedAt:Date.now()};
+    data.weatherCache=w;save();showWeather(w);
+  }catch(e){
+    if(cached)showWeather(cached,true);else{$("weatherIcon").textContent="—";$("weatherTemp").textContent="--°";$("weatherCondition").textContent="取得できません";$("weatherRain").textContent="--%"}
+  }
+}
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
 function clearForm(){$("entryDate").value=iso();["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).value="");$("note").value="";$("saveEntry").textContent="保存する";renderTodaySummary()}
-function saveEntry(){const date=$("entryDate").value;if(!date)return toast("日付を入力してください");const e={date,sales:num("sales"),patients:num("patients"),newPatients:num("newPatients"),surgeries:num("surgeries"),checkups:num("checkups"),trimmings:num("trimmings"),secondOpinions:num("secondOpinions"),note:$("note").value.trim()};const i=data.entries.findIndex(x=>x.date===date);if(i>=0)data.entries[i]=e;else data.entries.push(e);data.entries.sort((a,b)=>a.date.localeCompare(b.date));save();render();clearForm();toast(i>=0?"更新しました":"保存しました")}
+function saveEntry(){const date=$("entryDate").value;if(!date)return toast("日付を入力してください");const e={date,sales:num("sales"),patients:num("patients"),newPatients:num("newPatients"),surgeries:num("surgeries"),checkups:num("checkups"),trimmings:num("trimmings"),secondOpinions:num("secondOpinions"),weather:data.weatherCache?{condition:data.weatherCache.condition,temperature:data.weatherCache.temperature,rainProbability:data.weatherCache.rainProbability,code:data.weatherCache.code}:null,note:$("note").value.trim()};const i=data.entries.findIndex(x=>x.date===date);if(i>=0)data.entries[i]=e;else data.entries.push(e);data.entries.sort((a,b)=>a.date.localeCompare(b.date));save();render();clearForm();toast(i>=0?"更新しました":"保存しました")}
 function edit(date){const e=data.entries.find(x=>x.date===date);if(!e)return;["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).value=e[id]||"");$("entryDate").value=e.date;$("note").value=e.note||"";$("saveEntry").textContent="更新する";preview();switchPage("today");setTimeout(()=>$("entryDate").scrollIntoView({behavior:"smooth",block:"center"}),150)}
 function del(date){if(!confirm(`${date}の記録を削除しますか？`))return;data.entries=data.entries.filter(x=>x.date!==date);save();render();toast("削除しました")}
 function sum(entries){return entries.reduce((a,e)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=(Number(e[k])||0));return a},{sales:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0})}
@@ -48,43 +70,19 @@ function smoothPath(points){
   return d;
 }
 function renderYearChart(rows){
-  const el=$("yearChart"),detail=$("chartDetail"),w=760,h=360,pad={l:58,r:20,t:28,b:46},target=MONTHLY_TARGET;
+  const el=$("yearChart"),detail=$("chartDetail"),w=760,h=340,pad={l:30,r:18,t:20,b:38},target=MONTHLY_TARGET;
   const lastIndex=rows.reduce((last,r,i)=>(r.sales>0||r.expense>0)?i:last,-1);
   if(lastIndex<0){el.innerHTML='<div class="chart-empty">年間データがまだありません。</div>';detail.innerHTML='<span>データを入力するとグラフを表示します</span>';return}
-  const visible=rows.slice(0,lastIndex+1);
-  const profits=visible.map(r=>r.sales-r.expense);
-  const values=[...visible.map(r=>r.sales),...profits,target,0];
-  let rawMin=Math.min(...values),rawMax=Math.max(...values);
-  const range=Math.max(1000000,rawMax-rawMin),padding=range*.12;
-  let min=Math.min(0,rawMin-padding),max=rawMax+padding;
-  const step=max<=6500000?1000000:2000000;
-  max=Math.ceil(max/step)*step;
-  min=Math.floor(min/step)*step;
-  if(max===min)max=min+step;
-  const plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;
-  const x=i=>visible.length===1?pad.l+plotW/2:pad.l+i*plotW/(visible.length-1);
-  const y=v=>pad.t+plotH*(max-v)/(max-min);
-  const salesPts=visible.map((r,i)=>[x(i),y(r.sales)]);
-  const profitPts=visible.map((r,i)=>[x(i),y(r.sales-r.expense)]);
-  let grid='';
-  for(let v=min;v<=max;v+=step){
-    const yy=y(v),label=v===0?'0':`${Math.round(v/10000)}万`;
-    grid+=`<line x1="${pad.l}" y1="${yy}" x2="${w-pad.r}" y2="${yy}" class="chart-grid ${v===0?'zero-line':''}"/><text x="${pad.l-9}" y="${yy+4}" text-anchor="end" class="chart-axis">${label}</text>`;
-  }
-  const months=visible.map((r,i)=>`<text x="${x(i)}" y="${h-15}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
-  const zeroY=y(0);
-  const area=`${smoothPath(salesPts)} L${salesPts.at(-1)[0]},${zeroY} L${salesPts[0][0]},${zeroY} Z`;
-  const band=plotW/Math.max(visible.length,1);
-  const hitAreas=visible.map((r,i)=>{
-    const profit=r.sales-r.expense,rate=r.sales?profit/r.sales*100:0,left=Math.max(pad.l,x(i)-band/2),right=Math.min(w-pad.r,x(i)+band/2);
-    return `<g class="chart-hit" tabindex="0" data-month="${i+1}" data-sales="${r.sales}" data-profit="${profit}" data-rate="${rate.toFixed(1)}"><rect x="${left}" y="${pad.t}" width="${Math.max(24,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="5" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(profit)}" r="4.5" class="chart-dot profit-dot"/></g>`;
-  }).join('');
-  const targetMarkup=target>=min&&target<=max?`<line x1="${pad.l}" y1="${y(target)}" x2="${w-pad.r}" y2="${y(target)}" class="target-line"/><text x="${w-pad.r}" y="${y(target)-8}" text-anchor="end" class="target-label">500万円</text>`:'';
-  const salesPath=smoothPath(salesPts),profitPath=smoothPath(profitPts);
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="月別売上と利益の推移"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".18"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient></defs>${grid}${targetMarkup}<path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line"/><path d="${profitPath}" class="profit-line"/>${months}${hitAreas}</svg>`;
+  const visible=rows.slice(0,lastIndex+1),profits=visible.map(r=>r.sales-r.expense),maxValue=Math.max(target,...visible.map(r=>r.sales),...profits,1);
+  const max=Math.ceil(maxValue/1000000)*1000000+500000,plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;
+  const x=i=>visible.length===1?pad.l+plotW/2:pad.l+i*plotW/(visible.length-1),y=v=>pad.t+plotH*(1-v/max);
+  const salesPts=visible.map((r,i)=>[x(i),y(r.sales)]),profitPts=visible.map((r,i)=>[x(i),y(Math.max(0,r.sales-r.expense))]);
+  const salesPath=smoothPath(salesPts),profitPath=smoothPath(profitPts),area=`${salesPath} L${x(visible.length-1).toFixed(1)},${(h-pad.b).toFixed(1)} L${x(0).toFixed(1)},${(h-pad.b).toFixed(1)} Z`;
+  const targetY=y(target),months=visible.map((r,i)=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
+  const hits=visible.map((r,i)=>{const profit=r.sales-r.expense,rate=r.sales?profit/r.sales*100:0,left=i?((x(i-1)+x(i))/2):pad.l,right=i<visible.length-1?((x(i)+x(i+1))/2):w-pad.r;return `<g class="chart-hit" tabindex="0" data-month="${i+1}" data-sales="${r.sales}" data-profit="${profit}" data-rate="${rate.toFixed(1)}"><rect x="${left}" y="${pad.t}" width="${Math.max(24,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="5.5" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(Math.max(0,profit))}" r="4.5" class="chart-dot profit-dot"/></g>`}).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".28"/><stop offset="62%" stop-color="#00a99d" stop-opacity=".08"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient><filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><line x1="${pad.l}" y1="${targetY}" x2="${w-pad.r}" y2="${targetY}" class="target-line"/><text x="${w-pad.r}" y="${targetY-8}" text-anchor="end" class="target-label">目標 500万円</text><path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line premium-line"/><path d="${profitPath}" class="profit-line"/>${months}${hits}</svg>`;
   const select=g=>{el.querySelectorAll('.chart-hit').forEach(x=>x.classList.toggle('selected',x===g));detail.innerHTML=`<strong>${g.dataset.month}月</strong><span>売上 ${yen(g.dataset.sales)}</span><span>利益 ${yen(g.dataset.profit)}</span><span>利益率 ${g.dataset.rate}%</span>`};
-  el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',()=>select(g));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});
-  select(el.querySelector('.chart-hit:last-of-type'));
+  el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',()=>select(g));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});select(el.querySelector('.chart-hit:last-of-type'));
 }
 
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
@@ -164,7 +162,7 @@ function saveFinance(){const m=$("monthPicker").value||monthNow();data.finance={
 function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage").textContent=`日別記録 ${data.entries.length}件、月間過去データ ${Object.keys(data.historical).length}か月、使用容量 約${(size/1024).toFixed(1)}KB`}
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(data,null,2),"application/json")}
-function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","note"],rows=data.entries.map(e=>head.map(k=>esc(e[k])).join(",")),monthly=[["month","sales","expense"],...Object.keys(data.historical).sort().map(m=>[m,data.historical[m].sales||0,data.financeByMonth[m]?.monthlyExpense??data.historical[m].expense??0])];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
+function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),monthly=[["month","sales","expense"],...Object.keys(data.historical).sort().map(m=>[m,data.historical[m].sales||0,data.financeByMonth[m]?.monthlyExpense??data.historical[m].expense??0])];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
 async function importJson(file){try{const x=JSON.parse(await file.text());if(!Array.isArray(x.entries))throw 0;data={...base,...x,finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})}};save();render();toast("復元しました")}catch{alert("読み込めませんでした")}}
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
@@ -172,6 +170,6 @@ function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classLis
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){recent();month();years();year();finance();storage();renderTodaySummary();$("memoText").value=data.memo||""}
-function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();switchPage("today");render();renderTodaySummary();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();
