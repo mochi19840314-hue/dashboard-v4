@@ -4,17 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v6.2</title>
+<title>院長 Dashboard Pro v6.2.3</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=62ai1">
+<link rel="stylesheet" href="style.css?v=623">
 </head>
 <body>
-<header>
-  <p>横浜都筑どうぶつ病院</p>
-  <h1>院長 Dashboard Pro</h1>
-  <small id="todayLabel"></small>
+<header class="app-header">
+  <img class="header-logo" src="clinic-logo.png" alt="横浜都筑どうぶつ病院 ロゴ">
+  <div>
+    <p>横浜都筑どうぶつ病院</p>
+    <h1>院長 Dashboard Pro</h1>
+    <small id="todayLabel"></small>
+  </div>
 </header>
 
 <nav id="tabs">
@@ -38,7 +41,7 @@
       <small>横浜市都筑区</small>
     </div>
     <div class="weather-side">
-      <span>現在の降水確率</span><strong id="weatherRain">--%</strong>
+      <span>今後1時間の降水確率</span><strong id="weatherRain">--%</strong>
       <button id="refreshWeather" type="button" aria-label="天気を再取得">↻</button>
     </div>
   </div>
@@ -181,14 +184,21 @@
 
 <section id="finance" class="page">
   <h2>財務</h2>
-  <div class="brand-card card">
-    <div><span class="eyebrow">REGIONAL TRUST</span><h3>ブランドスコア</h3><p id="brandComment">新患・健診・手術・セカンドオピニオンから算出します。</p></div>
-    <div class="brand-score"><strong id="brandScore">0</strong><small>/100</small></div>
+  <div class="brand-card finance-brand-card card">
+    <div class="finance-brand-copy">
+      <span class="eyebrow">REGIONAL TRUST</span><h3>ブランドスコア</h3>
+      <div class="finance-score-row"><strong id="brandScore">0</strong><small>/100</small></div>
+      <p id="brandComment">新患・健診・手術・セカンドオピニオンから算出します。</p>
+    </div>
+    <div class="finance-score-visual">
+      <svg id="brandSparkline" viewBox="0 0 190 72" role="img" aria-label="ブランドスコア推移"></svg>
+      <div class="score-delta"><span>前月比</span><strong id="brandDelta">±0</strong><small>ポイント</small></div>
+    </div>
   </div>
-  <div class="metrics">
-    <article><span>月間利益目安</span><strong id="monthProfit">0円</strong></article>
-    <article><span>利益率目安</span><strong id="profitRate">0%</strong></article>
-    <article><span>実質純資産目安</span><strong id="netAssets">0円</strong></article>
+  <div class="metrics finance-kpis">
+    <article><span>月間利益（税引前）</span><strong id="monthProfit">0円</strong><small id="profitDelta">前月比 —</small></article>
+    <article><span>利益率</span><strong id="profitRate">0%</strong><small id="rateDelta">前月比 —</small></article>
+    <article><span>実質純資産</span><strong id="netAssets">0円</strong><small id="assetDelta">口座残高 − 借入残高</small></article>
   </div>
   <div class="card form">
     <label>口座残高（円）<input id="balance" type="number" min="0"></label>
@@ -217,6 +227,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=622finance"></script>
+<script src="app.js?v=623"></script>
 </body>
 </html>

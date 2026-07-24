@@ -34,15 +34,18 @@ async function fetchWeather(force=false){
   if(!force&&cached&&age<30*60*1000){showWeather(cached);return}
   try{
     $("weatherCondition").textContent="天気を取得中";
-    const url="https://api.open-meteo.com/v1/forecast?latitude=35.544&longitude=139.570&current=temperature_2m,weather_code&hourly=precipitation_probability&daily=weather_code,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=1";
+    const url="https://api.open-meteo.com/v1/forecast?latitude=35.544&longitude=139.570&current=temperature_2m,weather_code,precipitation,rain,showers&hourly=precipitation_probability&daily=weather_code,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=1";
     const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw new Error("weather");
     const j=await r.json(),code=Number(j.current?.weather_code||0),desc=WEATHER_CODES[code]||["天気","🌤️"];
     const times=Array.isArray(j.hourly?.time)?j.hourly.time:[],probs=Array.isArray(j.hourly?.precipitation_probability)?j.hourly.precipitation_probability:[];
-    const currentTime=String(j.current?.time||"").slice(0,13)+":00";
-    let hourIndex=times.indexOf(currentTime);
-    if(hourIndex<0&&times.length){const now=Date.now();hourIndex=times.reduce((best,t,i)=>Math.abs(new Date(t).getTime()-now)<Math.abs(new Date(times[best]).getTime()-now)?i:best,0)}
+    const currentIso=String(j.current?.time||"");
+    const currentMs=new Date(currentIso).getTime();
+    let hourIndex=times.length?times.reduce((best,t,i)=>Math.abs(new Date(t).getTime()-currentMs)<Math.abs(new Date(times[best]).getTime()-currentMs)?i:best,0):-1;
+    const nextProb=hourIndex>=0?Math.max(...probs.slice(hourIndex,Math.min(probs.length,hourIndex+2)).map(v=>Number(v)||0)):0;
+    const currentRain=(Number(j.current?.precipitation)||0)+(Number(j.current?.rain)||0)+(Number(j.current?.showers)||0);
+    const rainProbability=currentRain>0?Math.max(80,nextProb):nextProb;
     const dailyCode=Number(j.daily?.weather_code?.[0]??code),dailyDesc=WEATHER_CODES[dailyCode]||desc;
-    const w={condition:desc[0],icon:desc[1],temperature:Number(j.current?.temperature_2m)||0,rainProbability:Number(probs[hourIndex])||0,code,dailyCondition:dailyDesc[0],dailyCode,dailyRainMax:Number(j.daily?.precipitation_probability_max?.[0])||0,fetchedAt:Date.now()};
+    const w={condition:desc[0],icon:desc[1],temperature:Number(j.current?.temperature_2m)||0,rainProbability,code,currentRain,dailyCondition:dailyDesc[0],dailyCode,dailyRainMax:Number(j.daily?.precipitation_probability_max?.[0])||0,fetchedAt:Date.now()};
     data.weatherCache=w;save();showWeather(w);
   }catch(e){
     if(cached)showWeather(cached,true);else{$("weatherIcon").textContent="—";$("weatherTemp").textContent="--°";$("weatherCondition").textContent="取得できません";$("weatherRain").textContent="--%"}
@@ -210,21 +213,40 @@ function year(){
   renderYearChart(rows)
 }
 
-function renderBrandScore(s){
+function calcBrandScore(s){
   const patients=Math.max(0,Number(s.patients)||0),activeDays=new Set((s.entries||[]).map(e=>e.date)).size;
   const newRate=patients?(Number(s.newPatients)||0)/patients:0;
   const second=Number(s.secondOpinions)||0,checkups=Number(s.checkups)||0,surgeries=Number(s.surgeries)||0;
-  const score=Math.round(clamp(35+clamp(newRate/.08*25,0,25)+clamp(second/Math.max(1,activeDays*.3)*25,0,25)+clamp((checkups+surgeries)/Math.max(1,activeDays*.35)*15,0,15),0,100));
+  return Math.round(clamp(35+clamp(newRate/.08*25,0,25)+clamp(second/Math.max(1,activeDays*.3)*25,0,25)+clamp((checkups+surgeries)/Math.max(1,activeDays*.35)*15,0,15),0,100));
+}
+function monthShift(m,delta){const [y,mo]=m.split("-").map(Number),d=new Date(y,mo-1+delta,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
+function renderBrandSparkline(month,score){
+  const months=Array.from({length:6},(_,i)=>monthShift(month,i-5)),values=months.map(x=>calcBrandScore(monthSummary(x)));values[5]=score;
+  const svg=$("brandSparkline"),w=190,h=72,p=6,min=Math.min(...values,30),max=Math.max(...values,70),range=Math.max(1,max-min);
+  const pts=values.map((v,i)=>[p+i*(w-p*2)/(values.length-1),h-p-(v-min)/range*(h-p*2)]);
+  const line=smoothPath(pts),area=`${line} L${pts.at(-1)[0]},${h-p} L${pts[0][0]},${h-p} Z`;
+  svg.innerHTML=`<defs><linearGradient id="brandFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#009f91" stop-opacity=".22"/><stop offset="1" stop-color="#009f91" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#brandFill)"/><path d="${line}" fill="none" stroke="#008f83" stroke-width="3" stroke-linecap="round"/><circle cx="${pts.at(-1)[0]}" cy="${pts.at(-1)[1]}" r="5" fill="#008f83"/>`;
+  return values.at(-2)||0;
+}
+function renderBrandScore(s,m){
+  const patients=Math.max(0,Number(s.patients)||0),activeDays=new Set((s.entries||[]).map(e=>e.date)).size;
+  const newRate=patients?(Number(s.newPatients)||0)/patients:0,second=Number(s.secondOpinions)||0;
+  const score=calcBrandScore(s),prev=renderBrandSparkline(m,score),delta=score-prev;
   animateNumber($("brandScore"),score,v=>String(Math.round(v)),600);
+  $("brandDelta").textContent=`${delta>0?"+":delta<0?"−":"±"}${Math.abs(delta)}`;
+  $("brandDelta").className=delta>0?"positive":delta<0?"negative":"";
   let comment="新患・健診・手術・セカンドオピニオンから算出します。";
-  if(activeDays){
-    if(second>=Math.max(3,activeDays*.3))comment=`セカンドオピニオン${second}件。専門的な相談先としての認知が強まっています。`;
-    else if(newRate>=.08)comment=`新患比率は${(newRate*100).toFixed(1)}%。地域での新しい接点が順調です。`;
-    else comment="現在は安定運用です。信頼指標は月ごとの推移で見るのがおすすめです。";
-  }
+  if(activeDays){if(second>=Math.max(3,activeDays*.3))comment=`セカンドオピニオン${second}件。専門的な相談先としての認知が強まっています。`;else if(newRate>=.08)comment=`新患比率は${(newRate*100).toFixed(1)}%。地域での新しい接点が順調です。`;else comment="安定して推移しています。月ごとの変化を確認しましょう。"}
   $("brandComment").textContent=comment;
 }
-function finance(){const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},expense=Number(mf.monthlyExpense ?? hist.expense ?? (m===monthNow()?f.monthlyExpense:0))||0;$("balance").value=f.balance||"";$("monthlyExpense").value=expense||"";$("loan").value=f.loan||"";$("repayment").value=f.repayment||"";$("incomeTarget").value=f.incomeTarget||"";const s=monthSummary(m),profit=s.sales-expense;renderBrandScore(s);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(s.sales?profit/s.sales*100:0);$("netAssets").textContent=yen(f.balance-f.loan)}
+function finance(){
+  const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},expense=Number(mf.monthlyExpense ?? hist.expense ?? (m===monthNow()?f.monthlyExpense:0))||0;
+  $("balance").value=f.balance||"";$("monthlyExpense").value=expense||"";$("loan").value=f.loan||"";$("repayment").value=f.repayment||"";$("incomeTarget").value=f.incomeTarget||"";
+  const s=monthSummary(m),profit=s.sales-expense,rate=s.sales?profit/s.sales*100:0,prevM=monthShift(m,-1),prevS=monthSummary(prevM),prevProfit=prevS.sales-prevS.expense,prevRate=prevS.sales?prevProfit/prevS.sales*100:0;
+  renderBrandScore(s,m);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("netAssets").textContent=yen(f.balance-f.loan);
+  const pd=profit-prevProfit,rd=rate-prevRate;$("profitDelta").textContent=prevS.sales?`前月比 ${pd>=0?"+":"−"}${yen(Math.abs(pd))}`:"前月比 —";$("rateDelta").textContent=prevS.sales?`前月比 ${rd>=0?"+":"−"}${Math.abs(rd).toFixed(1)}pt`:"前月比 —";
+  $("profitDelta").className=pd>0?"positive":pd<0?"negative":"";$("rateDelta").className=rd>0?"positive":rd<0?"negative":"";
+}
 function saveFinance(){const m=$("monthPicker").value||monthNow();data.finance={balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget")};data.financeByMonth[m]={monthlyExpense:num("monthlyExpense")};save();finance();month();year();toast(`${m}の財務情報を保存しました`)}
 function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage").textContent=`日別記録 ${data.entries.length}件、月間過去データ ${Object.keys(data.historical).length}か月、使用容量 約${(size/1024).toFixed(1)}KB`}
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
