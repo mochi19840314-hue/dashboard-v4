@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v7.0</title>
+<title>院長 Dashboard Pro v7.1</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=700">
+<link rel="stylesheet" href="style.css?v=710">
 </head>
 <body>
 <header class="app-header">
@@ -26,6 +26,7 @@
   <button class="tab" data-page="year">年間</button>
   <button class="tab" data-page="finance">財務</button>
   <button class="tab" data-page="memo">メモ</button>
+  <button class="tab" data-page="settings">病院設定</button>
   <button class="tab" data-page="data">データ</button>
 </nav>
 <div id="pageIndicator" class="page-indicator" aria-label="ページ位置"></div>
@@ -216,6 +217,28 @@
   <div class="card"><textarea id="memoText" placeholder="振り返り、スタッフ共有、経営アイデアなど"></textarea><small id="memoStatus">保存済み</small></div>
 </section>
 
+<section id="settings" class="page">
+  <h2>病院設定</h2>
+  <p class="lead">AIと経営スコアが診療体制を理解するための設定です。</p>
+  <div class="card schedule-summary">
+    <span class="eyebrow">CLINIC SCHEDULE</span>
+    <h3>横浜都筑どうぶつ病院</h3>
+    <div class="schedule-badges"><span>月曜：休診</span><span>土曜：午後のみ</span><span>火〜金・日：通常診療</span></div>
+  </div>
+  <div class="card form clinic-settings-form">
+    <label>通常診療日の売上目標（円）<input id="fullDayTarget" type="number" min="0" inputmode="numeric"></label>
+    <label>土曜日・午後診療の売上目標（円）<input id="saturdayTarget" type="number" min="0" inputmode="numeric"></label>
+    <label>通常診療日の基準来院数<input id="fullDayPatients" type="number" min="1" step="0.5" inputmode="decimal"></label>
+    <label>土曜日・午後診療の基準来院数<input id="saturdayPatients" type="number" min="1" step="0.5" inputmode="decimal"></label>
+    <label class="wide">臨時休診日（1行に1日、YYYY-MM-DD）<textarea id="closedDates" class="small-textarea" placeholder="2026-08-14"></textarea></label>
+    <button id="saveClinicSettings" class="primary wide">病院設定を保存</button>
+  </div>
+  <div class="card clinic-rule-card">
+    <h3>AIの評価ルール</h3>
+    <p>月曜日と臨時休診日は評価対象外です。土曜日は午後診療専用の目標で評価し、通常診療日と単純比較しません。</p>
+  </div>
+</section>
+
 <section id="data" class="page">
   <h2>データ管理</h2>
   <div class="card dataButtons">
@@ -228,6 +251,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=700"></script>
+<script src="app.js?v=710"></script>
 </body>
 </html>

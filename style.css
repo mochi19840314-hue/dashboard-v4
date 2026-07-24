@@ -131,3 +131,14 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 .management-rank{display:inline-grid;place-items:center;min-width:46px;height:34px;padding:0 10px;border-radius:999px;background:linear-gradient(145deg,#e3f8f4,#d8eeff);color:#007f75;font-size:17px;letter-spacing:-.4px;box-shadow:inset 0 0 0 1px rgba(0,143,131,.08)}
 .management-breakdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:15px}.management-breakdown span{padding:7px 8px;border-radius:11px;background:rgba(0,159,145,.065);color:var(--muted);font-size:9px;font-weight:800;white-space:nowrap}.management-breakdown b{color:var(--text);font-size:11px}
 @media(max-width:600px){.management-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}.management-rank{height:30px;min-width:41px;font-size:15px}}
+
+/* v7.1 clinic schedule */
+.schedule-summary{background:linear-gradient(135deg,#effbf8,#fff)}
+.schedule-summary h3{margin:.35rem 0 .8rem}
+.schedule-badges{display:flex;flex-wrap:wrap;gap:.5rem}
+.schedule-badges span{background:#e4f6f2;color:#087d72;border-radius:999px;padding:.45rem .7rem;font-size:.82rem;font-weight:700}
+.small-textarea{min-height:92px!important}
+.clinic-rule-card p{margin-bottom:0;line-height:1.7}
+.clinic-day-tag{display:inline-flex;align-items:center;border-radius:999px;padding:.28rem .55rem;background:#e8f7f4;color:#087d72;font-weight:700;font-size:.78rem}
+.clinic-day-tag.closed{background:#f1f2f4;color:#667085}
+.clinic-day-tag.half{background:#fff4d8;color:#8a5a00}

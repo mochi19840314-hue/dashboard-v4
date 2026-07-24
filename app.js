@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const KEY="keitaDashboardSimpleV1";
-const PAGE_IDS=["today","month","year","finance","memo","data"];
+const PAGE_IDS=["today","month","year","finance","memo","settings","data"];
 const MONTHLY_TARGET=5000000;
 const HISTORICAL={
   "2026-01":{sales:3442266,expense:3268225},
@@ -10,13 +10,14 @@ const HISTORICAL={
   "2026-05":{sales:4973297,expense:3746638},
   "2026-06":{sales:4727145,expense:3666032}
 };
-const base={entries:[],settings:{},weatherCache:null,finance:{balance:0,monthlyExpense:0,loan:0,repayment:0,incomeTarget:0},financeByMonth:{},historical:{...HISTORICAL},memo:""};
+const DEFAULT_CLINIC={fullDayTarget:180000,saturdayTarget:100000,fullDayPatients:17.5,saturdayPatients:9,closedDates:[]};
+const base={entries:[],settings:{},weatherCache:null,finance:{balance:0,monthlyExpense:0,loan:0,repayment:0,incomeTarget:0},financeByMonth:{},historical:{...HISTORICAL},clinic:{...DEFAULT_CLINIC},memo:""};
 let data=load(),memoTimer;
 const $=id=>document.getElementById(id),num=id=>Math.max(0,Number($(id).value)||0);
 const yen=v=>`${Math.round(Number(v)||0).toLocaleString("ja-JP")}円`,pct=v=>`${(Number(v)||0).toFixed(1)}%`;
 const iso=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 const monthNow=()=>iso().slice(0,7);
-function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},historical:{...HISTORICAL,...(raw.historical||{})},entries:Array.isArray(raw.entries)?raw.entries:[]}}catch{return structuredClone(base)}}
+function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},historical:{...HISTORICAL,...(raw.historical||{})},clinic:{...DEFAULT_CLINIC,...(raw.clinic||{}),closedDates:Array.isArray(raw.clinic?.closedDates)?raw.clinic.closedDates:[]},entries:Array.isArray(raw.entries)?raw.entries:[]}}catch{return structuredClone(base)}}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));storage()}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout($("toast").t);$("toast").t=setTimeout(()=>$("toast").classList.remove("show"),1600)}
 function preview(){const s=num("sales"),p=num("patients");$("todaySales").textContent=yen(s);$("todayPatients").textContent=`${p}件`;$("todayUnit").textContent=yen(p?s/p:0);$("todayNew").textContent=`${num("newPatients")}件`;renderDailyAI()}
@@ -67,39 +68,58 @@ function recent(){const t=$("recent"),rows=[...data.entries].sort((a,b)=>b.date.
 const WEEKDAYS=["日","月","火","水","木","金","土"];
 const avg=(rows,key)=>rows.length?rows.reduce((a,e)=>a+(Number(e[key])||0),0)/rows.length:0;
 function weekdayName(date){return WEEKDAYS[new Date(`${date}T12:00:00`).getDay()]+"曜日"}
+function clinicDayInfo(date){
+  const day=new Date(`${date}T12:00:00`).getDay(),c=data.clinic||DEFAULT_CLINIC;
+  if((c.closedDates||[]).includes(date))return {type:"closed",label:"臨時休診",weight:0,target:0,patientsTarget:0};
+  if(day===1)return {type:"closed",label:"月曜休診",weight:0,target:0,patientsTarget:0};
+  if(day===6)return {type:"half",label:"土曜・午後診療",weight:.5,target:Number(c.saturdayTarget)||100000,patientsTarget:Number(c.saturdayPatients)||9};
+  return {type:"full",label:"通常診療",weight:1,target:Number(c.fullDayTarget)||180000,patientsTarget:Number(c.fullDayPatients)||17.5};
+}
+function operatingEntries(entries){return entries.filter(e=>clinicDayInfo(e.date).type!=="closed")}
+function operatingUnits(entries){return operatingEntries(entries).reduce((a,e)=>a+clinicDayInfo(e.date).weight,0)}
+function expectedBusinessDays(month){
+  const [y,m]=month.split("-").map(Number),last=new Date(y,m,0).getDate();let n=0;
+  for(let d=1;d<=last;d++){const date=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;if(clinicDayInfo(date).type!=="closed")n++}
+  return n;
+}
 function isRainy(e){const w=e.weather||{},code=Number(w.dailyCode??w.code),rain=Number(w.dailyRainMax??w.rainProbability)||0,condition=w.dailyCondition||w.condition||"";return [51,53,55,61,63,65,80,81,82,95,96,99].includes(code)||rain>=50||/雨|雷/.test(condition)}
 function isSunny(e){const w=e.weather||{},code=Number(w.dailyCode??w.code),condition=w.dailyCondition||w.condition||"";return [0,1].includes(code)||/快晴|晴れ/.test(condition)}
 function analysisFor(entries){
-  const usable=entries.filter(e=>e.sales||e.patients||e.weather);
+  const usable=operatingEntries(entries).filter(e=>e.sales||e.patients||e.weather);
   const groups={};usable.forEach(e=>{const k=weekdayName(e.date);(groups[k]??=[]).push(e)});
-  const weekdayRows=Object.entries(groups).map(([name,rows])=>({name,rows,sales:avg(rows,"sales"),patients:avg(rows,"patients")})).sort((a,b)=>b.sales-a.sales);
+  const weekdayRows=Object.entries(groups).map(([name,rows])=>{
+    const targetRate=rows.length?rows.reduce((a,e)=>a+(Number(e.sales)||0)/Math.max(1,clinicDayInfo(e.date).target),0)/rows.length:0;
+    return {name,rows,sales:avg(rows,"sales"),patients:avg(rows,"patients"),targetRate};
+  }).sort((a,b)=>b.targetRate-a.targetRate);
   const rain=usable.filter(isRainy),sunny=usable.filter(isSunny),hot=usable.filter(e=>Number(e.weather?.temperature)>=30),weatherKnown=usable.filter(e=>e.weather);
   return {usable,weekdayRows,rain,sunny,hot,weatherKnown,overallSales:avg(usable,"sales"),overallPatients:avg(usable,"patients")};
 }
 function renderDailyAI(){
-  const date=$("entryDate")?.value||iso(),saved=data.entries.find(e=>e.date===date),w=date===iso()?data.weatherCache:saved?.weather;
+  const date=$("entryDate")?.value||iso(),saved=data.entries.find(e=>e.date===date),w=date===iso()?data.weatherCache:saved?.weather,day=clinicDayInfo(date);
   const sales=num("sales")||Number(saved?.sales)||0,patients=num("patients")||Number(saved?.patients)||0,newP=num("newPatients")||Number(saved?.newPatients)||0,second=num("secondOpinions")||Number(saved?.secondOpinions)||0;
-  const history=data.entries.filter(e=>e.date!==date),sameDay=history.filter(e=>weekdayName(e.date)===weekdayName(date));
-  const basePatients=avg(sameDay.length?sameDay:history,"patients"),baseSales=avg(sameDay.length?sameDay:history,"sales");
-  let title="今日のデータを待っています",text="天気と入力内容を組み合わせて、今日の評価と行動提案を表示します。",tags=[];
-  if(w||sales||patients){
-    const weatherText=w?`${w.condition}・${Math.round(Number(w.temperature)||0)}℃`:"天気未記録";
-    const notes=[];
-    if(patients&&basePatients){const d=(patients/basePatients-1)*100;notes.push(`来院数は同じ曜日の平均より${Math.abs(d).toFixed(0)}%${d>=0?"多め":"少なめ"}です。`)}
-    if(sales&&baseSales){const d=(sales/baseSales-1)*100;notes.push(`売上は比較基準より${Math.abs(d).toFixed(0)}%${d>=0?"上振れ":"下振れ"}しています。`)}
+  const history=operatingEntries(data.entries.filter(e=>e.date!==date)),sameType=history.filter(e=>clinicDayInfo(e.date).type===day.type);
+  const basePatients=avg(sameType.length?sameType:history,"patients"),baseSales=avg(sameType.length?sameType:history,"sales");
+  let title="今日のデータを待っています",text="天気と入力内容を組み合わせて、今日の評価と行動提案を表示します。",tags=[day.label];
+  if(day.type==="closed"){
+    title=`${day.label}です`;text="休診日は売上・来院件数・経営スコアの評価対象から除外します。今月全体の状況確認や院長メモにご利用ください。";
+  }else if(w||sales||patients){
+    const weatherText=w?`${w.condition}・${Math.round(Number(w.temperature)||0)}℃`:"天気未記録",notes=[],rate=day.target?sales/day.target:0;
+    if(sales)notes.push(`${day.label}の目標${yen(day.target)}に対し、達成率${Math.round(rate*100)}%です。`);
+    if(patients&&basePatients){const d=(patients/basePatients-1)*100;notes.push(`来院数は同じ診療区分の平均より${Math.abs(d).toFixed(0)}%${d>=0?"多め":"少なめ"}です。`)}
+    else if(patients)notes.push(`基準来院数${day.patientsTarget}件に対し${patients}件です。`);
+    if(sales&&baseSales){const d=(sales/baseSales-1)*100;notes.push(`売上は同じ診療区分の実績より${Math.abs(d).toFixed(0)}%${d>=0?"上振れ":"下振れ"}しています。`)}
     if(w&&Number(w.temperature)>=30)notes.push("高温日です。熱中症注意喚起と、涼しい時間帯の来院案内が適しています。");
     else if(w&&isRainy({weather:w}))notes.push("雨天です。空き枠があればLINEやストーリーズで当日受診を案内する余地があります。");
     if(second>0)notes.push(`セカンドオピニオン${second}件は、専門相談先としての信頼蓄積につながっています。`);
     if(newP===0&&patients>=10)notes.push("新患がないため、口コミ返信や症例発信を1つ行うと新患導線を維持できます。");
-    title=`${weatherText}の経営コメント`;
-    text=notes.slice(0,3).join(" ")||"データは安定しています。予約状況と診療負荷を確認し、無理のない運営を優先しましょう。";
-    tags=[weekdayName(date),w?.condition,patients?`来院${patients}件`:null,second?`専門相談${second}件`:null].filter(Boolean);
+    title=`${weatherText}・${day.label}`;text=notes.slice(0,3).join(" ")||"データは安定しています。予約状況と診療負荷を確認し、無理のない運営を優先しましょう。";
+    tags=[day.label,w?.condition,patients?`来院${patients}件`:null,sales?`目標${Math.round(rate*100)}%`:null,second?`専門相談${second}件`:null].filter(Boolean);
   }
   $("dailyAiTitle").textContent=title;$("dailyAiText").textContent=text;$("dailyAiTags").innerHTML=tags.map(t=>`<span>${t}</span>`).join("");
 }
 function renderWeatherBusiness(entries,s,forecast,set,left){
   const a=analysisFor(entries),sample=a.usable.length;$("analysisSample").textContent=`${sample}日分`;
-  const best=a.weekdayRows[0];$("bestWeekday").textContent=best?best.name:"—";$("bestWeekdaySub").textContent=best?`平均 ${yen(best.sales)}・${best.patients.toFixed(1)}件`:"3日以上で分析";
+  const best=a.weekdayRows[0];$("bestWeekday").textContent=best?best.name:"—";$("bestWeekdaySub").textContent=best?`目標達成 ${Math.round(best.targetRate*100)}%・平均 ${yen(best.sales)}`:"3日以上で分析";
   $("rainAvgSales").textContent=a.rain.length?yen(avg(a.rain,"sales")):"—";
   $("rainImpact").textContent=a.rain.length&&a.overallSales?`全体比 ${((avg(a.rain,"sales")/a.overallSales-1)*100).toFixed(0)}%（${a.rain.length}日）`:"雨データ待ち";
   $("sunnyAvgPatients").textContent=a.sunny.length?`${avg(a.sunny,"patients").toFixed(1)}件`:"—";
@@ -109,23 +129,23 @@ function renderWeatherBusiness(entries,s,forecast,set,left){
   if(sample<3)actions.push({p:"データ蓄積",t:"まず3営業日以上を入力すると、曜日・天気別の比較が始まります。"});
   if(a.rain.length>=2&&a.overallSales&&avg(a.rain,"sales")<a.overallSales*.9)actions.push({p:"雨天対策",t:`雨の日の売上は全体平均より約${Math.abs((avg(a.rain,"sales")/a.overallSales-1)*100).toFixed(0)}%低めです。雨予報の前日にLINEで予約確認と当日枠を案内しましょう。`});
   if(a.hot.length>=2&&a.overallPatients&&avg(a.hot,"patients")<a.overallPatients*.9)actions.push({p:"高温日対策",t:"30℃以上の日は来院が減る傾向です。午前・夕方の受診案内と熱中症注意喚起を組み合わせましょう。"});
-  if(best&&a.weekdayRows.length>=2){const worst=a.weekdayRows[a.weekdayRows.length-1];if(best.sales>worst.sales*1.25)actions.push({p:"曜日最適化",t:`${best.name}は好調、${worst.name}は弱めです。弱い曜日に健診・再診フォロー・当日枠告知を集中すると効率的です。`})}
+  if(best&&a.weekdayRows.length>=2){const worst=a.weekdayRows[a.weekdayRows.length-1];if(best.targetRate>worst.targetRate*1.2)actions.push({p:"曜日最適化",t:`診療時間補正後では${best.name}が好調、${worst.name}が弱めです。弱い曜日に健診・再診フォロー・当日枠告知を集中すると効率的です。`})}
   if((s.secondOpinions||0)>=3)actions.push({p:"専門性を発信",t:`セカンドオピニオンが${s.secondOpinions}件あります。匿名化した症例解説や「相談できる疾患」を発信し、強みを明確にしましょう。`});
   if(s.checkups<Math.max(2,Math.ceil(sample*.2)))actions.push({p:"健診を底上げ",t:"健診件数が少なめです。天気の良い日にLINE・Instagramで健診枠を案内すると動きやすくなります。"});
   if(forecast<set.target&&left>0)actions.push({p:"目標差を埋める",t:`月末予測は${yen(forecast)}です。新規施策を増やすより、健診・再診・予防の案内漏れを減らすことを優先しましょう。`});
   $("aiActionList").innerHTML=actions.slice(0,3).map((x,i)=>`<article><b>${i+1}</b><div><strong>${x.p}</strong><p>${x.t}</p></div></article>`).join("")||"<p>大きな弱点は見られません。現在の診療品質と負荷管理を維持しましょう。</p>";
 }
 function month(){
-  const m=$("monthPicker").value||monthNow(),s=monthSummary(m),entries=s.entries,set=data.settings[m]||{target:MONTHLY_TARGET,businessDays:26};
+  const m=$("monthPicker").value||monthNow(),s=monthSummary(m),entries=operatingEntries(s.entries),set=data.settings[m]||{target:MONTHLY_TARGET,businessDays:expectedBusinessDays(m)};
   $("target").value=set.target;$("businessDays").value=set.businessDays;$("monthSales").textContent=yen(s.sales);$("monthPatients").textContent=`${s.patients}件`;$("monthUnit").textContent=yen(s.patients?s.sales/s.patients:0);$("monthNew").textContent=`${s.newPatients}件`;$("monthSurgery").textContent=`${s.surgeries}件`;$("monthCheckup").textContent=`${s.checkups}件`;$("monthTrim").textContent=`${s.trimmings}件`;$("monthSecond").textContent=`${s.secondOpinions||0}件`;
-  const days=Math.max(1,set.businessDays||26),done=new Set(entries.map(e=>e.date)).size,left=Math.max(0,days-done),progress=set.target?s.sales/set.target*100:0,need=left?Math.max(0,set.target-s.sales)/left:Math.max(0,set.target-s.sales),avgDaily=done?s.sales/done:0,forecast=done?avgDaily*days:s.sales,gap=set.target-forecast;
+  const days=Math.max(1,set.businessDays||expectedBusinessDays(m)),done=new Set(entries.map(e=>e.date)).size,left=Math.max(0,days-done),progress=set.target?s.sales/set.target*100:0,need=left?Math.max(0,set.target-s.sales)/left:Math.max(0,set.target-s.sales),avgDaily=done?s.sales/done:0,forecast=done?avgDaily*days:s.sales,gap=set.target-forecast;
   $("progressText").textContent=pct(progress);$("needDaily").textContent=yen(need);$("forecast").textContent=yen(forecast);$("progressBar").style.width=`${Math.min(100,progress)}%`;$("monthComment").textContent=done?`記録 ${done}営業日／設定 ${days}営業日。残り${left}営業日です。`:(s.sales?"過去の月間売上データを表示しています。日次内訳はありません。":"記録はまだありません。");
   $("aiForecastValue").textContent=yen(forecast);$("aiForecastComment").textContent=done?(forecast>=set.target?`現在の日商${yen(avgDaily)}を維持すると、目標を約${yen(forecast-set.target)}上回る見込みです。`:`現在のペースでは目標まで約${yen(Math.max(0,gap))}不足する見込みです。残り${left}営業日の必要日商は${yen(need)}です。`):(s.sales?"この月は確定済みの月間売上です。":"まだ今月の記録がありません。1日分入力すると予測が始まります。");
   const a=analysisFor(entries);let title="データ待ち",text="記録を入力すると、天気と曜日を含めた提案を表示します。";
   if(done>0){const second=s.secondOpinions||0,best=a.weekdayRows[0];if(a.rain.length>=2&&a.overallSales&&avg(a.rain,"sales")<a.overallSales*.9){title="雨の日の来院導線を強化";text="雨天日の実績が全体平均を下回っています。前日の予約確認と当日枠の告知を組み合わせましょう。"}else if(second>=Math.max(3,Math.ceil(done*.3))){title="専門相談の増加が強み";text=`今月のセカンドオピニオンは${second}件です。専門的な相談先としての認知を、症例発信でさらに定着させましょう。`}else if(best){title=`${best.name}の強みを活用`;text=`${best.name}は平均売上${yen(best.sales)}で最も好調です。弱い曜日への再診・健診誘導に、この傾向を活かしましょう。`}else{title="現在のペースを維持";text="売上・来院・天気を継続記録すると、提案精度がさらに上がります。"}}
   $("aiSuggestionTitle").textContent=title;$("aiSuggestionText").textContent=text;renderWeatherBusiness(entries,s,forecast,set,left);
 }
-function saveSettings(){const m=$("monthPicker").value||monthNow();data.settings[m]={target:num("target"),businessDays:Math.max(1,num("businessDays")||26)};save();month();toast("目標を保存しました")}
+function saveSettings(){const m=$("monthPicker").value||monthNow();data.settings[m]={target:num("target"),businessDays:Math.max(1,num("businessDays")||expectedBusinessDays(m))};save();month();toast("目標を保存しました")}
 function years(){const ys=new Set([...data.entries.map(e=>e.date.slice(0,4)),...Object.keys(data.historical).map(m=>m.slice(0,4))]);ys.add(String(new Date().getFullYear()));$("yearPicker").innerHTML=[...ys].sort().reverse().map(y=>`<option>${y}</option>`).join("")}
 function smoothPath(points){
   if(!points.length)return "";
@@ -231,7 +251,7 @@ function calcManagementScore(s,month){
   const netAssets=snap.balance-snap.loan,prevNetAssets=prevSnap.balance-prevSnap.loan;
   const salesScore=Math.round(clamp(sales/Math.max(1,target)*25,0,25));
   const profitScore=Math.round(clamp(rate/25*15,0,15));
-  const patientTarget=Math.max(1,activeDays*17.5);
+  const patientTarget=Math.max(1,opEntries.reduce((a,e)=>a+clinicDayInfo(e.date).patientsTarget,0)||activeDays*(Number(data.clinic.fullDayPatients)||17.5));
   const patientScore=Math.round(clamp(patients/patientTarget*15,0,15));
   const newTarget=Math.max(1,activeDays*0.8);
   const newScore=Math.round(clamp(newPatients/newTarget*10,0,10));
@@ -288,6 +308,15 @@ function finance(){
   $("profitDelta").className=pd>0?"positive":pd<0?"negative":"";$("rateDelta").className=rd>0?"positive":rd<0?"negative":"";
 }
 function saveFinance(){const m=$("monthPicker").value||monthNow();data.finance={balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget")};data.financeByMonth[m]={...(data.financeByMonth[m]||{}),monthlyExpense:num("monthlyExpense"),balance:num("balance"),loan:num("loan"),repayment:num("repayment")};save();finance();month();year();toast(`${m}の財務情報を保存しました`)}
+function renderClinicSettings(){
+  const c=data.clinic||DEFAULT_CLINIC;
+  $("fullDayTarget").value=c.fullDayTarget;$("saturdayTarget").value=c.saturdayTarget;$("fullDayPatients").value=c.fullDayPatients;$("saturdayPatients").value=c.saturdayPatients;$("closedDates").value=(c.closedDates||[]).join("\n");
+}
+function saveClinicSettings(){
+  const dates=$("closedDates").value.split(/\s+/).map(x=>x.trim()).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
+  data.clinic={fullDayTarget:num("fullDayTarget")||180000,saturdayTarget:num("saturdayTarget")||100000,fullDayPatients:Number($("fullDayPatients").value)||17.5,saturdayPatients:Number($("saturdayPatients").value)||9,closedDates:[...new Set(dates)].sort()};
+  save();render();toast("病院設定を保存しました");
+}
 function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage").textContent=`日別記録 ${data.entries.length}件、月間過去データ ${Object.keys(data.historical).length}か月、使用容量 約${(size/1024).toFixed(1)}KB`}
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(data,null,2),"application/json")}
@@ -295,10 +324,10 @@ function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head
 async function importJson(file){try{const x=JSON.parse(await file.text());if(!Array.isArray(x.entries))throw 0;data={...base,...x,finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})}};save();render();toast("復元しました")}catch{alert("読み込めませんでした")}}
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
-function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="year"){years();year()}if(id==="finance")finance();window.scrollTo({top:0,behavior:"smooth"})}
+function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:0,behavior:"smooth"})}
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
-function render(){recent();month();years();year();finance();storage();renderTodaySummary();renderDailyAI();$("memoText").value=data.memo||""}
-function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+function render(){recent();month();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();$("memoText").value=data.memo||""}
+function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();
