@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro</title>
+<title>院長 Dashboard Pro v6.0</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=50p4">
+<link rel="stylesheet" href="style.css?v=60p1">
 </head>
 <body>
 <header>
@@ -30,7 +30,7 @@
 <main id="pageContainer">
 <section id="today" class="page active">
   <h2>今日の入力</h2>
-  <p class="lead">30秒で入力できる6項目です。</p>
+  <p class="lead">30秒で入力できる7項目です。</p>
   <div class="card form">
     <label>日付<input id="entryDate" type="date"></label>
     <label>売上（円）<input id="sales" type="number" inputmode="numeric" min="0"></label>
@@ -39,6 +39,7 @@
     <label>手術件数<input id="surgeries" type="number" inputmode="numeric" min="0"></label>
     <label>健診件数<input id="checkups" type="number" inputmode="numeric" min="0"></label>
     <label>トリミング件数<input id="trimmings" type="number" inputmode="numeric" min="0"></label>
+    <label>セカンドオピニオン件数<input id="secondOpinions" type="number" inputmode="numeric" min="0"></label>
     <label class="wide">メモ<input id="note" type="text" maxlength="160"></label>
     <div class="actions wide">
       <button id="saveEntry" class="primary">保存する</button>
@@ -72,6 +73,7 @@
     <article><span>手術件数</span><strong id="monthSurgery">0件</strong></article>
     <article><span>健診件数</span><strong id="monthCheckup">0件</strong></article>
     <article><span>トリミング</span><strong id="monthTrim">0件</strong></article>
+    <article class="brand-kpi"><span>セカンドオピニオン</span><strong id="monthSecond">0件</strong></article>
     <article class="accent"><span>目標達成率</span><strong id="progressText">0%</strong></article>
     <article class="accent"><span>残り必要日商</span><strong id="needDaily">0円</strong></article>
     <article><span>月末売上予測</span><strong id="forecast">0円</strong></article>
@@ -149,6 +151,10 @@
     <label>目標年収（円・任意）<input id="incomeTarget" type="number" min="0" placeholder="例：12000000"></label>
     <button id="saveFinance" class="primary wide">保存する</button>
   </div>
+  <div class="brand-card card">
+    <div><span class="eyebrow">REGIONAL TRUST</span><h3>ブランドスコア</h3><p id="brandComment">新患・健診・手術・セカンドオピニオンから算出します。</p></div>
+    <div class="brand-score"><strong id="brandScore">0</strong><small>/100</small></div>
+  </div>
   <div class="metrics">
     <article><span>月間利益目安</span><strong id="monthProfit">0円</strong></article>
     <article><span>利益率目安</span><strong id="profitRate">0%</strong></article>
@@ -173,6 +179,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=50p4"></script>
+<script src="app.js?v=60p1"></script>
 </body>
 </html>

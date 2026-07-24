@@ -90,3 +90,13 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 @media(max-width:760px){.insight-grid{grid-template-columns:1fr}.score-card{padding:19px}.score-ring{width:116px;height:116px}.score-ring strong{font-size:33px}.year-ai-card{padding:19px}}
 @media(max-width:430px){.score-card{grid-template-columns:1fr auto;gap:10px}.score-ring{width:102px;height:102px}.score-ring:before{inset:9px}.score-ring strong{font-size:29px}.score-breakdown{grid-template-columns:1fr}.score-card h3,.year-ai-card h3{font-size:20px}.director-main strong{font-size:27px}.apple-metrics article{min-height:118px;padding:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.sales-line,.profit-line{stroke-dasharray:none;stroke-dashoffset:0}.sales-area{opacity:1}}
+
+
+/* v6.0 Phase 1 — stable brand KPI update */
+.brand-kpi{background:linear-gradient(145deg,#ffffff,#edf9f7)!important}
+.brand-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:21px;border:0;border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(232,247,245,.88));box-shadow:var(--shadow);margin-bottom:16px}
+.brand-card h3{margin:4px 0 7px;font-size:22px;letter-spacing:-.4px}.brand-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+.brand-score{flex:0 0 auto;width:104px;height:104px;border-radius:50%;display:grid;place-content:center;text-align:center;background:linear-gradient(145deg,#fff,#e7f7f4);box-shadow:inset 0 0 0 8px rgba(0,159,145,.11),0 10px 24px rgba(0,159,145,.11)}
+.brand-score strong{font-size:32px;line-height:1;letter-spacing:-1px}.brand-score small{color:var(--muted);font-weight:800}
+.form label:has(#secondOpinions){background:linear-gradient(145deg,rgba(255,255,255,.7),rgba(232,247,245,.55));border-radius:14px;padding:10px}
+@media(max-width:430px){.brand-card{padding:18px}.brand-score{width:90px;height:90px}.brand-score strong{font-size:28px}}
