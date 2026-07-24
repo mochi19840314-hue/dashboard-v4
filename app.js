@@ -11,7 +11,7 @@ const HISTORICAL={
   "2026-06":{sales:4727145,expense:3666032}
 };
 const DEFAULT_CLINIC={fullDayTarget:180000,saturdayTarget:100000,fullDayPatients:17.5,saturdayPatients:9,closedDates:[]};
-const base={entries:[],settings:{},weatherCache:null,finance:{balance:0,monthlyExpense:0,loan:0,repayment:0,incomeTarget:0},financeByMonth:{},historical:{...HISTORICAL},clinic:{...DEFAULT_CLINIC},memo:""};
+const base={entries:[],settings:{},weatherCache:null,finance:{balance:0,monthlyExpense:0,loan:0,repayment:0,incomeTarget:0,morikuboOnline:0,royalCanin:0,purina:0},financeByMonth:{},historical:{...HISTORICAL},clinic:{...DEFAULT_CLINIC},memo:""};
 let data=load(),memoTimer;
 const $=id=>document.getElementById(id),num=id=>Math.max(0,Number($(id).value)||0);
 const yen=v=>`${Math.round(Number(v)||0).toLocaleString("ja-JP")}円`,pct=v=>`${(Number(v)||0).toFixed(1)}%`;
@@ -59,9 +59,14 @@ function edit(date){const e=data.entries.find(x=>x.date===date);if(!e)return;["s
 function del(date){if(!confirm(`${date}の記録を削除しますか？`))return;data.entries=data.entries.filter(x=>x.date!==date);save();render();toast("削除しました")}
 function sum(entries){return entries.reduce((a,e)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=(Number(e[k])||0));return a},{sales:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0})}
 function monthSummary(m){
-  const entries=data.entries.filter(e=>e.date.startsWith(m)),daily=sum(entries),hist=data.historical[m]||{};
+  const entries=data.entries.filter(e=>e.date.startsWith(m)),daily=sum(entries),hist=data.historical[m]||{},mf=data.financeByMonth[m]||{};
   const fallbackCurrent=(m===monthNow()?data.finance.monthlyExpense:0);
-  return {...daily,sales:daily.sales||Number(hist.sales)||0,entries,expense:Number(data.financeByMonth[m]?.monthlyExpense ?? hist.expense ?? fallbackCurrent ?? 0)||0}
+  const clinicalSales=daily.sales||Number(hist.sales)||0;
+  const morikuboOnline=Number(mf.morikuboOnline ?? (m===monthNow()?data.finance.morikuboOnline:0))||0;
+  const royalCanin=Number(mf.royalCanin ?? (m===monthNow()?data.finance.royalCanin:0))||0;
+  const purina=Number(mf.purina ?? (m===monthNow()?data.finance.purina:0))||0;
+  const ecSales=morikuboOnline+royalCanin+purina;
+  return {...daily,clinicalSales,ecSales,morikuboOnline,royalCanin,purina,sales:clinicalSales+ecSales,entries,expense:Number(mf.monthlyExpense ?? hist.expense ?? fallbackCurrent ?? 0)||0}
 }
 function recent(){const t=$("recent"),rows=[...data.entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);t.innerHTML=rows.length?rows.map(e=>`<tr><td>${e.date}</td><td>${yen(e.sales)}</td><td>${e.patients}件</td><td>${e.newPatients||0}件</td><td class="record-actions"><button class="edit-record" data-edit="${e.date}">編集</button><button data-del="${e.date}">削除</button></td></tr>`).join(""):'<tr><td colspan="5">まだ記録がありません。</td></tr>';t.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(b.dataset.edit));t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>del(b.dataset.del))}
 
@@ -302,12 +307,13 @@ function renderBrandScore(s,m){
 function finance(){
   const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},expense=Number(mf.monthlyExpense ?? hist.expense ?? (m===monthNow()?f.monthlyExpense:0))||0;
   const snap=financeSnapshot(m);$("balance").value=snap.balance||"";$("monthlyExpense").value=expense||"";$("loan").value=snap.loan||"";$("repayment").value=snap.repayment||"";$("incomeTarget").value=f.incomeTarget||"";
-  const s=monthSummary(m),profit=s.sales-expense,rate=s.sales?profit/s.sales*100:0,prevM=monthShift(m,-1),prevS=monthSummary(prevM),prevProfit=prevS.sales-prevS.expense,prevRate=prevS.sales?prevProfit/prevS.sales*100:0;
-  renderBrandScore(s,m);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("netAssets").textContent=yen(snap.balance-snap.loan);
+  const s=monthSummary(m);$("morikuboOnline").value=s.morikuboOnline||"";$("royalCanin").value=s.royalCanin||"";$("purina").value=s.purina||"";
+  const profit=s.sales-expense,rate=s.sales?profit/s.sales*100:0,prevM=monthShift(m,-1),prevS=monthSummary(prevM),prevProfit=prevS.sales-prevS.expense,prevRate=prevS.sales?prevProfit/prevS.sales*100:0;
+  renderBrandScore(s,m);$("financeTotalSales").textContent=yen(s.sales);$("financeEcSales").textContent=yen(s.ecSales);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("netAssets").textContent=yen(snap.balance-snap.loan);
   const pd=profit-prevProfit,rd=rate-prevRate;$("profitDelta").textContent=prevS.sales?`前月比 ${pd>=0?"+":"−"}${yen(Math.abs(pd))}`:"前月比 —";$("rateDelta").textContent=prevS.sales?`前月比 ${rd>=0?"+":"−"}${Math.abs(rd).toFixed(1)}pt`:"前月比 —";
   $("profitDelta").className=pd>0?"positive":pd<0?"negative":"";$("rateDelta").className=rd>0?"positive":rd<0?"negative":"";
 }
-function saveFinance(){const m=$("monthPicker").value||monthNow();data.finance={balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget")};data.financeByMonth[m]={...(data.financeByMonth[m]||{}),monthlyExpense:num("monthlyExpense"),balance:num("balance"),loan:num("loan"),repayment:num("repayment")};save();finance();month();year();toast(`${m}の財務情報を保存しました`)}
+function saveFinance(){const m=$("monthPicker").value||monthNow(),ec={morikuboOnline:num("morikuboOnline"),royalCanin:num("royalCanin"),purina:num("purina")};data.finance={balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget"),...ec};data.financeByMonth[m]={...(data.financeByMonth[m]||{}),monthlyExpense:num("monthlyExpense"),balance:num("balance"),loan:num("loan"),repayment:num("repayment"),...ec};save();finance();month();year();toast(`${m}の財務・EC売上を保存しました`)}
 function renderClinicSettings(){
   const c=data.clinic||DEFAULT_CLINIC;
   $("fullDayTarget").value=c.fullDayTarget;$("saturdayTarget").value=c.saturdayTarget;$("fullDayPatients").value=c.fullDayPatients;$("saturdayPatients").value=c.saturdayPatients;$("closedDates").value=(c.closedDates||[]).join("\n");
@@ -320,7 +326,7 @@ function saveClinicSettings(){
 function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage").textContent=`日別記録 ${data.entries.length}件、月間過去データ ${Object.keys(data.historical).length}か月、使用容量 約${(size/1024).toFixed(1)}KB`}
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(data,null,2),"application/json")}
-function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),monthly=[["month","sales","expense"],...Object.keys(data.historical).sort().map(m=>[m,data.historical[m].sales||0,data.financeByMonth[m]?.monthlyExpense??data.historical[m].expense??0])];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
+function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),months=[...new Set([...Object.keys(data.historical),...Object.keys(data.financeByMonth)])].sort(),monthly=[["month","clinicalSales","morikuboOnline","royalCanin","purina","ecSales","totalSales","expense","profit"],...months.map(m=>{const s=monthSummary(m);return [m,s.clinicalSales,s.morikuboOnline,s.royalCanin,s.purina,s.ecSales,s.sales,s.expense,s.sales-s.expense]})];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
 function normalizeBackup(raw){
   let x=raw;
   if(x&&typeof x==="object"&&!Array.isArray(x)){
