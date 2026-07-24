@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v7.1.2</title>
+<title>院長 Dashboard Pro v7.1.3</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=712">
+<link rel="stylesheet" href="style.css?v=711">
 </head>
 <body>
 <header class="app-header">
@@ -244,19 +244,20 @@
   <div class="card dataButtons">
     <button id="exportJson" class="primary">完全バックアップ</button>
     <label class="fileBtn">バックアップを復元<input id="importJson" type="file" accept=".json,application/json,text/plain"></label>
-    <p id="importStatus" class="import-status" aria-live="polite">JSONバックアップを選択してください。</p>
-    <details class="paste-restore">
-      <summary>ファイル選択で復元できない場合</summary>
-      <label>JSONを貼り付けて復元<textarea id="importPaste" class="small-textarea" placeholder="バックアップJSONの全文を貼り付けてください"></textarea></label>
-      <button id="restorePaste">貼り付けたJSONを復元</button>
-    </details>
     <button id="exportCsv">CSV出力</button>
     <button id="deleteAll" class="danger">全データ削除</button>
+  </div>
+  <div class="card import-card">
+    <h3>JSONを貼り付けて復元</h3>
+    <p class="sub">iPhoneでファイル選択が動かない場合の予備手段です。バックアップJSONの全文を貼り付けてください。</p>
+    <textarea id="importPaste" class="import-paste" placeholder="{ &quot;entries&quot;: [ ... ] }"></textarea>
+    <button id="restorePaste" class="primary">貼り付けたJSONを復元</button>
+    <p id="importStatus" class="import-status" aria-live="polite"></p>
   </div>
   <div class="card"><p id="storage"></p></div>
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=712"></script>
+<script src="app.js?v=713"></script>
 </body>
 </html>

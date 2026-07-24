@@ -144,3 +144,10 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 .clinic-day-tag.half{background:#fff4d8;color:#8a5a00}
 
 .import-status{margin:0;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:13px;line-height:1.5}.import-status.success{background:#eaf8f4;color:#087564}.import-status.error{background:#fff0f0;color:#a73535}.paste-restore{border-top:1px solid var(--line);padding-top:10px}.paste-restore summary{cursor:pointer;font-weight:800}.paste-restore label{display:block;margin-top:12px}.paste-restore textarea{width:100%;margin-top:8px;box-sizing:border-box}.paste-restore button{width:100%;margin-top:8px}
+
+.import-card{display:grid;gap:12px}
+.import-card h3{margin:0}
+.import-paste{width:100%;min-height:150px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.45}
+.import-status{min-height:1.5em;margin:0;font-size:13px;color:var(--muted)}
+.import-status.success{color:#18864b}
+.import-status.error{color:#c0392b}
