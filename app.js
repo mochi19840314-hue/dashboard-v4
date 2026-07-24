@@ -336,17 +336,43 @@ function normalizeBackup(raw){
   if(!hasRecognizedData)throw new Error("unsupported backup");
   return {...base,...x,entries,settings:{...(x.settings||{})},finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})},clinic:{...DEFAULT_CLINIC,...(x.clinic||{}),closedDates:Array.isArray(x.clinic?.closedDates)?x.clinic.closedDates:[]}};
 }
+function readBackupFile(file){
+  return new Promise((resolve,reject)=>{
+    if(!file)return reject(new Error("ファイルが選択されていません"));
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||""));
+    reader.onerror=()=>reject(reader.error||new Error("ファイルを読み込めませんでした"));
+    reader.readAsText(file,"UTF-8");
+  });
+}
 async function importJson(file){
+  const input=$("importJson");
   try{
-    const text=(await file.text()).replace(/^\uFEFF/,"").trim();
-    const parsed=JSON.parse(text);
+    const text=(await readBackupFile(file)).replace(/^\uFEFF/,"").trim();
+    if(!text)throw new Error("空のファイルです");
+    let parsed;
+    try{parsed=JSON.parse(text)}catch(e){throw new Error("JSONの解析に失敗しました")}
     const restored=normalizeBackup(parsed);
-    data=restored;save();render();toast(`復元しました（${data.entries.length}件）`);
-    $("importJson").value="";
+    const count=restored.entries.length;
+    const months=Object.keys(restored.historical||{}).length;
+    const ok=confirm(`バックアップを復元します。\n日別記録：${count}件\n月間データ：${months}か月\n\n現在の端末データは置き換えられます。続行しますか？`);
+    if(!ok)return;
+    const previous=JSON.stringify(data);
+    try{
+      data=restored;
+      localStorage.setItem(KEY,JSON.stringify(data));
+    }catch(saveErr){
+      data=JSON.parse(previous);
+      throw new Error("端末への保存に失敗しました");
+    }
+    render();
+    toast(`復元しました（${count}件）`);
+    alert(`復元が完了しました。\n日別記録：${count}件\n月間データ：${months}か月`);
   }catch(err){
     console.error("backup import failed",err);
-    alert("バックアップを読み込めませんでした。JSON形式の完全バックアップを選択してください。");
-    $("importJson").value="";
+    alert(`バックアップを読み込めませんでした。\n${err?.message||"JSON形式を確認してください。"}`);
+  }finally{
+    if(input)input.value="";
   }
 }
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
