@@ -142,3 +142,5 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 .clinic-day-tag{display:inline-flex;align-items:center;border-radius:999px;padding:.28rem .55rem;background:#e8f7f4;color:#087d72;font-weight:700;font-size:.78rem}
 .clinic-day-tag.closed{background:#f1f2f4;color:#667085}
 .clinic-day-tag.half{background:#fff4d8;color:#8a5a00}
+
+.paste-import-panel{display:grid;gap:12px}.paste-import-panel[hidden]{display:none}.paste-json{min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.45}.paste-actions{display:flex;gap:10px;flex-wrap:wrap}.muted{color:var(--muted);font-size:13px}

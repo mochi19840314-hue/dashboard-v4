@@ -336,43 +336,71 @@ function normalizeBackup(raw){
   if(!hasRecognizedData)throw new Error("unsupported backup");
   return {...base,...x,entries,settings:{...(x.settings||{})},finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})},clinic:{...DEFAULT_CLINIC,...(x.clinic||{}),closedDates:Array.isArray(x.clinic?.closedDates)?x.clinic.closedDates:[]}};
 }
-function readBackupFile(file){
-  return new Promise((resolve,reject)=>{
-    if(!file)return reject(new Error("ファイルが選択されていません"));
+function parseBackupText(text){
+  const cleaned=String(text||"").replace(/^\uFEFF/,"").trim();
+  if(!cleaned)throw new Error("空のファイルです");
+  let parsed;
+  try{parsed=JSON.parse(cleaned)}catch(e){throw new Error(`JSONの解析に失敗しました（${e.message||"形式エラー"}）`)}
+  return normalizeBackup(parsed);
+}
+async function readBackupFile(file){
+  if(!file)throw new Error("ファイルが選択されていません");
+  if(file.size===0)throw new Error("ファイルの中身が空です");
+  if(typeof file.text==="function"){
+    try{return await file.text()}catch(e){}
+  }
+  return await new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onload=()=>resolve(String(reader.result||""));
     reader.onerror=()=>reject(reader.error||new Error("ファイルを読み込めませんでした"));
     reader.readAsText(file,"UTF-8");
   });
 }
+function restoreBackup(restored,sourceLabel="バックアップ"){
+  const count=restored.entries.length;
+  const months=Object.keys(restored.historical||{}).length;
+  const ok=confirm(`${sourceLabel}を復元します。\n日別記録：${count}件\n月間データ：${months}か月\n\n現在の端末データは置き換えられます。続行しますか？`);
+  if(!ok)return false;
+  const previous=JSON.stringify(data);
+  try{
+    localStorage.setItem(`${KEY}-before-import`,previous);
+    data=restored;
+    localStorage.setItem(KEY,JSON.stringify(data));
+  }catch(saveErr){
+    data=JSON.parse(previous);
+    throw new Error("端末への保存に失敗しました");
+  }
+  render();
+  toast(`復元しました（${count}件）`);
+  $("importStatus").textContent=`最終復元：${new Date().toLocaleString("ja-JP")}／${count}件`;
+  alert(`復元が完了しました。\n日別記録：${count}件\n月間データ：${months}か月`);
+  return true;
+}
 async function importJson(file){
   const input=$("importJson");
   try{
-    const text=(await readBackupFile(file)).replace(/^\uFEFF/,"").trim();
-    if(!text)throw new Error("空のファイルです");
-    let parsed;
-    try{parsed=JSON.parse(text)}catch(e){throw new Error("JSONの解析に失敗しました")}
-    const restored=normalizeBackup(parsed);
-    const count=restored.entries.length;
-    const months=Object.keys(restored.historical||{}).length;
-    const ok=confirm(`バックアップを復元します。\n日別記録：${count}件\n月間データ：${months}か月\n\n現在の端末データは置き換えられます。続行しますか？`);
-    if(!ok)return;
-    const previous=JSON.stringify(data);
-    try{
-      data=restored;
-      localStorage.setItem(KEY,JSON.stringify(data));
-    }catch(saveErr){
-      data=JSON.parse(previous);
-      throw new Error("端末への保存に失敗しました");
-    }
-    render();
-    toast(`復元しました（${count}件）`);
-    alert(`復元が完了しました。\n日別記録：${count}件\n月間データ：${months}か月`);
+    $("importStatus").textContent=`読み込み中：${file?.name||"選択ファイル"}`;
+    const text=await readBackupFile(file);
+    const restored=parseBackupText(text);
+    restoreBackup(restored,file?.name||"バックアップ");
   }catch(err){
     console.error("backup import failed",err);
-    alert(`バックアップを読み込めませんでした。\n${err?.message||"JSON形式を確認してください。"}`);
+    $("importStatus").textContent=`読み込み失敗：${err?.message||"不明なエラー"}`;
+    alert(`バックアップを読み込めませんでした。\n${err?.message||"JSON形式を確認してください。"}\n\nファイル選択で失敗する場合は「JSONを貼り付けて復元」をお使いください。`);
   }finally{
     if(input)input.value="";
+  }
+}
+function restorePastedJson(){
+  try{
+    const restored=parseBackupText($("pasteJson").value);
+    if(restoreBackup(restored,"貼り付けたJSON")){
+      $("pasteJson").value="";
+      $("pasteImportPanel").hidden=true;
+    }
+  }catch(err){
+    $("importStatus").textContent=`貼り付け復元失敗：${err?.message||"不明なエラー"}`;
+    alert(`貼り付けたJSONを読み込めませんでした。\n${err?.message||"JSON形式を確認してください。"}`);
   }
 }
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
@@ -381,6 +409,6 @@ function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classLis
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){recent();month();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();$("memoText").value=data.memo||""}
-function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("showPasteImport").onclick=()=>{$("pasteImportPanel").hidden=false;$("pasteJson").focus()};$("cancelPasteImport").onclick=()=>{$("pasteImportPanel").hidden=true};$("restorePastedJson").onclick=restorePastedJson;$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();
