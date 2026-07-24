@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v6.1</title>
+<title>院長 Dashboard Pro v6.2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=61w1">
+<link rel="stylesheet" href="style.css?v=62ai1">
 </head>
 <body>
 <header>
@@ -64,6 +64,15 @@
     <article><span>客単価</span><strong id="todayUnit">0円</strong></article>
     <article><span>新患数</span><strong id="todayNew">0件</strong></article>
   </div>
+  <article class="card daily-ai-card" id="dailyAiCard">
+    <div class="ai-orb" aria-hidden="true">✦</div>
+    <div>
+      <span class="eyebrow">TODAY'S MANAGEMENT AI</span>
+      <h3 id="dailyAiTitle">今日のデータを待っています</h3>
+      <p id="dailyAiText">天気と入力内容を組み合わせて、今日の評価と行動提案を表示します。</p>
+      <div id="dailyAiTags" class="ai-tags"></div>
+    </div>
+  </article>
   <div class="card">
     <h3>最近の記録</h3>
     <div class="table"><table><thead><tr><th>日付</th><th>売上</th><th>件数</th><th>新患</th><th>操作</th></tr></thead><tbody id="recent"></tbody></table></div>
@@ -91,6 +100,23 @@
     <article><span>月末売上予測</span><strong id="forecast">0円</strong></article>
   </div>
   <div class="card"><div class="progress"><i id="progressBar"></i></div><p id="monthComment"></p></div>
+
+  <div class="card intelligence-card">
+    <div class="intelligence-heading">
+      <div><span class="eyebrow">WEATHER × BUSINESS</span><h3>曜日・天気分析</h3></div>
+      <span id="analysisSample" class="sample-badge">0日分</span>
+    </div>
+    <div class="analysis-grid">
+      <article><span>好調な曜日</span><strong id="bestWeekday">—</strong><small id="bestWeekdaySub">データ待ち</small></article>
+      <article><span>雨の日の平均売上</span><strong id="rainAvgSales">—</strong><small id="rainImpact">データ待ち</small></article>
+      <article><span>晴れの日の平均来院</span><strong id="sunnyAvgPatients">—</strong><small id="sunnyImpact">データ待ち</small></article>
+      <article><span>高温日の平均来院</span><strong id="hotAvgPatients">—</strong><small id="hotImpact">30℃以上</small></article>
+    </div>
+  </div>
+  <div class="card action-card">
+    <div class="intelligence-heading"><div><span class="eyebrow">NEXT BEST ACTION</span><h3>AI経営提案</h3></div></div>
+    <div id="aiActionList" class="action-list"><p>日次データが3日以上たまると、優先順位付きで提案します。</p></div>
+  </div>
 
   <div class="ai-grid">
     <article class="card ai-card">
@@ -191,6 +217,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=61w1"></script>
+<script src="app.js?v=62ai1"></script>
 </body>
 </html>
