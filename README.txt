@@ -1,4 +1,4 @@
-院長 Dashboard Pro v7.1.2
+院長 Dashboard Pro v7.1.1
 
 変更点
 - 月曜日を休診日としてAI・経営スコア・曜日分析から除外
@@ -9,11 +9,3 @@
 - 曜日分析を診療時間補正後の目標達成率で比較
 
 更新前にデータタブから完全バックアップを保存してください。
-
-
-V7.1.2 修正:
-- iPhoneでのバックアップ読込をFile.text / FileReaderの両方式に対応
-- JSON貼り付け復元を追加
-- 復元結果とエラー理由を画面表示
-- 復元前データをlocalStorageの keitaDashboardSimpleV1_before_restore に退避
-- PWAキャッシュ名を更新

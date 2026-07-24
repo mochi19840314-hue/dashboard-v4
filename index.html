@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v7.1.3</title>
+<title>院長 Dashboard Pro v7.1.1</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -243,21 +243,14 @@
   <h2>データ管理</h2>
   <div class="card dataButtons">
     <button id="exportJson" class="primary">完全バックアップ</button>
-    <label class="fileBtn">バックアップを復元<input id="importJson" type="file" accept=".json,application/json,text/plain"></label>
+    <label class="fileBtn">バックアップを復元<input id="importJson" type="file" accept=".json"></label>
     <button id="exportCsv">CSV出力</button>
     <button id="deleteAll" class="danger">全データ削除</button>
-  </div>
-  <div class="card import-card">
-    <h3>JSONを貼り付けて復元</h3>
-    <p class="sub">iPhoneでファイル選択が動かない場合の予備手段です。バックアップJSONの全文を貼り付けてください。</p>
-    <textarea id="importPaste" class="import-paste" placeholder="{ &quot;entries&quot;: [ ... ] }"></textarea>
-    <button id="restorePaste" class="primary">貼り付けたJSONを復元</button>
-    <p id="importStatus" class="import-status" aria-live="polite"></p>
   </div>
   <div class="card"><p id="storage"></p></div>
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=713"></script>
+<script src="app.js?v=711"></script>
 </body>
 </html>

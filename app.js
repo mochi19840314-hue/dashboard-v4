@@ -251,7 +251,7 @@ function calcManagementScore(s,month){
   const netAssets=snap.balance-snap.loan,prevNetAssets=prevSnap.balance-prevSnap.loan;
   const salesScore=Math.round(clamp(sales/Math.max(1,target)*25,0,25));
   const profitScore=Math.round(clamp(rate/25*15,0,15));
-  const patientTarget=Math.max(1,opEntries.reduce((a,e)=>a+clinicDayInfo(e.date).patientsTarget,0)||activeDays*(Number(data.clinic.fullDayPatients)||17.5));
+  const opEntries=operatingEntries(s.entries||[]);const patientTarget=Math.max(1,opEntries.reduce((a,e)=>a+clinicDayInfo(e.date).patientsTarget,0)||activeDays*(Number(data.clinic.fullDayPatients)||17.5));
   const patientScore=Math.round(clamp(patients/patientTarget*15,0,15));
   const newTarget=Math.max(1,activeDays*0.8);
   const newScore=Math.round(clamp(newPatients/newTarget*10,0,10));
@@ -323,11 +323,6 @@ function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(d
 function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),monthly=[["month","sales","expense"],...Object.keys(data.historical).sort().map(m=>[m,data.historical[m].sales||0,data.financeByMonth[m]?.monthlyExpense??data.historical[m].expense??0])];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
 function normalizeBackup(raw){
   let x=raw;
-  if(typeof x==="string"){
-    const trimmed=x.replace(/^\uFEFF/,"").trim();
-    if(!trimmed)throw new Error("empty backup");
-    x=JSON.parse(trimmed);
-  }
   if(x&&typeof x==="object"&&!Array.isArray(x)){
     if(x.data&&typeof x.data==="object")x=x.data;
     else if(x.payload&&typeof x.payload==="object")x=x.payload;
@@ -337,48 +332,22 @@ function normalizeBackup(raw){
   if(Array.isArray(x))x={entries:x};
   if(!x||typeof x!=="object")throw new Error("invalid backup");
   const entries=Array.isArray(x.entries)?x.entries:Array.isArray(x.records)?x.records:Array.isArray(x.dailyEntries)?x.dailyEntries:Array.isArray(x.dailyRecords)?x.dailyRecords:[];
-  const hasRecognizedData=entries.length||Array.isArray(x.entries)||x.settings||x.finance||x.financeByMonth||x.historical||x.memo!==undefined||x.clinic;
+  const hasRecognizedData=entries.length||Array.isArray(x.entries)||x.settings||x.finance||x.financeByMonth||x.historical||x.memo!==undefined;
   if(!hasRecognizedData)throw new Error("unsupported backup");
   return {...base,...x,entries,settings:{...(x.settings||{})},finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},historical:{...HISTORICAL,...(x.historical||{})},clinic:{...DEFAULT_CLINIC,...(x.clinic||{}),closedDates:Array.isArray(x.clinic?.closedDates)?x.clinic.closedDates:[]}};
 }
-function setImportStatus(message,type=""){
-  const el=$("importStatus");if(!el)return;
-  el.textContent=message;el.className=`import-status${type?` ${type}`:""}`;
-}
-function readFileText(file){
-  if(!file)return Promise.reject(new Error("no file"));
-  if(typeof file.text==="function"){
-    return file.text().catch(()=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(r.error||new Error("file read failed"));r.readAsText(file,"UTF-8")}));
-  }
-  return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||""));r.onerror=()=>reject(r.error||new Error("file read failed"));r.readAsText(file,"UTF-8")});
-}
-function restoreFromText(text,source="バックアップ"){
-  const cleaned=String(text||"").replace(/^\uFEFF/,"").trim();
-  if(!cleaned)throw new Error("empty backup");
-  const restored=normalizeBackup(cleaned);
-  const safetyKey=`${KEY}_before_restore`;
-  try{localStorage.setItem(safetyKey,JSON.stringify(data))}catch{}
-  data=restored;save();render();
-  setImportStatus(`${source}を復元しました（日別記録 ${data.entries.length}件）`,"success");
-  toast(`復元しました（${data.entries.length}件）`);
-}
 async function importJson(file){
-  setImportStatus(`「${file?.name||"選択ファイル"}」を読み込み中…`);
   try{
-    const text=await readFileText(file);
-    restoreFromText(text,file?.name||"バックアップ");
+    const text=(await file.text()).replace(/^\uFEFF/,"").trim();
+    const parsed=JSON.parse(text);
+    const restored=normalizeBackup(parsed);
+    data=restored;save();render();toast(`復元しました（${data.entries.length}件）`);
+    $("importJson").value="";
   }catch(err){
     console.error("backup import failed",err);
-    const detail=err instanceof SyntaxError?"JSONの構文を確認してください。":"このバックアップ形式を認識できませんでした。";
-    setImportStatus(`読み込みに失敗しました。${detail}`,"error");
-    alert(`バックアップを読み込めませんでした。\n${detail}\n\nファイル選択がうまくいかない場合は「JSONを貼り付けて復元」をお試しください。`);
-  }finally{
+    alert("バックアップを読み込めませんでした。JSON形式の完全バックアップを選択してください。");
     $("importJson").value="";
   }
-}
-function importPastedJson(){
-  try{restoreFromText($("importPaste").value,"貼り付けたJSON");$("importPaste").value=""}
-  catch(err){console.error("pasted backup import failed",err);setImportStatus("貼り付けたJSONを読み込めませんでした。全文が入っているか確認してください。","error");alert("貼り付けたJSONを読み込めませんでした。全文が入っているか確認してください。");}
 }
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
@@ -386,6 +355,6 @@ function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classLis
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){recent();month();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();$("memoText").value=data.memo||""}
-function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onclick=e=>{e.target.value=""};$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("restorePaste").onclick=importPastedJson;$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();
