@@ -88,8 +88,8 @@ function expectedBusinessDays(month){
   for(let d=1;d<=last;d++){const date=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;if(clinicDayInfo(date).type!=="closed")n++}
   return n;
 }
-function isRainy(e){const w=e.weather||{},code=Number(w.dailyCode??w.code),rain=Number(w.dailyRainMax??w.rainProbability)||0,condition=w.dailyCondition||w.condition||"";return [51,53,55,61,63,65,80,81,82,95,96,99].includes(code)||rain>=50||/雨|雷/.test(condition)}
-function isSunny(e){const w=e.weather||{},code=Number(w.dailyCode??w.code),condition=w.dailyCondition||w.condition||"";return [0,1].includes(code)||/快晴|晴れ/.test(condition)}
+function isRainy(e){const w=e.weather||{},code=Number(w.code??w.dailyCode),condition=w.condition||w.dailyCondition||"";return [51,53,55,61,63,65,80,81,82,95,96,99].includes(code)||/雨|雷/.test(condition)}
+function isSunny(e){const w=e.weather||{},code=Number(w.code??w.dailyCode),condition=w.condition||w.dailyCondition||"";return [0,1].includes(code)||/快晴|晴れ/.test(condition)}
 function analysisFor(entries){
   const usable=operatingEntries(entries).filter(e=>e.sales||e.patients||e.weather);
   const groups={};usable.forEach(e=>{const k=weekdayName(e.date);(groups[k]??=[]).push(e)});

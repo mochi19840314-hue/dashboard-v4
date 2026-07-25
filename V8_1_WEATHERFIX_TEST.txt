@@ -1,0 +1,6 @@
+V8.1 Weather Fix
+- Current weather code/condition now has priority.
+- Rain probability alone does not trigger '雨天'.
+- Cache version bumped to v811.
+- node --check: app.js and sw.js passed.
+- Focused weather tests: weather tests passed: [33m4[39m
