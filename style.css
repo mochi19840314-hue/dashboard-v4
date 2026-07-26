@@ -162,5 +162,12 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 
 .target-line{stroke:#d9534f;stroke-width:2;stroke-dasharray:8 6}.premium-line{stroke-width:4}
 
-#aiBriefCard{background:linear-gradient(135deg,#f6fffc,#eef8ff);border-radius:20px;margin-bottom:16px}
-#aiBrief{color:#184b48}
+#aiBriefCard{background:linear-gradient(135deg,#f6fffc,#eef8ff);border-radius:20px;margin:0 0 16px;padding:0;overflow:hidden}
+#aiBriefCard summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;cursor:pointer;list-style:none;font-weight:900;color:#184b48}
+#aiBriefCard summary::-webkit-details-marker{display:none}
+#aiBriefCard summary:after{content:"＋";flex:0 0 auto;width:25px;height:25px;border-radius:9px;display:grid;place-items:center;background:rgba(0,159,145,.1);color:var(--pd);font-size:17px}
+#aiBriefCard[open] summary:after{content:"−"}
+#aiBriefCard summary small{margin-left:auto;color:var(--muted);font-size:9px;font-weight:800}
+#aiBrief{padding:0 18px 18px;color:#184b48;line-height:1.8;font-size:14px;border-top:1px solid rgba(0,159,145,.08)}
+#aiBrief:not(:empty){padding-top:14px}
+@media(max-width:430px){#aiBriefCard summary{padding:15px}#aiBriefCard summary small{display:none}#aiBrief{padding-left:15px;padding-right:15px;font-size:13px}}
