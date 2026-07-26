@@ -1,3 +1,18 @@
+
+function renderAIBrief(){
+ const el=document.getElementById('aiBrief');
+ if(!el)return;
+ const sales=(typeof monthSummary==='function')?monthSummary(monthNow()).sales:0;
+ let msg='おはようございます。';
+ if(sales===0){
+   msg+=' 今日のデータ入力をお願いします。';
+ }else{
+   msg+=' 今日も落ち着いて丁寧な診療を心がけましょう。';
+ }
+ msg+='<br><br><b>今日やること</b><br>①必要な検査提案を丁寧に<br>②午後の予約状況を確認<br>③今日の出来事を一言メモ';
+ el.innerHTML=msg;
+}
+
 (()=>{"use strict";
 const KEY="keitaDashboardSimpleV1";
 const PAGE_IDS=["today","month","year","finance","memo","settings","data"];
@@ -29,7 +44,7 @@ function showWeather(w,offline=false){
   $("weatherTemp").textContent=`${Math.round(Number(w.temperature)||0)}°`;
   $("weatherCondition").textContent=w.condition+(offline?"（保存値）":"");
   $("weatherRain").textContent=`${Math.round(Number(w.rainProbability)||0)}%`;
-  renderDailyAI();
+  renderDailyAI();renderAIBrief();
 }
 async function fetchWeather(force=false){
   const cached=data.weatherCache,age=cached?Date.now()-Number(cached.fetchedAt||0):Infinity;
@@ -368,7 +383,7 @@ function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator"
 function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:0,behavior:"smooth"})}
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
-function render(){recent();month();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();$("memoText").value=data.memo||""}
+function render(){recent();month();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();renderAIBrief();$("memoText").value=data.memo||""}
 function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();

@@ -161,3 +161,6 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 @media(max-width:430px){.month-update-line{justify-content:space-between;margin-bottom:8px}.month-primary-kpis{gap:8px}.month-primary-kpis article,.month-revenue-breakdown article{padding:15px;border-radius:19px}.month-primary-kpis strong{font-size:23px}.month-rate-card strong{font-size:25px}.month-revenue-breakdown{grid-template-columns:1fr;gap:8px}.month-revenue-breakdown strong{font-size:19px}.month-revenue-breakdown small{font-size:9px}}
 
 .target-line{stroke:#d9534f;stroke-width:2;stroke-dasharray:8 6}.premium-line{stroke-width:4}
+
+#aiBriefCard{background:linear-gradient(135deg,#f6fffc,#eef8ff);border-radius:20px;margin-bottom:16px}
+#aiBrief{color:#184b48}
