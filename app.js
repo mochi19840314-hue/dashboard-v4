@@ -198,21 +198,16 @@ function renderYearChart(rows){
   const salesPath=salesPts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(""),profitPath=profitPts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(""),area=`${salesPath} L${x(visible.length-1).toFixed(1)},${(h-pad.b).toFixed(1)} L${x(0).toFixed(1)},${(h-pad.b).toFixed(1)} Z`;
   const targetY=y(target),months=visible.map((r,i)=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
   const hits=visible.map((r,i)=>{const profit=r.sales-r.expense,rate=r.sales?profit/r.sales*100:0,left=i?((x(i-1)+x(i))/2):pad.l,right=i<visible.length-1?((x(i)+x(i+1))/2):w-pad.r;return `<g class="chart-hit" tabindex="0" role="button" aria-label="${i+1}月の数値を表示" data-month="${i+1}" data-sales="${r.sales}" data-profit="${profit}" data-rate="${rate.toFixed(1)}" data-x="${x(i)}" data-y="${y(r.sales)}"><rect x="${left}" y="${pad.t}" width="${Math.max(30,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="7" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(Math.max(0,profit))}" r="6" class="chart-dot profit-dot"/></g>`}).join('');
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".28"/><stop offset="62%" stop-color="#00a99d" stop-opacity=".08"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient><filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><line x1="${pad.l}" y1="${targetY}" x2="${w-pad.r}" y2="${targetY}" class="target-line"/><text x="${w-pad.r}" y="${targetY-8}" text-anchor="end" class="target-label">目標 500万円</text><path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line premium-line"/><path d="${profitPath}" class="profit-line"/>${months}${hits}</svg><div class="chart-tooltip" role="status" aria-live="polite"></div>`;
-  const tooltip=el.querySelector('.chart-tooltip'),svg=el.querySelector('svg');
-  const select=(g,showTooltip=true)=>{
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".28"/><stop offset="62%" stop-color="#00a99d" stop-opacity=".08"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient><filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><line x1="${pad.l}" y1="${targetY}" x2="${w-pad.r}" y2="${targetY}" class="target-line"/><text x="${w-pad.r}" y="${targetY-8}" text-anchor="end" class="target-label">目標 500万円</text><path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line premium-line"/><path d="${profitPath}" class="profit-line"/>${months}${hits}</svg>`;
+  const select=g=>{
     el.querySelectorAll('.chart-hit').forEach(x=>x.classList.toggle('selected',x===g));
+    detail.classList.remove('detail-updating');
+    void detail.offsetWidth;
     detail.innerHTML=`<strong>${g.dataset.month}月</strong><span>売上 ${yen(g.dataset.sales)}</span><span>利益 ${yen(g.dataset.profit)}</span><span>利益率 ${g.dataset.rate}%</span>`;
-    if(!showTooltip){tooltip.classList.remove('show');return}
-    tooltip.innerHTML=`<strong>${g.dataset.month}月</strong><span><b>売上</b>${yen(g.dataset.sales)}</span><span><b>利益</b>${yen(g.dataset.profit)}</span><span><b>利益率</b>${g.dataset.rate}%</span>`;
-    const box=el.getBoundingClientRect(),svgBox=svg.getBoundingClientRect(),scaleX=svgBox.width/w,scaleY=svgBox.height/h;
-    const px=(svgBox.left-box.left)+Number(g.dataset.x)*scaleX,py=(svgBox.top-box.top)+Number(g.dataset.y)*scaleY;
-    tooltip.style.left=`${px}px`;tooltip.style.top=`${py}px`;
-    tooltip.classList.remove('show');requestAnimationFrame(()=>tooltip.classList.add('show'));
+    detail.classList.add('detail-updating');
   };
-  el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',e=>{e.stopPropagation();select(g,true)});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g,true)}})});
-  el.addEventListener('click',()=>tooltip.classList.remove('show'));
-  select(el.querySelector('.chart-hit:last-of-type'),false);
+  el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',e=>{e.stopPropagation();select(g)});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});
+  select(el.querySelector('.chart-hit:last-of-type'));
 }
 
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}

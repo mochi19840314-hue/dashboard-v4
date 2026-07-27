@@ -183,14 +183,11 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 @media(max-width:850px){.report-score-breakdown{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.report-score-main{grid-template-columns:1fr auto}.report-score-main>p{grid-column:1/-1}.report-score-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}.report-month-phrase{display:block}.report-month-phrase strong{display:block;text-align:left;margin-top:5px}.report-grade strong{font-size:46px}}
 
-/* v10.0.3 — interactive chart tooltip */
+/* v10.0.4 — interactive chart detail card */
 .year-chart{position:relative;touch-action:manipulation}
-.chart-tooltip{position:absolute;z-index:6;min-width:158px;padding:12px 13px;border-radius:17px;background:rgba(20,42,48,.94);color:#fff;box-shadow:0 16px 34px rgba(16,39,45,.24);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 8px)) scale(.94);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1)}
-.chart-tooltip.show{opacity:1;transform:translate(-50%,calc(-100% - 13px)) scale(1)}
-.chart-tooltip:after{content:"";position:absolute;left:50%;bottom:-6px;width:12px;height:12px;background:rgba(20,42,48,.94);transform:translateX(-50%) rotate(45deg);border-radius:2px}
-.chart-tooltip strong{display:block;margin-bottom:7px;font-size:16px;letter-spacing:-.2px}
-.chart-tooltip span{display:flex;justify-content:space-between;gap:15px;padding:2px 0;font-size:11px;font-weight:800;white-space:nowrap}
-.chart-tooltip b{color:rgba(255,255,255,.66);font-weight:750}
+.chart-detail{transform-origin:center;will-change:opacity,transform}
+.chart-detail.detail-updating{animation:chartDetailChange .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes chartDetailChange{0%{opacity:.36;transform:translateY(4px) scale(.985)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .chart-hit.selected .sales-dot{r:9}.chart-hit.selected .profit-dot{r:7}.chart-hit.selected .focus-line{opacity:.95}
-@media(max-width:430px){.chart-tooltip{min-width:145px;padding:11px 12px}.chart-tooltip strong{font-size:15px}.chart-tooltip span{font-size:10px}}
-@media(prefers-reduced-motion:reduce){.chart-tooltip,.chart-dot,.focus-line{transition:none!important}}
+@media(prefers-reduced-motion:reduce){.chart-detail.detail-updating{animation:none!important}.chart-dot,.focus-line{transition:none!important}}
+
