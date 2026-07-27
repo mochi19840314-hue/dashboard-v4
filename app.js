@@ -345,11 +345,54 @@ function expenseItem(label,current,previous,reason){
   const delta=!hasPrev?"比較データ不足":`${diff>=0?"＋":"−"}${yen(Math.abs(diff))}`;
   return `<article><div><span>${mark}</span><strong>${label}</strong></div><b>${delta}</b><p>${current?reason:"未入力です。財務画面から入力すると分析できます。"}</p></article>`
 }
+function clamp(v,min,max){return Math.min(max,Math.max(min,v))}
+function scoreByRatio(ratio,max,neutral=.67){
+  if(!Number.isFinite(ratio)||ratio<=0)return Math.round(max*neutral);
+  return Math.round(clamp(ratio,0,1)*max)
+}
+function reportScoreModel(s,prev,target,current){
+  const profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0;
+  const prevProfit=prev.sales-prev.expense,prevRate=prev.sales?prevProfit/prev.sales*100:0,prevUnit=prev.patients?prev.sales/prev.patients:0;
+  const progress=target?s.sales/target:0;
+  const salesScore=Math.round(clamp(progress,0,1)*30);
+  const profitScore=Math.round(clamp(rate/30,0,1)*25);
+  const patientsScore=prev.patients?scoreByRatio(s.patients/prev.patients,15):Math.round(15*.67);
+  const unitScore=prevUnit?scoreByRatio(unit/prevUnit,15):Math.round(15*.67);
+  const categorized=s.personnelExpense+s.medicalExpense+s.cardFee,prevCategorized=prev.personnelExpense+prev.medicalExpense+prev.cardFee;
+  let expenseScore=7;
+  if(s.sales&&categorized){
+    const expenseRatio=categorized/s.sales,prevExpenseRatio=prev.sales&&prevCategorized?prevCategorized/prev.sales:null;
+    if(expenseRatio<=.45)expenseScore=10;else if(expenseRatio<=.55)expenseScore=8;else if(expenseRatio<=.65)expenseScore=6;else expenseScore=3;
+    if(prevExpenseRatio!==null&&expenseRatio>prevExpenseRatio+.05)expenseScore=Math.max(0,expenseScore-2);
+  }
+  let growthScore=3;
+  if(prev.sales){
+    const signals=[s.newPatients>=prev.newPatients,s.checkups>=prev.checkups,s.surgeries>=prev.surgeries];
+    growthScore=signals.filter(Boolean).length>=2?5:signals.filter(Boolean).length===1?3:1;
+  }
+  const raw=salesScore+profitScore+patientsScore+unitScore+expenseScore+growthScore;
+  const score=clamp(Math.round(raw),0,100);
+  const grade=score>=95?'S':score>=90?'A':score>=80?'B':score>=70?'C':'D';
+  let phrase='改善点を整理した月';
+  if(progress>=1&&rate>=30&&unit>=prevUnit)phrase='診療の質で利益を伸ばした月';
+  else if(progress>=1&&rate>=30)phrase='売上と利益を両立できた月';
+  else if(progress>=1)phrase='売上目標を達成した月';
+  else if(rate>=30)phrase='利益をしっかり守れた月';
+  else if(prev.sales&&s.sales>prev.sales)phrase='成長の手応えが見えた月';
+  const status=current?'途中経過・暫定評価':'確定月の評価';
+  const comment=score>=90?'売上と利益率を中心に、経営の質が高い状態です。':score>=80?'全体として良好です。未達項目を一つずつ改善すると、さらに安定します。':score>=70?'一定の成果があります。売上・利益率・来院数のうち弱い項目を優先して確認しましょう。':'数字に改善余地があります。まず利益率と売上目標との差を確認しましょう。';
+  return {score,grade,phrase,status,comment,parts:{sales:salesScore,profit:profitScore,patients:patientsScore,unit:unitScore,expense:expenseScore,growth:growthScore},rate,prevRate,unit,prevUnit};
+}
+function setKpiTone(id,tone){const el=$(id)?.closest('article');if(el){el.classList.remove('kpi-good','kpi-watch','kpi-neutral');el.classList.add(tone)}}
 function renderMonthlyReport(){
   if(!$("reportMonthPicker"))return;
   const m=reportMonth(),s=monthSummary(m),prev=monthSummary(monthShift(m,-1)),cfg=data.settings[m]||{},target=Number(cfg.target)||MONTHLY_TARGET,profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0,progress=target?s.sales/target*100:0;
   $("reportSales").textContent=yen(s.sales);$("reportProgress").textContent=pct(progress);$("reportProfit").textContent=yen(profit);$("reportProfitRate").textContent=pct(rate);$("reportPatients").textContent=`${s.patients}件`;$("reportUnit").textContent=yen(unit);$("reportNew").textContent=`${s.newPatients}件`;$("reportClinical").textContent=`${s.surgeries}件 / ${s.checkups}件`;
   const current=m===monthNow(),days=s.entries.length;$("reportStatus").textContent=current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
+  const model=reportScoreModel(s,prev,target,current);
+  $("reportPhrase").textContent=`「${model.phrase}」`;$("reportGrade").textContent=model.grade;$("reportScore").textContent=model.score;$("reportScoreStatus").textContent=model.status;$("reportScoreComment").textContent=model.comment;$("reportScoreRing").style.setProperty('--report-score',model.score);
+  $("reportScoreSales").textContent=model.parts.sales;$("reportScoreProfit").textContent=model.parts.profit;$("reportScorePatients").textContent=model.parts.patients;$("reportScoreUnit").textContent=model.parts.unit;$("reportScoreExpense").textContent=model.parts.expense;$("reportScoreGrowth").textContent=model.parts.growth;
+  setKpiTone('reportSales',progress>=100?'kpi-good':progress>=85?'kpi-watch':'kpi-neutral');setKpiTone('reportProfitRate',rate>=30?'kpi-good':rate>=20?'kpi-watch':'kpi-neutral');setKpiTone('reportPatients',prev.patients&&s.patients>=prev.patients?'kpi-good':'kpi-neutral');setKpiTone('reportUnit',model.prevUnit&&unit>=model.prevUnit?'kpi-good':'kpi-neutral');
   const salesDiff=s.sales-prev.sales,patientDiff=s.patients-prev.patients,unitPrev=prev.patients?prev.sales/prev.patients:0,unitDiff=unit-unitPrev;
   let driver="来院数と客単価の両方";if(Math.abs(patientDiff)>0&&Math.abs(unitDiff)<500)driver="主に来院件数";else if(Math.abs(unitDiff)>=500&&Math.abs(patientDiff)<5)driver="主に客単価";
   $("reportSalesAnalysis").textContent=prev.sales?`総売上は${yen(s.sales)}で、前月比${salesDiff>=0?"＋":"−"}${yen(Math.abs(salesDiff))}です。${driver}が売上を支えています。月間目標に対する達成率は${pct(progress)}です。`:`総売上は${yen(s.sales)}、目標達成率は${pct(progress)}です。前月データがないため前月比較は表示していません。`;

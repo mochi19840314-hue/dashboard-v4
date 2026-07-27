@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1001">
+<link rel="stylesheet" href="style.css?v=1002">
 </head>
 <body>
 <header class="app-header">
@@ -159,7 +159,23 @@
 <section id="report" class="page">
   <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
   <div id="reportStatus" class="report-status">集計中です。</div>
-  <article class="card report-score-card"><span class="eyebrow">OVERALL REVIEW</span><div class="report-score-copy"><div><h3>今月の総合評価</h3><strong>評価準備中</strong></div><p>次回アップデートで100点満点とS〜D評価を追加します。今回は評価根拠となる月次レポートを安全に表示します。</p></div></article>
+  <article class="card report-score-card">
+    <span class="eyebrow">OVERALL REVIEW · BETA</span>
+    <div class="report-month-phrase"><span>📌 今月を一言で</span><strong id="reportPhrase">データを分析中</strong></div>
+    <div class="report-score-main">
+      <div class="report-grade"><small>総合評価</small><strong id="reportGrade">—</strong><span id="reportScoreStatus">暫定評価</span></div>
+      <div id="reportScoreRing" class="report-score-ring" style="--report-score:0"><div><strong id="reportScore">0</strong><small>/100</small></div></div>
+      <p id="reportScoreComment">売上・利益率・来院数・客単価・支出管理・成長性から評価します。</p>
+    </div>
+    <div class="report-score-breakdown">
+      <article><span>売上</span><strong><b id="reportScoreSales">0</b>/30</strong></article>
+      <article><span>利益率</span><strong><b id="reportScoreProfit">0</b>/25</strong></article>
+      <article><span>来院数</span><strong><b id="reportScorePatients">0</b>/15</strong></article>
+      <article><span>客単価</span><strong><b id="reportScoreUnit">0</b>/15</strong></article>
+      <article><span>支出管理</span><strong><b id="reportScoreExpense">0</b>/10</strong></article>
+      <article><span>成長性</span><strong><b id="reportScoreGrowth">0</b>/5</strong></article>
+    </div>
+  </article>
   <div class="report-kpis">
     <article><span>総売上</span><strong id="reportSales">0円</strong></article><article><span>目標達成率</span><strong id="reportProgress">0%</strong></article><article><span>月間利益</span><strong id="reportProfit">0円</strong></article><article><span>利益率</span><strong id="reportProfitRate">0%</strong></article><article><span>来院件数</span><strong id="reportPatients">0件</strong></article><article><span>客単価</span><strong id="reportUnit">0円</strong></article><article><span>新患数</span><strong id="reportNew">0件</strong></article><article><span>手術・健診</span><strong id="reportClinical">0件 / 0件</strong></article>
   </div>
@@ -293,6 +309,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1001"></script>
+<script src="app.js?v=1002"></script>
 </body>
 </html>
