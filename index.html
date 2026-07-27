@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro V9α.1</title>
+<title>院長 Dashboard Pro V10.0.1</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=901">
+<link rel="stylesheet" href="style.css?v=1001">
 </head>
 <body>
 <header class="app-header">
@@ -23,6 +23,7 @@
 <nav id="tabs">
   <button class="tab active" data-page="today">今日</button>
   <button class="tab" data-page="month">月間</button>
+  <button class="tab" data-page="report">レポート</button>
   <button class="tab" data-page="year">年間</button>
   <button class="tab" data-page="finance">財務</button>
   <button class="tab" data-page="memo">メモ</button>
@@ -154,6 +155,22 @@
   </div>
 </section>
 
+
+<section id="report" class="page">
+  <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
+  <div id="reportStatus" class="report-status">集計中です。</div>
+  <article class="card report-score-card"><span class="eyebrow">OVERALL REVIEW</span><div class="report-score-copy"><div><h3>今月の総合評価</h3><strong>評価準備中</strong></div><p>次回アップデートで100点満点とS〜D評価を追加します。今回は評価根拠となる月次レポートを安全に表示します。</p></div></article>
+  <div class="report-kpis">
+    <article><span>総売上</span><strong id="reportSales">0円</strong></article><article><span>目標達成率</span><strong id="reportProgress">0%</strong></article><article><span>月間利益</span><strong id="reportProfit">0円</strong></article><article><span>利益率</span><strong id="reportProfitRate">0%</strong></article><article><span>来院件数</span><strong id="reportPatients">0件</strong></article><article><span>客単価</span><strong id="reportUnit">0円</strong></article><article><span>新患数</span><strong id="reportNew">0件</strong></article><article><span>手術・健診</span><strong id="reportClinical">0件 / 0件</strong></article>
+  </div>
+  <article class="card report-section"><div class="report-section-title"><span>📈</span><div><h3>売上分析</h3><small>前月・目標との比較</small></div></div><p id="reportSalesAnalysis">データを集計しています。</p></article>
+  <article class="card report-section"><div class="report-section-title"><span>💡</span><div><h3>支出分析</h3><small>注目する3項目のみ</small></div></div><div id="reportExpenseAnalysis" class="expense-analysis"></div></article>
+  <div class="report-two-column"><article class="card report-section"><div class="report-section-title"><span>⭐</span><div><h3>良かった点</h3><small>最大3件</small></div></div><ul id="reportGoodPoints" class="report-list"></ul></article><article class="card report-section"><div class="report-section-title"><span>🔍</span><div><h3>改善点</h3><small>次の行動へ</small></div></div><ul id="reportImprovePoints" class="report-list"></ul></article></div>
+  <article class="card report-section"><div class="report-section-title"><span>📚</span><div><h3>今月の学び</h3><small>自動案を自由に編集できます</small></div></div><textarea id="reportLearning" class="report-learning" maxlength="500" placeholder="今月の学びを記録"></textarea><div class="report-save-row"><small id="reportLearningStatus">未保存</small><button id="saveReportLearning" class="primary" type="button">保存する</button></div></article>
+  <article class="card report-section"><div class="report-section-title"><span>🎯</span><div><h3>来月の重点目標</h3><small>自動提案</small></div></div><ul id="reportNextGoals" class="report-list"></ul></article>
+  <article class="card report-summary"><span class="eyebrow">AI MONTHLY SUMMARY</span><h3>AI総評</h3><p id="reportSummary">データを集計しています。</p></article>
+</section>
+
 <section id="year" class="page">
   <div class="row"><div><h2>年間集計</h2></div><select id="yearPicker"></select></div>
   <div class="director-card card">
@@ -224,6 +241,9 @@
   <div class="card form">
     <label>口座残高（円）<input id="balance" type="number" min="0"></label>
     <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
+    <label>人件費（円）<input id="personnelExpense" type="number" min="0" inputmode="numeric"></label>
+    <label>薬品・医療材料費（円）<input id="medicalExpense" type="number" min="0" inputmode="numeric"></label>
+    <label>カード決済手数料（円）<input id="cardFee" type="number" min="0" inputmode="numeric"></label>
     <label>森久保オンライン 入金額（円）<input id="morikuboOnline" type="number" inputmode="numeric" min="0" placeholder="0"></label>
     <label>ロイヤルカナン 入金額（円）<input id="royalCanin" type="number" inputmode="numeric" min="0" placeholder="0"></label>
     <label>ピュリナ 入金額（円）<input id="purina" type="number" inputmode="numeric" min="0" placeholder="0"></label>
@@ -273,6 +293,6 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=901"></script>
+<script src="app.js?v=1001"></script>
 </body>
 </html>
