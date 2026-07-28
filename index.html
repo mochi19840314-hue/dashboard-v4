@@ -316,14 +316,18 @@
 <div id="aiDirectorOverlay" class="ai-director-overlay" hidden>
   <section class="ai-director-sheet" role="dialog" aria-modal="true" aria-labelledby="aiDirectorTitle">
     <header class="ai-director-header">
-      <div><span class="eyebrow">HOSPITAL MANAGEMENT PARTNER</span><h2 id="aiDirectorTitle">AI院長 <small>β</small></h2></div>
+      <div><span class="eyebrow">HOSPITAL MANAGEMENT PARTNER</span><h2 id="aiDirectorTitle">AI院長 <small>v10.2</small></h2></div>
       <button id="aiDirectorClose" class="ai-director-close" type="button" aria-label="閉じる">×</button>
     </header>
+    <div id="aiDirectorOverview" class="ai-director-overview"></div>
     <div id="aiDirectorMessages" class="ai-director-messages" aria-live="polite"></div>
     <div class="ai-director-quick" aria-label="よく使う質問">
       <button type="button" data-ai-question="今月どう？">今月どう？</button>
-      <button type="button" data-ai-question="利益率は？">利益率は？</button>
-      <button type="button" data-ai-question="改善点は？">改善点は？</button>
+      <button type="button" data-ai-question="経営健康診断">健康診断</button>
+      <button type="button" data-ai-question="着地予測は？">着地予測</button>
+      <button type="button" data-ai-question="経営アラート">アラート</button>
+      <button type="button" data-ai-question="利益率は？">利益率</button>
+      <button type="button" data-ai-question="改善点は？">改善点</button>
       <button type="button" data-ai-question="院長への一言">院長への一言</button>
     </div>
     <form id="aiDirectorForm" class="ai-director-form">
@@ -334,6 +338,6 @@
   </section>
 </div>
 <div id="toast"></div>
-<script src="app.js?v=1010"></script>
+<script src="app.js?v=1020"></script>
 </body>
 </html>

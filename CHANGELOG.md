@@ -42,3 +42,10 @@
 - 既存のLocalStorageデータを読み取り、端末内だけで回答
 - 外部AI・外部サーバーへの経営データ送信なし
 - 既存データ形式と保存キーは変更なし
+
+## v10.2 AI Director
+- Added management health score and grade.
+- Added forecast and target probability.
+- Added management alerts.
+- Expanded AI Director answers and priorities.
+- Preserved existing LocalStorage schema.
