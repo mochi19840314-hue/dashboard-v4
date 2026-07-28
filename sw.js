@@ -1,4 +1,4 @@
-const C="keita-dashboard-v1020-ai-director";
+const C="keita-dashboard-v1031-ai-director-beta1";
 const A=["./","./index.html","./style.css?v=1020","./app.js?v=1020","./manifest.json","./icon-192.png","./icon-512.png","./clinic-logo.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});

@@ -49,3 +49,10 @@
 - Added management alerts.
 - Expanded AI Director answers and priorities.
 - Preserved existing LocalStorage schema.
+
+
+## v10.3 beta1
+- AI院長の自由入力ロジックを拡張
+- 回答根拠カードを追加
+- 健康診断の強み・弱み・優先事項を強化
+- 採用・設備投資・広告・売上変動理由に簡易対応

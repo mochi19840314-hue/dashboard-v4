@@ -458,7 +458,7 @@ async function importJson(file){
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
 
-// v10.2：AI院長（回答強化・着地予測・経営健康診断・経営アラート）
+// v10.3 beta1：AI院長（自由入力・根拠表示・健康診断強化）
 function aiDirectorSnapshot(){
   const m=monthNow(),s=monthSummary(m),prev=monthSummary(monthShift(m,-1));
   const setting=data.settings[m]||{target:MONTHLY_TARGET,businessDays:expectedBusinessDays(m)};
@@ -469,15 +469,13 @@ function aiDirectorSnapshot(){
   const prevProfit=prev.sales-prev.expense,prevRate=prev.sales?prevProfit/prev.sales*100:0;
   const prevUnit=prev.patients?prev.clinicalSales/prev.patients:0;
   const snap=financeSnapshot(m),netAssets=Number(snap.balance||0)-Number(snap.loan||0);
-  const progress=target?s.sales/target*100:0;
-  const needDaily=left?Math.max(0,target-s.sales)/left:Math.max(0,target-s.sales);
+  const progress=target?s.sales/target*100:0,needDaily=left?Math.max(0,target-s.sales)/left:Math.max(0,target-s.sales);
   const paceRatio=target?forecast/target:0;
   let probability=0;
-  if(done){
-    probability=Math.round(Math.max(5,Math.min(98,50+(paceRatio-1)*115+(done/days)*12)));
-    if(progress>=100)probability=100;
-  }
-  return {m,s,prev,target,days,done,left,avgDaily,forecast,profit,rate,unit,prevProfit,prevRate,prevUnit,netAssets,progress,needDaily,probability};
+  if(done){probability=Math.round(Math.max(5,Math.min(98,50+(paceRatio-1)*115+(done/days)*12)));if(progress>=100)probability=100;}
+  const patientPerDay=done?s.patients/done:0;
+  const prevPatientPerDay=prev.entries?.length?prev.patients/Math.max(1,new Set(operatingEntries(prev.entries||[]).map(e=>e.date)).size):0;
+  return {m,s,prev,target,days,done,left,avgDaily,forecast,profit,rate,unit,prevProfit,prevRate,prevUnit,netAssets,progress,needDaily,probability,patientPerDay,prevPatientPerDay};
 }
 function aiDirectorMoney(v){return yen(Math.round(Number(v)||0))}
 function aiClamp(v,min,max){return Math.max(min,Math.min(max,v))}
@@ -506,63 +504,98 @@ function aiDirectorAlerts(x=aiDirectorSnapshot()){
   if(x.s.checkups<5&&x.done>=5)alerts.push({type:'info',text:`健診は${x.s.checkups||0}件です。対象者への案内を再確認しましょう。`});
   return alerts.slice(0,4);
 }
-function renderAIDirectorOverview(){
-  const root=$('aiDirectorOverview');if(!root)return;
-  const x=aiDirectorSnapshot(),h=aiDirectorHealth(x),alerts=aiDirectorAlerts(x);
-  root.innerHTML=`<div class="ai-health-head"><div><span>経営健康診断</span><b>${h.total}<small>点</small></b></div><strong>${h.grade}</strong></div>
-  <div class="ai-health-grid"><span>売上<b>${h.sales}</b></span><span>利益<b>${h.profit}</b></span><span>来院<b>${h.patients}</b></span><span>単価<b>${h.unit}</b></span></div>
-  <div class="ai-forecast-line"><span>着地予測 <b>${aiDirectorMoney(x.forecast)}</b></span><span>達成見込み <b>${x.probability}%</b></span></div>
-  <div class="ai-alert-list">${alerts.map(a=>`<p class="${a.type}">${a.type==='good'?'✓':a.type==='danger'?'!':a.type==='warn'?'△':'i'} ${a.text}</p>`).join('')}</div>`;
-}
 function aiDirectorPriorities(x){
   const items=[];
   if(x.forecast<x.target)items.push(`残り診療日の平均日商を${aiDirectorMoney(x.needDaily)}へ近づける`);
   if(x.s.expense&&x.rate<25)items.push('人件費・薬品医療材料費・カード手数料の増減を確認する');
   if(x.s.checkups<10)items.push(`健診は現在${x.s.checkups||0}件。会計時・LINE・SNSの案内を継続する`);
   if(x.unit<14000)items.push('必要な検査・処置・再診計画の説明漏れを減らす');
-  if(x.s.patients&&x.done&&x.s.patients/x.done<12)items.push('再診予定と予防対象者へのフォローを確認する');
+  if(x.s.patients&&x.done&&x.patientPerDay<12)items.push('再診予定と予防対象者へのフォローを確認する');
   if(!items.length)items.push('診療品質と入力習慣を維持する','来月の重点施策を1つだけ決める');
   return items.slice(0,3);
 }
-function aiDirectorAnswer(question){
+function aiDirectorEvidence(x,keys=['sales','profit','patients','unit']){
+  const map={
+    sales:['売上',aiDirectorMoney(x.s.sales)],forecast:['着地予測',aiDirectorMoney(x.forecast)],target:['月間目標',aiDirectorMoney(x.target)],
+    profit:['利益',aiDirectorMoney(x.profit)],rate:['利益率',`${x.rate.toFixed(1)}%`],patients:['来院件数',`${x.s.patients||0}件`],
+    unit:['客単価',aiDirectorMoney(x.unit)],daily:['平均日商',aiDirectorMoney(x.avgDaily)],remaining:['残り診療日',`${x.left}日`],
+    checkups:['健診',`${x.s.checkups||0}件`],newPatients:['新患',`${x.s.newPatients||0}件`],assets:['実質純資産',aiDirectorMoney(x.netAssets)]
+  };
+  return keys.filter(k=>map[k]).map(k=>({label:map[k][0],value:map[k][1]}));
+}
+function aiDirectorHealthNarrative(x,h){
+  const scores=[['売上',h.sales],['利益',h.profit],['来院',h.patients],['客単価',h.unit]].sort((a,b)=>b[1]-a[1]);
+  const good=scores[0][0],weak=scores[scores.length-1][0],priority=aiDirectorPriorities(x)[0];
+  return {good:`最も良い項目は「${good}」です。`,weak:`改善余地が大きい項目は「${weak}」です。`,priority:`来月へ向けた最優先は「${priority}」です。`};
+}
+function aiDirectorResponse(question){
   const q=String(question||'').trim(),x=aiDirectorSnapshot(),s=x.s,h=aiDirectorHealth(x);
-  if(!q)return '質問を入力してください。';
-  if(!s.sales&&!s.entries.length)return '今月の診療データがまだありません。まず「今日」画面から売上と来院件数を入力すると、今月の状況を分析できます。';
+  if(!q)return {text:'質問を入力してください。',evidence:[]};
+  if(!s.sales&&!s.entries.length)return {text:'今月の診療データがまだありません。まず「今日」画面から売上と来院件数を入力すると、今月の状況を分析できます。',evidence:[]};
   const trend=x.prev.sales?((x.forecast-x.prev.sales)/x.prev.sales*100):null;
   const rateLabel=x.rate>=30?'非常に良好':x.rate>=25?'良好':x.rate>=20?'安定圏':x.rate>=10?'改善余地あり':'要注意';
   const targetText=x.forecast>=x.target?`現在のペースでは約${aiDirectorMoney(x.forecast)}で着地し、目標${aiDirectorMoney(x.target)}を達成できる見込みです。`:`現在のペースでは約${aiDirectorMoney(x.forecast)}の着地予測で、目標まで約${aiDirectorMoney(Math.max(0,x.target-x.forecast))}不足する見込みです。`;
-  if(/健康診断|スコア|評価|採点/.test(q))return `今月の経営健康診断は${h.total}点、${h.grade}評価です。\n\n売上 ${h.sales}点／利益 ${h.profit}点／来院 ${h.patients}点／客単価 ${h.unit}点です。\n\n${aiDirectorPriorities(x)[0]}ことが、次の改善ポイントです。`;
-  if(/アラート|警告|異常|注意/.test(q))return aiDirectorAlerts(x).map((a,i)=>`${i+1}. ${a.text}`).join('\n');
+  if(/健康診断|スコア|評価|採点/.test(q)){
+    const n=aiDirectorHealthNarrative(x,h);
+    return {text:`今月の経営健康診断は${h.total}点、${h.grade}評価です。\n\n${n.good}\n${n.weak}\n${n.priority}`,evidence:[{label:'売上',value:`${h.sales}点`},{label:'利益',value:`${h.profit}点`},{label:'来院',value:`${h.patients}点`},{label:'客単価',value:`${h.unit}点`} ]};
+  }
+  if(/アラート|警告|異常|注意/.test(q))return {text:aiDirectorAlerts(x).map((a,i)=>`${i+1}. ${a.text}`).join('\n'),evidence:aiDirectorEvidence(x,['forecast','rate','unit','checkups'])};
+  if(/なぜ.*売上|売上.*理由|伸びた理由|下がった理由/.test(q)){
+    const patientDelta=x.prev.patients?((s.patients-x.prev.patients)/x.prev.patients*100):null;
+    const unitDelta=x.prevUnit?((x.unit-x.prevUnit)/x.prevUnit*100):null;
+    let reason='前月比較データが十分でないため、主因はまだ断定できません。';
+    if(patientDelta!==null&&unitDelta!==null){
+      if(patientDelta>5&&unitDelta>5)reason='来院件数と客単価の両方が伸びたことが主因です。';
+      else if(patientDelta>5)reason='主に来院件数の増加が売上を押し上げています。';
+      else if(unitDelta>5)reason='主に客単価の上昇が売上を押し上げています。';
+      else if(patientDelta<-5&&unitDelta<-5)reason='来院件数と客単価の両方が下がった影響が大きいです。';
+      else reason='件数と単価の変化が相殺しており、手術・健診・重症症例など診療内容の影響が考えられます。';
+    }
+    return {text:`${reason}\n\nこれは入力データからの推定で、症例構成までは自動判定していません。`,evidence:aiDirectorEvidence(x,['sales','patients','unit','checkups'])};
+  }
   if(/今月|調子|状況|どう/.test(q)){
     const salesTrend=trend===null?'過去比較に必要なデータはまだ十分ではありません':`現在の着地予測は前月実績比で${trend>=0?'増加':'減少'}（${Math.abs(trend).toFixed(1)}%）です`;
     const strongest=[['売上',h.sales],['利益',h.profit],['来院',h.patients],['客単価',h.unit]].sort((a,b)=>b[1]-a[1])[0][0];
-    return `今月は総合${h.total}点（${h.grade}評価）です。売上は${aiDirectorMoney(s.sales)}、目標進捗は${x.progress.toFixed(1)}%。利益は${aiDirectorMoney(x.profit)}、利益率は${x.rate.toFixed(1)}%で「${rateLabel}」です。\n\n${targetText} 達成見込みは${x.probability}%です。\n\n強みは「${strongest}」。最優先は「${aiDirectorPriorities(x)[0]}」です。${salesTrend}。`;
+    return {text:`今月は総合${h.total}点（${h.grade}評価）です。利益率は${x.rate.toFixed(1)}%で「${rateLabel}」です。\n\n${targetText} 達成見込みは${x.probability}%です。\n\n強みは「${strongest}」。最優先は「${aiDirectorPriorities(x)[0]}」です。${salesTrend}。`,evidence:aiDirectorEvidence(x,['sales','forecast','profit','rate','patients','unit'])};
   }
   if(/利益率|利益|収益/.test(q)){
     const delta=x.prev.sales?x.rate-x.prevRate:null;
-    let action=x.rate>=30?'十分な利益余力があります。診療品質を維持しながら、採用・設備・教育への投資候補を整理できる水準です。':x.rate>=25?'良好です。急な支出増に注意しながら、この水準を安定して維持することが次の目標です。':x.rate>=20?'安定圏ですが、支出内訳を確認して25%以上へ近づける余地があります。':'人件費・薬品医療材料費・カード手数料を優先して確認してください。';
-    return `今月の利益は${aiDirectorMoney(x.profit)}、利益率は${x.rate.toFixed(1)}%です。${delta===null?'前月比較に必要な支出データはまだありません。':`前月より${delta>=0?'+':''}${delta.toFixed(1)}ポイントです。`}\n\n${action}`;
+    const action=x.rate>=30?'十分な利益余力があります。診療品質を維持しながら、採用・設備・教育への投資候補を整理できる水準です。':x.rate>=25?'良好です。急な支出増に注意しながら、この水準を安定して維持することが次の目標です。':x.rate>=20?'安定圏ですが、支出内訳を確認して25%以上へ近づける余地があります。':'人件費・薬品医療材料費・カード手数料を優先して確認してください。';
+    return {text:`今月の利益は${aiDirectorMoney(x.profit)}、利益率は${x.rate.toFixed(1)}%です。${delta===null?'前月比較に必要な支出データはまだありません。':`前月より${delta>=0?'+':''}${delta.toFixed(1)}ポイントです。`}\n\n${action}`,evidence:aiDirectorEvidence(x,['sales','profit','rate'])};
   }
-  if(/達成|着地|予測|見込み|売上目標/.test(q))return `${targetText}\n\n入力済み診療日は${x.done}日、残り想定診療日は${x.left}日です。目標達成に必要な残り平均日商は${aiDirectorMoney(x.needDaily)}、現在の平均日商は${aiDirectorMoney(x.avgDaily)}です。達成見込みは${x.probability}%です。`;
+  if(/達成|着地|予測|見込み|売上目標/.test(q))return {text:`${targetText}\n\n目標達成に必要な残り平均日商は${aiDirectorMoney(x.needDaily)}、現在の平均日商は${aiDirectorMoney(x.avgDaily)}です。達成見込みは${x.probability}%です。`,evidence:aiDirectorEvidence(x,['sales','target','forecast','daily','remaining'])};
   if(/改善|課題|何を|優先|重点|来月/.test(q)){
     const items=aiDirectorPriorities(x);
-    return `優先順位は次の${items.length}点です。\n\n${items.map((v,i)=>`${i+1}. ${v}`).join('\n')}\n\n一度に全部変えず、1番目を今週の行動に落とし込むのが安全です。`;
+    return {text:`優先順位は次の${items.length}点です。\n\n${items.map((v,i)=>`${i+1}. ${v}`).join('\n')}\n\n一度に全部変えず、1番目を今週の行動に落とし込むのが安全です。`,evidence:aiDirectorEvidence(x,['forecast','rate','patients','unit','checkups'])};
   }
-  if(/一言|院長|励ま|メッセージ/.test(q)){
-    if(h.total>=85)return '数字は十分に良い状態です。ここからは件数を無理に追うより、診療品質とスタッフの負担を守ることが、来月の安定につながります。';
-    if(x.forecast>=x.target)return '目標達成圏内です。焦らず、今来ている患者さんへの丁寧な診療と再診設計を続けてください。';
-    return '改善点はありますが、次にやるべきことは見えています。残り日数で無理に詰め込まず、必要な診療提案と再診フォローを一件ずつ積み重ねましょう。';
+  if(/広告|集客|google|インスタ|line|sns/i.test(q))return {text:`広告費を増やす前に、新患数と予約の空き方を確認してください。新患が少なく空きがあるなら広告強化、予約が埋まっているなら再診設計や単価・業務効率を優先する方が安全です。現在の新患は${s.newPatients||0}件です。`,evidence:aiDirectorEvidence(x,['newPatients','patients','sales','forecast'])};
+  if(/採用|看護師|スタッフ|人件費/.test(q))return {text:`採用可否は1か月だけで断定せず、少なくとも3か月の利益と口座残高で判断してください。今月の利益率は${x.rate.toFixed(1)}%です。25%以上を安定して維持し、採用後の固定費を差し引いても十分な現金が残るかを確認するのが安全です。`,evidence:aiDirectorEvidence(x,['profit','rate','assets','forecast'])};
+  if(/設備|内視鏡|ICU|車|GLC|リース|買える/.test(q))return {text:`設備投資は、導入後も3〜6か月分の固定費を確保できるかで判断してください。実質純資産と今月利益だけでは断定できませんが、利益が安定し、月々の支払額を差し引いても黒字が維持できるなら検討可能です。`,evidence:aiDirectorEvidence(x,['assets','profit','rate','forecast'])};
+  if(/一言|励ま|メッセージ/.test(q)){
+    const text=h.total>=85?'数字は十分に良い状態です。ここからは件数を無理に追うより、診療品質とスタッフの負担を守ることが、来月の安定につながります。':x.forecast>=x.target?'目標達成圏内です。焦らず、今来ている患者さんへの丁寧な診療と再診設計を続けてください。':'改善点はありますが、次にやるべきことは見えています。残り日数で無理に詰め込まず、必要な診療提案と再診フォローを一件ずつ積み重ねましょう。';
+    return {text,evidence:aiDirectorEvidence(x,['forecast','rate'])};
   }
-  if(/来院|患者|件数/.test(q))return `今月の来院件数は${s.patients||0}件、新患は${s.newPatients||0}件、1診療日平均は${x.done?(s.patients/x.done).toFixed(1):'0'}件です。客単価は約${aiDirectorMoney(x.unit)}です。件数だけでなく、重症度や必要な検査が適切に反映されているかも確認してください。`;
-  if(/客単価|単価/.test(q))return `今月の診療売上ベースの客単価は約${aiDirectorMoney(x.unit)}です。${x.prevUnit?`前月は約${aiDirectorMoney(x.prevUnit)}でした。`:''} 単価を無理に上げるのではなく、必要な検査・処置・再診計画の説明漏れを減らすことが、安全で持続的な改善につながります。`;
-  if(/健診/.test(q))return `今月の健診は${s.checkups||0}件です。10件未満なら、会計時の一言案内、対象者へのLINE、季節テーマのInstagram投稿を組み合わせると増やしやすくなります。`;
-  if(/純資産|口座|借入|採用|設備|車|GLC/.test(q))return `実質純資産は${aiDirectorMoney(x.netAssets)}、今月利益は${aiDirectorMoney(x.profit)}です。投資可否は断定せず、少なくとも3か月の利益、口座残高、返済後キャッシュが維持できるかを確認して判断してください。`;
-  return `「${q}」については、現在「今月どう？」「経営健康診断」「利益率」「着地予測」「経営アラート」「改善点」「院長への一言」などに対応しています。院内データを使う質問に言い換えてみてください。`;
+  if(/来院|患者|件数/.test(q))return {text:`今月の来院件数は${s.patients||0}件、新患は${s.newPatients||0}件、1診療日平均は${x.patientPerDay.toFixed(1)}件です。件数だけでなく、重症度や必要な検査が適切に反映されているかも確認してください。`,evidence:aiDirectorEvidence(x,['patients','newPatients','unit'])};
+  if(/客単価|単価/.test(q))return {text:`今月の診療売上ベースの客単価は約${aiDirectorMoney(x.unit)}です。${x.prevUnit?`前月は約${aiDirectorMoney(x.prevUnit)}でした。`:''} 単価を無理に上げるのではなく、必要な検査・処置・再診計画の説明漏れを減らすことが、安全で持続的な改善につながります。`,evidence:aiDirectorEvidence(x,['unit','patients','sales'])};
+  if(/健診/.test(q))return {text:`今月の健診は${s.checkups||0}件です。10件未満なら、会計時の一言案内、対象者へのLINE、季節テーマのInstagram投稿のうち1つを継続してください。`,evidence:aiDirectorEvidence(x,['checkups','patients','sales'])};
+  return {text:`「${q}」を院内データから十分に判断できませんでした。売上、利益、来院、客単価、健診、採用、設備投資、広告などの言葉を含めると、より具体的に回答できます。`,evidence:aiDirectorEvidence(x,['sales','rate','patients','unit'])};
 }
-function appendAIDirectorMessage(role,text){const box=$('aiDirectorMessages');if(!box)return;const el=document.createElement('div');el.className=`ai-message ${role}`;el.textContent=text;box.appendChild(el);box.scrollTop=box.scrollHeight}
-function openAIDirector(){const overlay=$('aiDirectorOverlay');if(!overlay)return;renderAIDirectorOverview();overlay.hidden=false;document.body.style.overflow='hidden';const box=$('aiDirectorMessages');if(box&&!box.children.length){const x=aiDirectorSnapshot();appendAIDirectorMessage('assistant',`こんにちは。${monthLabel(x.m)}の院内データを見ながらお答えします。\n経営健康診断とアラートも上部に表示しています。`)}setTimeout(()=>$('aiDirectorInput')?.focus(),180)}
+function appendAIDirectorMessage(role,text,evidence=[]){
+  const box=$('aiDirectorMessages');if(!box)return;
+  const el=document.createElement('div');el.className=`ai-message ${role}`;
+  const body=document.createElement('div');body.className='ai-message-body';body.textContent=text;el.appendChild(body);
+  if(role==='assistant'&&evidence.length){
+    const card=document.createElement('div');card.className='ai-evidence';
+    const title=document.createElement('b');title.textContent='判断の根拠';card.appendChild(title);
+    const grid=document.createElement('div');
+    evidence.forEach(item=>{const row=document.createElement('span');const label=document.createElement('small');label.textContent=item.label;const value=document.createElement('strong');value.textContent=item.value;row.append(label,value);grid.appendChild(row)});
+    card.appendChild(grid);el.appendChild(card);
+  }
+  box.appendChild(el);box.scrollTop=box.scrollHeight;
+}
+function openAIDirector(){const overlay=$('aiDirectorOverlay');if(!overlay)return;renderAIDirectorOverview();overlay.hidden=false;document.body.style.overflow='hidden';const box=$('aiDirectorMessages');if(box&&!box.children.length){const x=aiDirectorSnapshot();appendAIDirectorMessage('assistant',`こんにちは。${monthLabel(x.m)}の院内データを見ながらお答えします。\n自由に質問してください。回答には判断の根拠も表示します。`,aiDirectorEvidence(x,['sales','rate','patients','unit']))}setTimeout(()=>$('aiDirectorInput')?.focus(),180)}
 function closeAIDirector(){const overlay=$('aiDirectorOverlay');if(!overlay)return;overlay.hidden=true;document.body.style.overflow=''}
-function askAIDirector(q){const text=String(q||'').trim();if(!text)return;appendAIDirectorMessage('user',text);appendAIDirectorMessage('assistant',aiDirectorAnswer(text));$('aiDirectorInput').value=''}
+function askAIDirector(q){const text=String(q||'').trim();if(!text)return;appendAIDirectorMessage('user',text);const response=aiDirectorResponse(text);appendAIDirectorMessage('assistant',response.text,response.evidence);$('aiDirectorInput').value=''}
 function setupAIDirector(){
   const fab=$('aiDirectorFab'),close=$('aiDirectorClose'),overlay=$('aiDirectorOverlay'),form=$('aiDirectorForm');if(!fab||!close||!overlay||!form)return;
   fab.onclick=openAIDirector;close.onclick=closeAIDirector;overlay.addEventListener('click',e=>{if(e.target===overlay)closeAIDirector()});

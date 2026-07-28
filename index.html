@@ -316,7 +316,7 @@
 <div id="aiDirectorOverlay" class="ai-director-overlay" hidden>
   <section class="ai-director-sheet" role="dialog" aria-modal="true" aria-labelledby="aiDirectorTitle">
     <header class="ai-director-header">
-      <div><span class="eyebrow">HOSPITAL MANAGEMENT PARTNER</span><h2 id="aiDirectorTitle">AI院長 <small>v10.2</small></h2></div>
+      <div><span class="eyebrow">HOSPITAL MANAGEMENT PARTNER</span><h2 id="aiDirectorTitle">AI院長 <small>v10.3β1</small></h2></div>
       <button id="aiDirectorClose" class="ai-director-close" type="button" aria-label="閉じる">×</button>
     </header>
     <div id="aiDirectorOverview" class="ai-director-overview"></div>
@@ -328,16 +328,18 @@
       <button type="button" data-ai-question="経営アラート">アラート</button>
       <button type="button" data-ai-question="利益率は？">利益率</button>
       <button type="button" data-ai-question="改善点は？">改善点</button>
+      <button type="button" data-ai-question="売上が伸びた理由は？">売上の理由</button>
+      <button type="button" data-ai-question="看護師を採用できる？">採用判断</button>
       <button type="button" data-ai-question="院長への一言">院長への一言</button>
     </div>
     <form id="aiDirectorForm" class="ai-director-form">
-      <input id="aiDirectorInput" type="text" maxlength="80" autocomplete="off" placeholder="例：売上目標は達成できそう？">
+      <input id="aiDirectorInput" type="text" maxlength="80" autocomplete="off" placeholder="例：売上が伸びた理由は？">
       <button class="primary" type="submit">送信</button>
     </form>
-    <p class="ai-director-note">入力済みの院内データだけを端末内で分析します。外部AIへの送信はありません。</p>
+    <p class="ai-director-note">自由入力に対応したβ版です。入力済みの院内データだけを端末内で分析し、外部送信はありません。</p>
   </section>
 </div>
 <div id="toast"></div>
-<script src="app.js?v=1020"></script>
+<script src="app.js?v=1031"></script>
 </body>
 </html>
