@@ -36,23 +36,8 @@
 - 評価ロジックはβ版です。実運用の違和感を確認してから正式版へ調整します
 
 
-## v10.1.0 — AI院長 第一弾
-- 右下に「AI院長」ボタンを追加
-- 今月の状況、利益率、目標着地、改善点、院長への一言に対応
-- 既存のLocalStorageデータを読み取り、端末内だけで回答
-- 外部AI・外部サーバーへの経営データ送信なし
-- 既存データ形式と保存キーは変更なし
-
-## v10.2 AI Director
-- Added management health score and grade.
-- Added forecast and target probability.
-- Added management alerts.
-- Expanded AI Director answers and priorities.
-- Preserved existing LocalStorage schema.
-
-
-## v10.3 beta1
-- AI院長の自由入力ロジックを拡張
-- 回答根拠カードを追加
-- 健康診断の強み・弱み・優先事項を強化
-- 採用・設備投資・広告・売上変動理由に簡易対応
+## v10.0.5 AI Director Open Fix
+- AI院長ボタンを独立スクリプトで追加
+- タップでモーダルを確実に開閉
+- 「今月どう？」「利益率は？」を端末内データから回答
+- LocalStorageキー・既存データ構造は変更なし
