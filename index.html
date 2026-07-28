@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1004">
+<link rel="stylesheet" href="style.css?v=1010">
 </head>
 <body>
 <header class="app-header">
@@ -308,7 +308,32 @@
   <div class="card"><p id="storage"></p></div>
 </section>
 </main>
+
+<!-- v10.1 第一弾：AI院長（端末内分析・オフライン対応） -->
+<button id="aiDirectorFab" class="ai-director-fab" type="button" aria-label="AI院長を開く">
+  <span>💬</span><b>AI院長</b>
+</button>
+<div id="aiDirectorOverlay" class="ai-director-overlay" hidden>
+  <section class="ai-director-sheet" role="dialog" aria-modal="true" aria-labelledby="aiDirectorTitle">
+    <header class="ai-director-header">
+      <div><span class="eyebrow">HOSPITAL MANAGEMENT PARTNER</span><h2 id="aiDirectorTitle">AI院長 <small>β</small></h2></div>
+      <button id="aiDirectorClose" class="ai-director-close" type="button" aria-label="閉じる">×</button>
+    </header>
+    <div id="aiDirectorMessages" class="ai-director-messages" aria-live="polite"></div>
+    <div class="ai-director-quick" aria-label="よく使う質問">
+      <button type="button" data-ai-question="今月どう？">今月どう？</button>
+      <button type="button" data-ai-question="利益率は？">利益率は？</button>
+      <button type="button" data-ai-question="改善点は？">改善点は？</button>
+      <button type="button" data-ai-question="院長への一言">院長への一言</button>
+    </div>
+    <form id="aiDirectorForm" class="ai-director-form">
+      <input id="aiDirectorInput" type="text" maxlength="80" autocomplete="off" placeholder="例：売上目標は達成できそう？">
+      <button class="primary" type="submit">送信</button>
+    </form>
+    <p class="ai-director-note">入力済みの院内データだけを端末内で分析します。外部AIへの送信はありません。</p>
+  </section>
+</div>
 <div id="toast"></div>
-<script src="app.js?v=1004"></script>
+<script src="app.js?v=1010"></script>
 </body>
 </html>
