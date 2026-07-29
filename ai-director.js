@@ -40,6 +40,15 @@
     const expense=Number(finance.monthlyExpense??hist.expense??current.monthlyExpense)||0;
     return {...daily,clinicalSales,ecSales,sales,expense};
   };
+  const entryHasData=e=>e&&(Number(e.sales)||Number(e.patients)||Number(e.checkups)||Number(e.surgeries));
+  const previousOperatingEntry=data=>{
+    const today=TODAY();
+    const rows=(Array.isArray(data.entries)?data.entries:[])
+      .filter(e=>String(e.date||'')<today&&entryHasData(e))
+      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    return rows[0]||null;
+  };
+  const dailyTargetFor=data=>Number(data.clinic?.fullDayTarget)||180000;
   const metrics=()=>{
     const data=readData();
     const mk=monthKey();
@@ -57,7 +66,12 @@
     const loan=Number(finance.loan)||0;
     const personnelExpense=Number(finance.personnelExpense)||0;
     const medicalExpense=Number(finance.medicalExpense)||0;
-    return {...cur,profit,margin,target,businessDays,activeDays,remaining,forecast,balance,loan,netAssets:balance-loan,personnelExpense,medicalExpense,prev};
+    const previousEntry=previousOperatingEntry(data);
+    const previousUnit=previousEntry&&Number(previousEntry.patients)?(Number(previousEntry.sales)||0)/Number(previousEntry.patients):0;
+    const dailyTarget=dailyTargetFor(data);
+    const targetGap=Math.max(0,target-cur.sales);
+    const requiredDaily=remaining?targetGap/remaining:targetGap;
+    return {...cur,profit,margin,target,businessDays,activeDays,remaining,forecast,balance,loan,netAssets:balance-loan,personnelExpense,medicalExpense,prev,previousEntry,previousUnit,dailyTarget,targetGap,requiredDaily};
   };
   const block=(conclusion,reasons,next)=>({conclusion,reasons:Array.isArray(reasons)?reasons:[reasons],next});
   const answer=(kind,m)=>{
@@ -96,12 +110,32 @@
     return block('経営データを確認します。','売上・来院数・支出をもとに判断します。','相談項目を選んでください。');
   };
   const recommendation=m=>{
-    if(!m.sales)return {id:'start-input',title:'まず1日分を入力しましょう',detail:'今月の売上・来院数を入力すると、月末予測と具体的な優先事項を出せます。'};
-    if(m.expense&&m.margin<20)return {id:'margin-low',title:'今月は支出の確認を優先',detail:`利益率は${pct(m.margin)}です。薬品費・外注費・人件費の増加要因を1つずつ確認しましょう。`};
-    if(m.forecast<m.target&&m.remaining>0)return {id:'target-gap',title:'再診・健診の案内漏れを減らす',detail:`月末予測は${yen(m.forecast)}です。残り${m.remaining}営業日は、1日${yen(Math.max(0,m.target-m.sales)/m.remaining)}が目安です。`};
-    if(m.checkups<10)return {id:'checkups',title:'健診の提案を意識しましょう',detail:`今月の健診は${m.checkups}件です。対象患者への案内を診察時に一言添えるのがおすすめです。`};
-    if(m.margin>=30)return {id:'quality',title:'無理に件数を増やさず質を維持',detail:`利益率${pct(m.margin)}で良好です。診療の質とスタッフ負担のバランスを優先しましょう。`};
-    return {id:'followup',title:'既存患者のフォローを優先',detail:'新しい施策を増やすより、再診・予防・検査フォローの案内漏れを減らすのがおすすめです。'};
+    const e=m.previousEntry;
+    if(e){
+      const sales=Number(e.sales)||0,patients=Number(e.patients)||0,checkups=Number(e.checkups)||0,surgeries=Number(e.surgeries)||0;
+      const unit=patients?sales/patients:0;
+      const label=String(e.date||'').replaceAll('-','/');
+      if(patients>=25)return {id:`busy-${e.date}`,title:'今日は無理に件数を増やさず、診療の質を優先',summary:`直近診療日（${label}）は${patients}件でした。`,detail:`売上${yen(sales)}、来院${patients}件、客単価${yen(unit)}でした。高負荷の翌日は、再診計画とスタッフ負担の確認を優先するのがおすすめです。`};
+      if(sales<m.dailyTarget*.75)return {id:`sales-low-${e.date}`,title:'今日は再診・健診の案内漏れを減らしましょう',summary:`直近診療日の売上は${yen(sales)}でした。`,detail:`目安の日商${yen(m.dailyTarget)}に対して${yen(Math.max(0,m.dailyTarget-sales))}不足しています。来院${patients}件、健診${checkups}件でした。必要な検査・予防・健診を丁寧に案内しましょう。`};
+      if(patients>=10&&unit<8000)return {id:`unit-low-${e.date}`,title:'必要な検査と再診計画を丁寧に提案',summary:`直近診療日の客単価は${yen(unit)}でした。`,detail:`売上${yen(sales)}、来院${patients}件、健診${checkups}件、手術${surgeries}件でした。単価を上げること自体ではなく、必要な検査・処置・再診案内の漏れを減らすことを意識しましょう。`};
+      if(checkups===0&&patients>=10)return {id:`checkup-zero-${e.date}`,title:'今日は対象患者に健診を一言ご案内',summary:`直近診療日は${patients}件で、健診は0件でした。`,detail:`売上${yen(sales)}、客単価${yen(unit)}でした。シニア期や慢性疾患の患者さんに、無理のない範囲で健康診断の選択肢を一言添えるのがおすすめです。`};
+      if(sales>=m.dailyTarget)return {id:`good-day-${e.date}`,title:'良い流れです。今日は診療品質を維持しましょう',summary:`直近診療日の売上は${yen(sales)}で目安を上回りました。`,detail:`来院${patients}件、客単価${yen(unit)}、健診${checkups}件、手術${surgeries}件でした。無理な上積みより、再診フォローと診療品質の維持を優先しましょう。`};
+    }
+    if(!m.sales)return {id:'start-input',title:'まず1日分を入力しましょう',summary:'今月の診療データがまだありません。',detail:'売上・来院数を入力すると、直近診療日の結果から具体的な提案を出せます。'};
+    if(m.expense&&m.margin<20)return {id:'margin-low',title:'今月は支出の確認を優先',summary:`利益率は${pct(m.margin)}です。`,detail:'薬品費・外注費・人件費の増加要因を1つずつ確認しましょう。'};
+    if(m.forecast<m.target&&m.remaining>0)return {id:'target-gap',title:'月目標に向けて案内漏れを減らしましょう',summary:`目標まであと${yen(m.targetGap)}です。`,detail:`残り${m.remaining}営業日は、1日${yen(m.requiredDaily)}が目安です。再診・健診・予防の案内を丁寧に行いましょう。`};
+    return {id:'followup',title:'既存患者のフォローを優先',summary:'今月の流れは大きく崩れていません。',detail:'新しい施策を増やすより、再診・予防・検査フォローの案内漏れを減らすのがおすすめです。'};
+  };
+  const previousDayCard=m=>{
+    const e=m.previousEntry;
+    if(!e)return '<div class="aiDirectorEmpty">前日の入力データがありません。</div>';
+    const sales=Number(e.sales)||0,patients=Number(e.patients)||0,unit=patients?sales/patients:0;
+    return `<div class="aiDirectorMetrics"><div><span>売上</span><strong>${yen(sales)}</strong></div><div><span>来院</span><strong>${patients}件</strong></div><div><span>客単価</span><strong>${yen(unit)}</strong></div><div><span>健診</span><strong>${Number(e.checkups)||0}件</strong></div><div><span>手術</span><strong>${Number(e.surgeries)||0}件</strong></div></div><p class="aiDirectorDate">直近診療日：${String(e.date||'').replaceAll('-','/')}</p>`;
+  };
+  const targetNavigator=m=>{
+    const rate=m.target?m.sales/m.target*100:0;
+    const status=m.forecast>=m.target?'目標達成ペースです。':m.remaining?'対策すれば十分狙えます。':'今月の営業日は終了しています。';
+    return `<div class="aiDirectorMetrics aiDirectorTargetMetrics"><div><span>目標まで</span><strong>${yen(m.targetGap)}</strong></div><div><span>残り営業日</span><strong>${m.remaining}日</strong></div><div><span>必要日商</span><strong>${yen(m.requiredDaily)}</strong></div><div><span>達成率</span><strong>${pct(rate)}</strong></div></div><p class="aiDirectorTargetStatus">${status}</p>`;
   };
   function injectStyles(){
     const style=document.createElement('style');
@@ -112,9 +146,10 @@
       #aiDirectorPanel{width:min(100%,520px);max-height:84vh;overflow:auto;background:#f7faf9;border-radius:24px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.28);box-sizing:border-box}
       .aiDirectorHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.aiDirectorHead h2{margin:0;font-size:21px}.aiDirectorClose{width:38px;height:38px;border:0;border-radius:50%;font-size:24px;background:#e6efec;color:#24433e}
       .aiDirectorRecommend{background:#fff;border:1px solid rgba(8,127,107,.18);border-radius:18px;padding:15px;margin-bottom:12px}.aiDirectorEyebrow{display:block;color:#087f6b;font-size:12px;font-weight:800;margin-bottom:7px}.aiDirectorRecommend h3{font-size:17px;margin:0 0 7px}.aiDirectorRecommend p{font-size:14px;line-height:1.6;color:#50635f;margin:0}.aiDirectorReason{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #e7eeec}.aiDirectorReason.is-open{display:block}.aiDirectorActions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.aiDirectorActions button{border:0;border-radius:11px;padding:9px 12px;font-weight:750}.aiDirectorReasonBtn{background:#eaf4f1;color:#08705f}.aiDirectorAccept{background:#087f6b;color:#fff}.aiDirectorLater{background:#edf1f0;color:#40534f}.aiDirectorStatus{font-size:12px;color:#687a76;margin-top:8px;min-height:1.2em}
-      .aiDirectorMessage{background:#fff;border:1px solid rgba(8,127,107,.15);border-radius:16px;padding:14px;line-height:1.65;color:#20332f;margin-bottom:12px}.aiDirectorMessage h3{font-size:15px;margin:0 0 5px}.aiDirectorMessage p{margin:0 0 10px}.aiDirectorMessage p:last-child{margin-bottom:0}.aiDirectorMessage ul{margin:0 0 10px;padding-left:20px}
+      .aiDirectorSection{background:#fff;border:1px solid rgba(8,127,107,.14);border-radius:16px;padding:14px;margin-bottom:12px}.aiDirectorSectionTitle{font-size:14px;margin:0 0 10px;color:#24433e}.aiDirectorMetrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.aiDirectorMetrics div{background:#f1f6f4;border-radius:11px;padding:9px}.aiDirectorMetrics span{display:block;font-size:11px;color:#687a76;margin-bottom:4px}.aiDirectorMetrics strong{display:block;font-size:14px;color:#20332f}.aiDirectorDate,.aiDirectorTargetStatus{margin:9px 1px 0;font-size:12px;color:#60716d}.aiDirectorTargetMetrics{grid-template-columns:repeat(2,1fr)}.aiDirectorEmpty{font-size:13px;color:#687a76}.aiDirectorMessage{background:#fff;border:1px solid rgba(8,127,107,.15);border-radius:16px;padding:14px;line-height:1.65;color:#20332f;margin-bottom:12px}.aiDirectorMessage h3{font-size:15px;margin:0 0 5px}.aiDirectorMessage p{margin:0 0 10px}.aiDirectorMessage p:last-child{margin-bottom:0}.aiDirectorMessage ul{margin:0 0 10px;padding-left:20px}
       .aiDirectorQuick{display:grid;grid-template-columns:1fr 1fr;gap:10px}.aiDirectorQuick button{border:1px solid rgba(8,127,107,.22);background:#fff;color:#086f5e;border-radius:14px;padding:13px 10px;font-weight:750;font-size:14px}
       .aiDirectorNote{font-size:12px;color:#60716d;margin:12px 2px 0;line-height:1.5}
+      @media(max-width:390px){.aiDirectorMetrics{grid-template-columns:repeat(2,1fr)}}
       @media(max-width:360px){.aiDirectorQuick{grid-template-columns:1fr}#aiDirectorFab{right:12px}}
     `;
     document.head.appendChild(style);
@@ -135,6 +170,8 @@
         <div class="aiDirectorActions"><button class="aiDirectorReasonBtn" type="button">理由を見る</button><button class="aiDirectorAccept" type="button">👍 採用する</button><button class="aiDirectorLater" type="button">あとで見る</button></div>
         <div id="aiDirectorStatus" class="aiDirectorStatus" aria-live="polite"></div>
       </section>
+      <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📅 昨日の振り返り</h3><div id="aiDirectorPreviousDay"></div></section>
+      <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📈 月目標ナビ</h3><div id="aiDirectorTargetNavigator"></div></section>
       <div id="aiDirectorMessage" class="aiDirectorMessage">相談項目を選んでください。</div>
       <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
       <p class="aiDirectorNote">端末内に保存されたデータだけを使用します。外部サーバーには送信しません。</p>
@@ -144,8 +181,10 @@
     const refresh=()=>{
       const m=metrics();currentRecommendation=recommendation(m);
       overlay.querySelector('#aiDirectorRecommendTitle').textContent=currentRecommendation.title;
-      overlay.querySelector('#aiDirectorRecommendSummary').textContent='今日、最初に意識する経営アクションです。';
+      overlay.querySelector('#aiDirectorRecommendSummary').textContent=currentRecommendation.summary||'今日、最初に意識する経営アクションです。';
       overlay.querySelector('#aiDirectorReason').textContent=currentRecommendation.detail;
+      overlay.querySelector('#aiDirectorPreviousDay').innerHTML=previousDayCard(m);
+      overlay.querySelector('#aiDirectorTargetNavigator').innerHTML=targetNavigator(m);
       overlay.querySelector('#aiDirectorReason').classList.remove('is-open');
       overlay.querySelector('.aiDirectorReasonBtn').textContent='理由を見る';
       const fb=readFeedback()[TODAY()];
