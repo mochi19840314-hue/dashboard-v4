@@ -65,7 +65,10 @@
     <label>健診件数<input id="checkups" type="number" inputmode="numeric" min="0"></label>
     <label>トリミング件数<input id="trimmings" type="number" inputmode="numeric" min="0"></label>
     <label>セカンドオピニオン件数<input id="secondOpinions" type="number" inputmode="numeric" min="0"></label>
-    <label class="wide">メモ<input id="note" type="text" maxlength="160" placeholder="例：手術2件／熱中症1件／Google広告初診／高額診療／看護師実習など"></label>
+    <label class="wide">メモ
+      <textarea id="note" class="daily-note" maxlength="500" rows="4" placeholder="例：手術2件／熱中症1件／Google広告から初診／高額診療あり／看護師実習初日"></textarea>
+      <small class="note-guide">数字だけでは分からない出来事を一言。AI月間レポートの分析に使います。</small>
+    </label>
     <div class="actions wide">
       <button id="saveEntry" class="primary">保存する</button>
       <button id="clearEntry">クリア</button>
@@ -182,6 +185,12 @@
   <article class="card report-section"><div class="report-section-title"><span>📈</span><div><h3>売上分析</h3><small>前月・目標との比較</small></div></div><p id="reportSalesAnalysis">データを集計しています。</p></article>
   <article class="card report-section"><div class="report-section-title"><span>💡</span><div><h3>支出分析</h3><small>注目する3項目のみ</small></div></div><div id="reportExpenseAnalysis" class="expense-analysis"></div></article>
   <div class="report-two-column"><article class="card report-section"><div class="report-section-title"><span>⭐</span><div><h3>良かった点</h3><small>最大3件</small></div></div><ul id="reportGoodPoints" class="report-list"></ul></article><article class="card report-section"><div class="report-section-title"><span>🔍</span><div><h3>改善点</h3><small>次の行動へ</small></div></div><ul id="reportImprovePoints" class="report-list"></ul></article></div>
+  <article class="card report-section report-memo-section">
+    <div class="report-section-title"><span>📝</span><div><h3>メモから見えた傾向</h3><small>日々の出来事をAI院長が整理</small></div></div>
+    <p id="reportMemoTrend">メモを分析しています。</p>
+    <div id="reportMemoTags" class="report-memo-tags"></div>
+    <div class="report-memo-excerpts"><strong>今月の主な記録</strong><ul id="reportMemoExcerpts" class="report-list"></ul></div>
+  </article>
   <article class="card report-section"><div class="report-section-title"><span>📚</span><div><h3>今月の学び</h3><small>自動案を自由に編集できます</small></div></div><textarea id="reportLearning" class="report-learning" maxlength="500" placeholder="今月の学びを記録"></textarea><div class="report-save-row"><small id="reportLearningStatus">未保存</small><button id="saveReportLearning" class="primary" type="button">保存する</button></div></article>
   <article class="card report-section"><div class="report-section-title"><span>🎯</span><div><h3>来月の重点目標</h3><small>自動提案</small></div></div><ul id="reportNextGoals" class="report-list"></ul></article>
   <article class="card report-summary"><span class="eyebrow">AI MONTHLY SUMMARY</span><h3>AI総評</h3><p id="reportSummary">データを集計しています。</p></article>
@@ -309,7 +318,7 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1004"></script>
-<script src="ai-director.js?v=1013"></script>
+<script src="app.js?v=1021"></script>
+<script src="ai-director.js?v=1021"></script>
 </body>
 </html>

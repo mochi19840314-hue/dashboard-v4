@@ -391,12 +391,55 @@ function reportScoreModel(s,prev,target,current){
   return {score,grade,phrase,status,comment,parts:{sales:salesScore,profit:profitScore,patients:patientsScore,unit:unitScore,expense:expenseScore,growth:growthScore},rate,prevRate,unit,prevUnit};
 }
 function setKpiTone(id,tone){const el=$(id)?.closest('article');if(el){el.classList.remove('kpi-good','kpi-watch','kpi-neutral');el.classList.add(tone)}}
+
+const NOTE_THEMES=[
+  {key:"emergency",label:"救急・重症",words:["救急","緊急","重症","時間外","入院","ICU","熱中症","呼吸困難","ショック"]},
+  {key:"surgery",label:"手術・処置",words:["手術","オペ","避妊","去勢","抜歯","歯科","麻酔","処置"]},
+  {key:"new",label:"新患・集患",words:["新患","初診","Google","広告","口コミ","Instagram","インスタ","LINE","紹介"]},
+  {key:"highValue",label:"高額・検査",words:["高額","検査","エコー","レントゲン","CT","MRI","内視鏡","健診","スクリーニング"]},
+  {key:"staff",label:"スタッフ・採用",words:["看護師","スタッフ","実習","採用","応募","面接","教育","研修","トリマー"]},
+  {key:"capacity",label:"混雑・診療負荷",words:["満枠","混雑","待ち","忙しい","キャパ","残業","予約外","飛び込み"]},
+  {key:"seasonal",label:"季節性症例",words:["熱中症","皮膚","外耳炎","下痢","嘔吐","フィラリア","ノミ","ダニ","ワクチン"]},
+  {key:"issue",label:"トラブル・課題",words:["クレーム","トラブル","ミス","キャンセル","機会損失","故障","不具合"]}
+];
+function cleanNoteText(v){return String(v||"").replace(/\s+/g," ").trim()}
+function analyzeMonthNotes(entries){
+  const rows=entries.map(e=>({date:e.date,note:cleanNoteText(e.note)})).filter(x=>x.note);
+  const themes=NOTE_THEMES.map(t=>({...t,count:rows.reduce((n,r)=>n+(t.words.some(w=>r.note.toLowerCase().includes(w.toLowerCase()))?1:0),0)})).filter(t=>t.count>0).sort((a,b)=>b.count-a.count);
+  const top=themes.slice(0,3),excerpts=rows.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  let trend="今月はメモの記録がありません。日々の出来事を一言残すと、数値と診療内容を結び付けて振り返れます。";
+  if(rows.length){
+    if(top.length){
+      const labels=top.map(t=>`${t.label}${t.count}日`).join("、");
+      trend=`${rows.length}日分のメモを分析しました。特に「${labels}」の記録が目立ちます。数値の変化と重ねて、売上や診療負荷の背景を確認できます。`;
+    }else{
+      trend=`${rows.length}日分のメモがあります。特定テーマへの偏りは小さく、日々の診療内容が幅広く記録されています。`;
+    }
+  }
+  return {rows,themes,top,excerpts,trend};
+}
+function renderReportMemoAnalysis(entries){
+  const a=analyzeMonthNotes(entries),trendEl=$("reportMemoTrend"),tagsEl=$("reportMemoTags"),listEl=$("reportMemoExcerpts");
+  if(trendEl)trendEl.textContent=a.trend;
+  if(tagsEl){
+    tagsEl.textContent="";
+    a.top.forEach(t=>{const span=document.createElement("span");span.textContent=`${t.label} ${t.count}`;tagsEl.appendChild(span)});
+  }
+  if(listEl){
+    listEl.textContent="";
+    const items=a.excerpts.length?a.excerpts:[{date:"",note:"メモが蓄積されると、ここに今月の主な記録が表示されます。"}];
+    items.forEach(x=>{const li=document.createElement("li");li.textContent=x.date?`${x.date.slice(5).replace("-","/")}　${x.note}`:x.note;listEl.appendChild(li)});
+  }
+  return a;
+}
+
 function renderMonthlyReport(){
   if(!$("reportMonthPicker"))return;
   const m=reportMonth(),s=monthSummary(m),prev=monthSummary(monthShift(m,-1)),cfg=data.settings[m]||{},target=Number(cfg.target)||MONTHLY_TARGET,profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0,progress=target?s.sales/target*100:0;
   $("reportSales").textContent=yen(s.sales);$("reportProgress").textContent=pct(progress);$("reportProfit").textContent=yen(profit);$("reportProfitRate").textContent=pct(rate);$("reportPatients").textContent=`${s.patients}件`;$("reportUnit").textContent=yen(unit);$("reportNew").textContent=`${s.newPatients}件`;$("reportClinical").textContent=`${s.surgeries}件 / ${s.checkups}件`;
   const current=m===monthNow(),days=s.entries.length;$("reportStatus").textContent=current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
   const model=reportScoreModel(s,prev,target,current);
+  const memoAnalysis=renderReportMemoAnalysis(s.entries);
   $("reportPhrase").textContent=`「${model.phrase}」`;$("reportGrade").textContent=model.grade;$("reportScore").textContent=model.score;$("reportScoreStatus").textContent=model.status;$("reportScoreComment").textContent=model.comment;$("reportScoreRing").style.setProperty('--report-score',model.score);
   $("reportScoreSales").textContent=model.parts.sales;$("reportScoreProfit").textContent=model.parts.profit;$("reportScorePatients").textContent=model.parts.patients;$("reportScoreUnit").textContent=model.parts.unit;$("reportScoreExpense").textContent=model.parts.expense;$("reportScoreGrowth").textContent=model.parts.growth;
   setKpiTone('reportSales',progress>=100?'kpi-good':progress>=85?'kpi-watch':'kpi-neutral');setKpiTone('reportProfitRate',rate>=30?'kpi-good':rate>=20?'kpi-watch':'kpi-neutral');setKpiTone('reportPatients',prev.patients&&s.patients>=prev.patients?'kpi-good':'kpi-neutral');setKpiTone('reportUnit',model.prevUnit&&unit>=model.prevUnit?'kpi-good':'kpi-neutral');
@@ -409,7 +452,7 @@ function renderMonthlyReport(){
   $("reportGoodPoints").innerHTML=(good.slice(0,3).length?good.slice(0,3):["データが増えると良かった点を表示します"]).map(x=>`<li>${x}</li>`).join("");$("reportImprovePoints").innerHTML=(improve.slice(0,3).length?improve.slice(0,3):["現時点で大きな改善警告はありません"]).map(x=>`<li>${x}</li>`).join("");
   const autoLearning=rate>=30?"支出が増えても、売上と利益率を同時に確認することで、成長投資か利益圧迫かを判断できた月でした。":"売上だけでなく支出構成を確認し、利益率を保つことの重要性が見えた月でした。";const saved=data.monthlyReports?.[m]?.learningText;$("reportLearning").value=saved||autoLearning;$("reportLearningStatus").textContent=saved?"保存済み":"自動案";
   const goals=[];goals.push(`月間売上${yen(target)}以上`);goals.push("利益率30%以上を維持");if(s.checkups<10)goals.push("健診10件以上");else if(unit)goals.push(`客単価${yen(Math.round(unit/1000)*1000)}以上を維持`);$("reportNextGoals").innerHTML=goals.slice(0,3).map(x=>`<li>${x}</li>`).join("");
-  const condition=progress>=100&&rate>=30?"売上と利益の両面で好調":"改善余地を確認しながら前進";$("reportSummary").textContent=`${monthLabel(m)}は「${condition}」な月です。${driver}が売上を支え、利益率は${pct(rate)}でした。支出では人件費・薬品医療材料費・カード決済手数料の3項目に絞って変化を確認し、来月は売上目標と利益率を両立させることが重点です。`;
+  const condition=progress>=100&&rate>=30?"売上と利益の両面で好調":"改善余地を確認しながら前進",memoContext=memoAnalysis.top.length?` 日々のメモでは${memoAnalysis.top.map(x=>x.label).join("・")}の記録が目立ち、数値変化の背景として注目されます。`:"";$("reportSummary").textContent=`${monthLabel(m)}は「${condition}」な月です。${driver}が売上を支え、利益率は${pct(rate)}でした。${memoContext}支出では人件費・薬品医療材料費・カード決済手数料の3項目に絞って変化を確認し、来月は売上目標と利益率を両立させることが重点です。`;
 }
 function saveReportLearning(){const m=reportMonth();data.monthlyReports={...(data.monthlyReports||{}),[m]:{...(data.monthlyReports?.[m]||{}),learningText:$("reportLearning").value.trim(),updatedAt:new Date().toISOString()}};save();$("reportLearningStatus").textContent="保存済み";toast(`${monthLabel(m)}の学びを保存しました`)}
 function moveReportMonth(delta){const [y,m]=reportMonth().split("-").map(Number),d=new Date(y,m-1+delta,1);$("reportMonthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;renderMonthlyReport()}
