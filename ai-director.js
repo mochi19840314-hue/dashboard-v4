@@ -107,6 +107,24 @@
         m.balance?`現預金 ${yen(m.balance)}・借入差引 ${yen(m.netAssets)}`:'口座残高は未入力です。'
       ],strong?'同水準を3か月維持し、頭金・保険・維持費を含む月額で最終判断しましょう。':possible?'利益150万円前後を3か月維持できれば、検討しやすくなります。':'設備投資後の資金余力を優先し、利益率20%以上の安定を待ちましょう。');
     }
+    if(kind==='glb'){
+      if(!m.expense)return block('まだ判断できません。','支出が未入力のため、毎月の余力を計算できません。','総支出と口座残高を入力してください。');
+      const strong=m.profit>=1200000&&m.margin>=22&&m.netAssets>=2500000;
+      const possible=m.profit>=800000&&m.margin>=18;
+      return block(strong?'GLBはリースなら前向きに検討できます。':possible?'GLBは条件付きで検討可能です。':'今はもう少し待つのが安全です。',[
+        `月間利益 ${yen(m.profit)}・利益率 ${pct(m.margin)}`,
+        m.balance?`現預金 ${yen(m.balance)}・借入差引 ${yen(m.netAssets)}`:'口座残高は未入力です。'
+      ],strong?'月額リース料・保険・維持費の合計を、月間利益の10%以内に収めて最終判断しましょう。':possible?'まず月間利益120万円以上を3か月維持し、手元資金を減らさないリース条件を確認しましょう。':'利益率20%前後と月間利益100万円以上が安定してから再検討しましょう。');
+    }
+    if(kind==='endoscopy'){
+      if(!m.expense)return block('まだ判断できません。','総支出が未入力のため、設備投資後の余力を評価できません。','総支出と口座残高を入力してください。');
+      const strong=m.profit>=1500000&&m.margin>=25&&m.netAssets>=4000000;
+      const possible=m.profit>=1000000&&m.margin>=20&&m.netAssets>=2500000;
+      return block(strong?'内視鏡は導入を前向きに検討できます。':possible?'条件を確認すれば検討可能です。':'今は資金を厚くする時期です。',[
+        `月間利益 ${yen(m.profit)}・利益率 ${pct(m.margin)}`,
+        m.balance?`現預金 ${yen(m.balance)}・借入差引 ${yen(m.netAssets)}`:'口座残高は未入力です。'
+      ],strong?'本体価格・保守費・洗浄設備を含む総額を確認し、想定症例数で3〜4年以内に回収できるか試算しましょう。':possible?'中古機も含めて総額を確認し、月間利益150万円以上を3か月維持してから契約するのが安全です。':'ICU導入後の資金余力を優先し、現預金と利益の安定を待ちましょう。');
+    }
     return block('経営データを確認します。','売上・来院数・支出をもとに判断します。','相談項目を選んでください。');
   };
   const recommendation=m=>{
@@ -173,7 +191,7 @@
       <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📅 昨日の振り返り</h3><div id="aiDirectorPreviousDay"></div></section>
       <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📈 月目標ナビ</h3><div id="aiDirectorTargetNavigator"></div></section>
       <div id="aiDirectorMessage" class="aiDirectorMessage">相談項目を選んでください。</div>
-      <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
+      <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="glb">🚙 GLBなら？</button><button type="button" data-ai-question="endoscopy">🔬 内視鏡導入できる？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
       <p class="aiDirectorNote">端末内に保存されたデータだけを使用します。外部サーバーには送信しません。</p>
     </div>`;
     document.body.append(fab,overlay);
@@ -201,26 +219,3 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build,{once:true});else build();
 })();
-
-
-// Investment AI helpers
-window.getInvestmentAdvice=function(){
- const m=metrics();
- function glb(){
-  if(m.margin>=20 && m.profit>=1000000 && m.balance>=2000000){
-    return {title:"🚙 GLBなら？",text:`🟢 検討可能です。\n利益率 ${m.margin.toFixed(1)}%、月間利益 ${yen(m.profit)}。現状ならGLBは現実的です。`};
-  }else if(m.margin>=15){
-    return {title:"🚙 GLBなら？",text:`🟡 条件付きで検討。利益率 ${m.margin.toFixed(1)}%。もう少し利益を積み上げると安心です。`};
-  }
-  return {title:"🚙 GLBなら？",text:`🔴 もう少し待ちましょう。まずは利益率20%を目標にしましょう。`};
- }
- function scope(){
-  if(m.margin>=20 && m.balance>=3000000){
-    return {title:"🔬 内視鏡導入",text:"🟢 導入を検討できるタイミングです。"};
-  }else if(m.margin>=15){
-    return {title:"🔬 内視鏡導入",text:"🟡 あと少しです。利益率20%を維持できれば検討しましょう。"};
-  }
-  return {title:"🔬 内視鏡導入",text:"🔴 まずは運転資金を優先しましょう。"};
- }
- return {glb:glb(),scope:scope()};
-};
