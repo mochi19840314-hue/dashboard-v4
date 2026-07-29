@@ -2,6 +2,7 @@
   'use strict';
   const STORAGE_KEY='keitaDashboardSimpleV1';
   const FEEDBACK_KEY='keitaAIDirectorFeedbackV1';
+  const BRIEFING_OPEN_KEY='keitaAIDirectorBriefingOpenedV1';
   const TODAY=()=>{
     const d=new Date();
     return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
@@ -144,6 +145,37 @@
     if(m.forecast<m.target&&m.remaining>0)return {id:'target-gap',title:'月目標に向けて案内漏れを減らしましょう',summary:`目標まであと${yen(m.targetGap)}です。`,detail:`残り${m.remaining}営業日は、1日${yen(m.requiredDaily)}が目安です。再診・健診・予防の案内を丁寧に行いましょう。`};
     return {id:'followup',title:'既存患者のフォローを優先',summary:'今月の流れは大きく崩れていません。',detail:'新しい施策を増やすより、再診・予防・検査フォローの案内漏れを減らすのがおすすめです。'};
   };
+
+  const briefingFor=m=>{
+    const now=new Date();
+    const hour=now.getHours();
+    const greeting=hour<11?'おはようございます。':hour<17?'こんにちは。':'お疲れさまです。';
+    const e=m.previousEntry;
+    const rate=m.target?m.sales/m.target*100:0;
+    let recap='直近診療日のデータはまだありません。';
+    if(e){
+      const sales=Number(e.sales)||0,patients=Number(e.patients)||0;
+      recap=`直近診療日は${patients}件・${yen(sales)}の診療でした。`;
+    }
+    let situation='今月の記録を入力すると、目標までの状況を確認できます。';
+    if(m.sales){
+      if(rate>=100)situation=`今月は目標を達成しています。達成率は${pct(rate)}です。`;
+      else if(m.forecast>=m.target)situation=`今月は目標達成ペースです。目標まであと${yen(m.targetGap)}です。`;
+      else if(m.remaining)situation=`目標まであと${yen(m.targetGap)}、残り${m.remaining}営業日です。`;
+      else situation=`今月の達成率は${pct(rate)}です。`;
+    }
+    const rec=recommendation(m);
+    let closing='今日も一件一件の診療を大切に進めましょう。';
+    if(rate>=100)closing='目標達成後は、無理に件数を追わず診療品質を大切にしましょう。';
+    else if(m.previousEntry&&Number(m.previousEntry.patients)>=25)closing='昨日の負荷が高かったため、スタッフへの声掛けも忘れずに。';
+    else if(m.remaining&&m.requiredDaily>0&&m.requiredDaily<=m.dailyTarget)closing='十分に届く水準です。焦らず案内漏れを減らしましょう。';
+    return {greeting,recap,situation,focus:rec.title,closing};
+  };
+  const briefingCard=m=>{
+    const b=briefingFor(m);
+    return `<section class="aiDirectorBriefing" aria-labelledby="aiDirectorBriefingTitle"><span class="aiDirectorBriefingEyebrow">☀️ 朝のブリーフィング</span><h3 id="aiDirectorBriefingTitle">${b.greeting}</h3><p>${b.recap}</p><p>${b.situation}</p><div class="aiDirectorBriefingFocus"><span>今日の重点</span><strong>${b.focus}</strong></div><p class="aiDirectorBriefingClosing">${b.closing}</p></section>`;
+  };
+
   const previousDayCard=m=>{
     const e=m.previousEntry;
     if(!e)return '<div class="aiDirectorEmpty">前日の入力データがありません。</div>';
@@ -163,7 +195,7 @@
       #aiDirectorOverlay.is-open{display:flex}
       #aiDirectorPanel{width:min(100%,520px);max-height:84vh;overflow:auto;background:#f7faf9;border-radius:24px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.28);box-sizing:border-box}
       .aiDirectorHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.aiDirectorHead h2{margin:0;font-size:21px}.aiDirectorClose{width:38px;height:38px;border:0;border-radius:50%;font-size:24px;background:#e6efec;color:#24433e}
-      .aiDirectorRecommend{background:#fff;border:1px solid rgba(8,127,107,.18);border-radius:18px;padding:15px;margin-bottom:12px}.aiDirectorEyebrow{display:block;color:#087f6b;font-size:12px;font-weight:800;margin-bottom:7px}.aiDirectorRecommend h3{font-size:17px;margin:0 0 7px}.aiDirectorRecommend p{font-size:14px;line-height:1.6;color:#50635f;margin:0}.aiDirectorReason{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #e7eeec}.aiDirectorReason.is-open{display:block}.aiDirectorActions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.aiDirectorActions button{border:0;border-radius:11px;padding:9px 12px;font-weight:750}.aiDirectorReasonBtn{background:#eaf4f1;color:#08705f}.aiDirectorAccept{background:#087f6b;color:#fff}.aiDirectorLater{background:#edf1f0;color:#40534f}.aiDirectorStatus{font-size:12px;color:#687a76;margin-top:8px;min-height:1.2em}
+      .aiDirectorBriefing{background:linear-gradient(180deg,#ffffff,#f3f9f7);border:1px solid rgba(8,127,107,.18);border-radius:18px;padding:15px;margin-bottom:12px}.aiDirectorBriefingEyebrow{display:block;color:#087f6b;font-size:12px;font-weight:800;margin-bottom:7px}.aiDirectorBriefing h3{font-size:19px;margin:0 0 9px;color:#20332f}.aiDirectorBriefing p{font-size:14px;line-height:1.6;color:#50635f;margin:0 0 7px}.aiDirectorBriefingFocus{margin:12px 0 9px;padding:11px 12px;background:#eaf5f1;border-radius:12px}.aiDirectorBriefingFocus span{display:block;font-size:11px;color:#60716d;margin-bottom:4px}.aiDirectorBriefingFocus strong{font-size:15px;color:#08705f}.aiDirectorBriefingClosing{font-weight:700;color:#24433e!important;margin-bottom:0!important}.aiDirectorRecommend{background:#fff;border:1px solid rgba(8,127,107,.18);border-radius:18px;padding:15px;margin-bottom:12px}.aiDirectorEyebrow{display:block;color:#087f6b;font-size:12px;font-weight:800;margin-bottom:7px}.aiDirectorRecommend h3{font-size:17px;margin:0 0 7px}.aiDirectorRecommend p{font-size:14px;line-height:1.6;color:#50635f;margin:0}.aiDirectorReason{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #e7eeec}.aiDirectorReason.is-open{display:block}.aiDirectorActions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.aiDirectorActions button{border:0;border-radius:11px;padding:9px 12px;font-weight:750}.aiDirectorReasonBtn{background:#eaf4f1;color:#08705f}.aiDirectorAccept{background:#087f6b;color:#fff}.aiDirectorLater{background:#edf1f0;color:#40534f}.aiDirectorStatus{font-size:12px;color:#687a76;margin-top:8px;min-height:1.2em}
       .aiDirectorSection{background:#fff;border:1px solid rgba(8,127,107,.14);border-radius:16px;padding:14px;margin-bottom:12px}.aiDirectorSectionTitle{font-size:14px;margin:0 0 10px;color:#24433e}.aiDirectorMetrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.aiDirectorMetrics div{background:#f1f6f4;border-radius:11px;padding:9px}.aiDirectorMetrics span{display:block;font-size:11px;color:#687a76;margin-bottom:4px}.aiDirectorMetrics strong{display:block;font-size:14px;color:#20332f}.aiDirectorDate,.aiDirectorTargetStatus{margin:9px 1px 0;font-size:12px;color:#60716d}.aiDirectorTargetMetrics{grid-template-columns:repeat(2,1fr)}.aiDirectorEmpty{font-size:13px;color:#687a76}.aiDirectorMessage{background:#fff;border:1px solid rgba(8,127,107,.15);border-radius:16px;padding:14px;line-height:1.65;color:#20332f;margin-bottom:12px}.aiDirectorMessage h3{font-size:15px;margin:0 0 5px}.aiDirectorMessage p{margin:0 0 10px}.aiDirectorMessage p:last-child{margin-bottom:0}.aiDirectorMessage ul{margin:0 0 10px;padding-left:20px}
       .aiDirectorQuick{display:grid;grid-template-columns:1fr 1fr;gap:10px}.aiDirectorQuick button{border:1px solid rgba(8,127,107,.22);background:#fff;color:#086f5e;border-radius:14px;padding:13px 10px;font-weight:750;font-size:14px}
       .aiDirectorNote{font-size:12px;color:#60716d;margin:12px 2px 0;line-height:1.5}
@@ -182,6 +214,7 @@
     overlay.id='aiDirectorOverlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','aiDirectorTitle');
     overlay.innerHTML=`<div id="aiDirectorPanel">
       <div class="aiDirectorHead"><h2 id="aiDirectorTitle">💬 AI院長</h2><button class="aiDirectorClose" type="button" aria-label="閉じる">×</button></div>
+      <div id="aiDirectorBriefing"></div>
       <section class="aiDirectorRecommend" aria-labelledby="aiDirectorRecommendTitle">
         <span class="aiDirectorEyebrow">💡 今日のおすすめ</span><h3 id="aiDirectorRecommendTitle"></h3><p id="aiDirectorRecommendSummary"></p>
         <div id="aiDirectorReason" class="aiDirectorReason"></div>
@@ -198,6 +231,7 @@
     let currentRecommendation=null;
     const refresh=()=>{
       const m=metrics();currentRecommendation=recommendation(m);
+      overlay.querySelector('#aiDirectorBriefing').innerHTML=briefingCard(m);
       overlay.querySelector('#aiDirectorRecommendTitle').textContent=currentRecommendation.title;
       overlay.querySelector('#aiDirectorRecommendSummary').textContent=currentRecommendation.summary||'今日、最初に意識する経営アクションです。';
       overlay.querySelector('#aiDirectorReason').textContent=currentRecommendation.detail;
@@ -215,6 +249,16 @@
     const record=action=>{if(!currentRecommendation)return;const all=readFeedback();all[TODAY()]={id:currentRecommendation.id,action,at:new Date().toISOString()};saveFeedback(all);overlay.querySelector('#aiDirectorStatus').textContent=action==='accepted'?'おすすめを採用しました。':'あとで確認する設定にしました。';};
     overlay.querySelector('.aiDirectorAccept').addEventListener('click',()=>record('accepted'));overlay.querySelector('.aiDirectorLater').addEventListener('click',()=>record('later'));
     overlay.querySelectorAll('[data-ai-question]').forEach(btn=>btn.addEventListener('click',()=>{overlay.querySelector('#aiDirectorMessage').innerHTML=renderBlock(answer(btn.dataset.aiQuestion,metrics()));}));
+    const maybeOpenMorningBriefing=()=>{
+      const hour=new Date().getHours();
+      if(hour<5||hour>=12)return;
+      let opened='';
+      try{opened=localStorage.getItem(BRIEFING_OPEN_KEY)||'';}catch{}
+      if(opened===TODAY())return;
+      try{localStorage.setItem(BRIEFING_OPEN_KEY,TODAY());}catch{}
+      setTimeout(open,450);
+    };
+    maybeOpenMorningBriefing();
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('is-open'))close();});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build,{once:true});else build();
