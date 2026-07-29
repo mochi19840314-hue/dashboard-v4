@@ -201,3 +201,26 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build,{once:true});else build();
 })();
+
+
+// Investment AI helpers
+window.getInvestmentAdvice=function(){
+ const m=metrics();
+ function glb(){
+  if(m.margin>=20 && m.profit>=1000000 && m.balance>=2000000){
+    return {title:"🚙 GLBなら？",text:`🟢 検討可能です。\n利益率 ${m.margin.toFixed(1)}%、月間利益 ${yen(m.profit)}。現状ならGLBは現実的です。`};
+  }else if(m.margin>=15){
+    return {title:"🚙 GLBなら？",text:`🟡 条件付きで検討。利益率 ${m.margin.toFixed(1)}%。もう少し利益を積み上げると安心です。`};
+  }
+  return {title:"🚙 GLBなら？",text:`🔴 もう少し待ちましょう。まずは利益率20%を目標にしましょう。`};
+ }
+ function scope(){
+  if(m.margin>=20 && m.balance>=3000000){
+    return {title:"🔬 内視鏡導入",text:"🟢 導入を検討できるタイミングです。"};
+  }else if(m.margin>=15){
+    return {title:"🔬 内視鏡導入",text:"🟡 あと少しです。利益率20%を維持できれば検討しましょう。"};
+  }
+  return {title:"🔬 内視鏡導入",text:"🔴 まずは運転資金を優先しましょう。"};
+ }
+ return {glb:glb(),scope:scope()};
+};
