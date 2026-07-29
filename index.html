@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1004">
+<link rel="stylesheet" href="style.css?v=1022">
 </head>
 <body>
 <header class="app-header">
@@ -42,6 +42,25 @@
     </summary>
     <div id="aiBrief">おはようございます。今日の入力をお待ちしています。</div>
   </details>
+  <article class="card management-insight-card" id="managementInsightCard" aria-labelledby="managementInsightTitle">
+    <div class="management-insight-heading">
+      <div><span class="eyebrow">AI MANAGEMENT INSIGHT</span><h2 id="managementInsightTitle">AI経営インサイト</h2></div>
+      <span class="insight-period" id="insightPeriod">今月</span>
+    </div>
+    <div class="management-insight-overview">
+      <div class="insight-score-ring" id="insightScoreRing" style="--insight-score:0"><div><small>AI経営スコア</small><strong id="insightScore">—</strong><span>/100</span></div></div>
+      <div class="insight-kpis">
+        <div><span>目標達成率</span><strong id="insightProgress">0%</strong></div>
+        <div><span>利益率評価</span><strong id="insightProfitRating">データ待ち</strong><small id="insightProfitRate">利益率 —</small></div>
+        <div><span>必要日商</span><strong id="insightNeedDaily">0円</strong></div>
+        <div><span>前営業日との比較</span><strong id="insightPrevious">比較データなし</strong><small id="insightPreviousDetail">売上実績をもとに比較</small></div>
+      </div>
+    </div>
+    <div class="management-insight-guidance">
+      <section><span class="insight-label">✓ 今日やること</span><p id="insightTodo">今日の記録を入力して、月間の進捗を確認しましょう。</p></section>
+      <section><span class="insight-label">✦ AI院長コメント</span><p id="insightComment">既存の売上・支出・診療データから、経営状況をまとめます。</p></section>
+    </div>
+  </article>
   <h2>今日の入力</h2>
   <div class="card weather-card" id="weatherCard" aria-live="polite">
     <div class="weather-icon" id="weatherIcon">⌁</div>
@@ -318,7 +337,7 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1021"></script>
+<script src="app.js?v=1022"></script>
 <script src="ai-director.js?v=1021"></script>
 </body>
 </html>
