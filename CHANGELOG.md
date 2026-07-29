@@ -59,3 +59,6 @@
 - 直近診療日の結果から「今日のおすすめ」を自動生成
 - 月目標までの残額・残り営業日・必要日商・達成率を自動表示
 - 既存LocalStorageキーと保存形式は変更なし
+
+
+v10.1.4 placeholder update: Morning briefing enhancements planned.
