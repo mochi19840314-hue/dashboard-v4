@@ -108,7 +108,7 @@ function renderKagemusha(){
  const values=currentKagemushaData(),mood=values.mood;
  [card,button].forEach(element=>{if(element){element.dataset.mood=mood;if(element===button)element.className=`kagemusha-button kagemusha-character kagemusha--${mood}`}});
  const emoji=$("kagemushaEmoji"),symbols={normal:"🥷",smile:"🥷✨",thinking:"🥷💭",warning:"🥷⚠️"};if(emoji)emoji.textContent=symbols[mood];
- if(USE_KAGEMUSHA_IMAGES&&button){let image=$("kagemushaImage");if(!image){image=document.createElement("img");image.id="kagemushaImage";image.alt="";image.hidden=true;button.insertBefore(image,emoji)}image.onload=()=>{image.hidden=false;if(emoji)emoji.hidden=true};image.onerror=()=>{image.hidden=true;if(emoji)emoji.hidden=false};image.src=`assets/kagemusha-${mood}.png`}
+ if(USE_KAGEMUSHA_IMAGES&&button){let image=$("kagemushaImage");if(!image){image=document.createElement("img");image.id="kagemushaImage";image.alt="";image.hidden=true;button.insertBefore(image,emoji)}image.onload=()=>{image.hidden=false;if(emoji)emoji.hidden=true};image.onerror=()=>{image.hidden=true;if(emoji)emoji.hidden=false};image.src=mood==="thinking"?"影武者思考.jpeg":`kagemusha-${mood}.jpeg`}
  const monthEnd=isLastDayOfMonth(values.date);
  if(heading)heading.textContent=monthEnd?"🥷 影武者 月間総括":"影武者のひとこと";
  if(greeting){greeting.hidden=monthEnd;greeting.textContent=monthEnd?"":generateKagemushaGreeting({hour:new Date().getHours(),...values,hasProfitData:values.profitRate!==null})}
