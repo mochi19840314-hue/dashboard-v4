@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v10.4.0</title>
+<title>院長 Dashboard Pro v10.4.1</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1040">
+<link rel="stylesheet" href="style.css?v=1041">
 </head>
 <body>
 <header class="app-header">
@@ -265,8 +265,17 @@
   </div>
   <div class="card chart-card apple-chart-card">
     <div class="chart-heading"><div><span class="eyebrow">ANNUAL PERFORMANCE</span><h3>月別売上・利益</h3><p>入力済みの月までを表示します。</p></div><div class="chart-legend"><span><i class="legend-sales"></i>売上</span><span><i class="legend-profit"></i>利益</span><span><i class="legend-target"></i>目標</span></div></div>
-    <div id="chartDetail" class="chart-detail" aria-live="polite"><span>月をタップすると詳細を表示</span></div>
     <div id="yearChart" class="year-chart" role="img" aria-label="月別売上と利益の折れ線グラフ"></div>
+    <section id="chartDetail" class="chart-detail" aria-live="polite" aria-labelledby="chartDetailMonth">
+      <h4 id="chartDetailMonth">月別詳細</h4>
+      <dl class="chart-detail-grid">
+        <div><dt>売上</dt><dd id="chartDetailSales">—</dd></div><div><dt>支出</dt><dd id="chartDetailExpense">—</dd></div>
+        <div><dt>利益</dt><dd id="chartDetailProfit">—</dd></div><div><dt>利益率</dt><dd id="chartDetailRate">—</dd></div>
+        <div><dt>来院件数</dt><dd id="chartDetailPatients">—</dd></div><div><dt>客単価</dt><dd id="chartDetailUnit">—</dd></div>
+        <div><dt>手術件数</dt><dd id="chartDetailSurgeries">—</dd></div><div><dt>新患数</dt><dd id="chartDetailNewPatients">—</dd></div>
+      </dl>
+      <div class="chart-detail-ai"><span>AIコメント</span><p id="chartDetailAi">月を選択すると、入力済みデータからコメントを表示します。</p></div>
+    </section>
   </div>
 </section>
 
@@ -346,7 +355,7 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1040"></script>
+<script src="app.js?v=1041"></script>
 <script src="ai-director.js?v=1021"></script>
 </body>
 </html>
