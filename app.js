@@ -69,34 +69,41 @@ async function fetchWeather(force=false){
   }
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
+function getAIDirectorStatus({sales,progress,left,need,pace}){return !sales?"入力待ち":progress>=100||(left&&pace>=need)?"順調":left&&pace>=need*.8?"要確認":"要改善"}
 function generateAIDirectorComment({date,sales,target,progress,margin,left,need,pace,todaySales,todayPatients,unit}){
   const variantFor=templates=>{
-    const seed=[...date].reduce((hash,char)=>(hash*31+char.charCodeAt(0))>>>0,2166136261);
-    return templates[seed%templates.length];
+    const dayNumber=Math.floor(Date.parse(`${date}T00:00:00Z`)/86400000);
+    return templates[((dayNumber%templates.length)+templates.length)%templates.length];
   };
   if(!sales)return variantFor([
-    ["現在は、今月の経営状況を判断するための売上データがまだありません。",`月目標は${yen(target)}で、残営業日は${left}日です。`,"今日は売上と来院件数を記録し、判断できる状態をつくりましょう。"],
-    ["今月は、経営ペースを評価するための記録を待っている段階です。",`目標${yen(target)}に対して、残りの営業日は${left}日あります。`,"まず今日の売上と来院件数を残し、月の流れを見えるようにしましょう。"],
-    ["現在は売上実績が未入力のため、目標ペースをまだ判定できません。",`今月の目標は${yen(target)}、残営業日は${left}日です。`,"今日は診療後に売上と来院件数を入力し、明日からの判断材料を整えましょう。"],
-    ["経営分析はデータがそろう前のスタート地点です。",`月目標${yen(target)}まで、営業日はあと${left}日あります。`,"今日の実績を記録することから始め、無理のないペースを確認しましょう。"]
+    ["院長、今月はまだ売上の記録がないようです。",`目標は${yen(target)}、残りは${left}営業日です。`,"まだ焦らなくて大丈夫です。","今日の診療後に、売上と来院件数を入力しましょう。"],
+    ["院長、まずは今月の実績を待っている状態です。",`月目標${yen(target)}に対し、営業日はあと${left}日あります。`,"ここから記録を始めれば十分です。","今日は売上と来院件数だけでも残しておきましょう。"],
+    ["院長、今は売上が未入力なので、ペースをまだ判断できません。",`今月の目標は${yen(target)}、残営業日は${left}日です。`,"数字が入れば、すぐに流れが見えてきます。","まず今日の実績を記録して、明日の判断材料を作りましょう。"],
+    ["院長、今月の状況はまだ白紙です。",`目標${yen(target)}まで、残り${left}営業日です。`,"最初の一日を入れれば、そこから一緒に見ていけます。","今日の終わりに、売上と来院件数を記録しましょう。"]
   ]);
   if(progress>=100)return variantFor([
-    ["現在は月目標を達成しており、安定した状況です。",`今月売上${yen(sales)}、利益率${pct(margin)}で、必要日商は${yen(0)}です。`,`今日は${todayPatients?`来院${todayPatients}件・客単価${yen(unit)}の診療品質`:"来院ごとの診療品質"}を優先しましょう。`],
-    ["今月はすでに目標をクリアし、余裕を持って運営できる状況です。",`売上は${yen(sales)}、利益率は${pct(margin)}で、追加の必要日商はありません。`,`今日は${todayPatients?`${todayPatients}件の来院対応`:"一件一件の対応"}を丁寧に進め、良い状態を維持しましょう。`],
-    ["現在の売上は月目標を上回り、順調に推移しています。",`今月売上${yen(sales)}と利益率${pct(margin)}から、必要日商は${yen(0)}です。`,`客単価${yen(unit)}も確認しつつ、今日は無理な上積みより診療品質を大切にしましょう。`],
-    ["目標達成後の安定運営に入っています。",`今月は${yen(sales)}を積み上げ、利益率は${pct(margin)}、残営業日は${left}日です。`,"今日は予約とスタッフ負荷のバランスを見ながら、診療品質を保ちましょう。"]
+    ["院長、今月はもう目標を達成できています。",`売上は${yen(sales)}、利益率は${pct(margin)}、必要日商は0円です。`,"しっかり積み上げられましたね。","今日は無理に上積みせず、一件一件の診療品質を優先しましょう。"],
+    ["院長、目標を超えて安定した運営に入っています。",`今月売上は${yen(sales)}で、利益率${pct(margin)}、残り${left}営業日です。`,"今の流れなら安心して進められます。","今日は予約の偏りとスタッフの負荷を一度確認しましょう。"],
+    ["院長、今月の売上は目標をしっかり上回っています。",`実績${yen(sales)}、利益率${pct(margin)}で、追加の必要日商はありません。`,"ここまでの運営が数字に表れていますね。",`今日は${todayPatients?`${todayPatients}件の来院対応`:"目の前の診療"}を丁寧に進めましょう。`],
+    ["院長、今月は余裕を持って目標クリアです。",`売上${yen(sales)}、客単価${yen(unit)}、必要日商は0円です。`,"良い状態を作れています。","今日は診療品質を保ちながら、明日以降の予約状況を整えましょう。"]
   ]);
   if(left&&pace>=need)return variantFor([
-    ["現在は目標ペースを維持しています。",`今月売上${yen(sales)}に対し、残り${left}営業日の必要日商は${yen(need)}です。`,`今日は${todaySales?`売上${yen(todaySales)}と客単価${yen(unit)}を確認しつつ、`:""}無理な上積みより診療品質を意識しましょう。`],
-    ["今月は目標に届く流れを保てています。",`売上${yen(sales)}を積み上げ、必要日商は残り${left}日で${yen(need)}です。`,`今日は${todayPatients?`来院${todayPatients}件への対応`:"一件一件の診療"}を丁寧に行い、今のペースを維持しましょう。`],
-    ["現在の進捗は、月目標に対して順調です。",`今月売上は${yen(sales)}で、残営業日に必要な平均売上は${yen(need)}です。`,`客単価${yen(unit)}を確認しながら、今日は必要な診療を着実に積み上げましょう。`],
-    ["経営ペースは大きく崩れず、安定して進んでいます。",`残り${left}営業日で必要日商${yen(need)}に対し、現在の日商ペースは${yen(pace)}です。`,"今日は数字を追いすぎず、案内漏れの防止と診療品質を意識しましょう。"]
+    ["院長、今月は目標に届くペースで進んでいます。",`売上${yen(sales)}、残り${left}営業日の必要日商は${yen(need)}です。`,"今の積み上げなら順調です。","今日は数字を追いすぎず、診療品質を大切にしましょう。"],
+    ["院長、今のところ月目標への流れは良好です。",`現在の日商ペース${yen(pace)}に対し、必要日商は${yen(need)}です。`,"このまま落ち着いて進めば大丈夫です。","今日は案内漏れがないかだけ確認して、今のペースを保ちましょう。"],
+    ["院長、今月は大きく崩れず順調に進んでいます。",`今月売上${yen(sales)}に対し、残り${left}日で一日${yen(need)}が目安です。`,"無理のないラインにいますね。",`今日は${todayPatients?`${todayPatients}件の来院対応`:"一件一件の診療"}を丁寧に進めましょう。`],
+    ["院長、目標に向けた積み上げはうまくいっています。",`売上は${yen(sales)}、必要日商${yen(need)}に対し、現在のペースは${yen(pace)}です。`,"しっかり目安を上回れています。","今日は予約とスタッフ負荷のバランスを見ておきましょう。"]
+  ]);
+  if(left&&pace>=need*.8)return variantFor([
+    ["院長、今月は目標までもう一歩のところです。",`売上${yen(sales)}で、必要日商${yen(need)}に対し現在のペースは${yen(pace)}です。`,"少しだけ意識すれば届く差です。","今日は必要な検査や再診の案内漏れを確認しましょう。"],
+    ["院長、目標ペースにほぼ並んでいます。",`残り${left}営業日で必要な日商は${yen(need)}、現在は${yen(pace)}ペースです。`,"大きな心配はありませんが、今日は要確認です。","予約表を見て、必要なフォローを1つ確実に進めましょう。"],
+    ["院長、今月の進み方は悪くありませんが、あと少し上積みが必要です。",`今月売上${yen(sales)}、残り${left}日の必要日商は${yen(need)}です。`,"焦って数字だけを追うほどの差ではありません。","今日は来院予定の内容を見直し、診療上必要な提案を丁寧に行いましょう。"],
+    ["院長、今は目標ラインの少し手前にいます。",`現在の日商ペースは${yen(pace)}、ここから必要なのは${yen(need)}です。`,"十分に取り戻せる範囲です。",`今日は${todayPatients?`来院${todayPatients}件の診療内容`:"予約内容"}を確認し、案内漏れを防ぎましょう。`]
   ]);
   return variantFor([
-    ["現在は月目標に向けて、日々の積み上げを意識したい状況です。",`今月売上${yen(sales)}、目標${yen(target)}に対し、残り${left}営業日の必要日商は${yen(need)}です。`,`今日は来院${todayPatients}件と客単価${yen(unit)}を確認し、必要な診療の案内漏れを減らしましょう。`],
-    ["今月は目標ペースへ戻すため、今日の動きを丁寧に整えたい状況です。",`売上${yen(sales)}に対し、残り${left}日で1日${yen(need)}が目安です。`,`今日は${todayPatients}件の来院内容を振り返り、必要な検査や再診案内を確実に行いましょう。`],
-    ["現在は月目標に対して、少しペースを意識する必要があります。",`目標${yen(target)}と今月売上${yen(sales)}の差から、必要日商は${yen(need)}です。`,`客単価${yen(unit)}だけを追わず、今日は診療上必要な提案の漏れを確認しましょう。`],
-    ["目標達成には、残り営業日の着実な積み上げが大切な局面です。",`今月売上は${yen(sales)}で、残り${left}営業日に必要な平均は${yen(need)}です。`,`今日は来院${todayPatients}件を起点に、診療品質を保ちながら必要な対応を積み上げましょう。`]
+    ["院長、今月は目標ペースから少し離れています。",`売上${yen(sales)}に対し、残り${left}営業日の必要日商は${yen(need)}です。`,"厳しい局面ですが、できることを一つずつ進めましょう。","今日は必要な検査と再診案内の漏れを確認してください。"],
+    ["院長、今は目標に戻すための手入れが必要です。",`今月売上${yen(sales)}、必要日商${yen(need)}に対し、現在は${yen(pace)}ペースです。`,"焦りますよね。ただ、数字だけを追う必要はありません。","まず今日の予約を見直し、診療上必要な提案を確実に行いましょう。"],
+    ["院長、今月の積み上げはやや遅れています。",`目標${yen(target)}に対し売上は${yen(sales)}、残り${left}日で一日${yen(need)}が目安です。`,"今は状況を正面から見て、小さく立て直すところです。",`今日は${todayPatients?`${todayPatients}件の来院内容`:"予約内容"}を確認し、必要なフォローを一つ進めましょう。`],
+    ["院長、目標達成には残り営業日の積み上げが大切な状況です。",`売上${yen(sales)}、残営業日${left}日、必要日商は${yen(need)}です。`,"楽な数字ではありませんが、まず今日に集中しましょう。","今日は診療品質を守りながら、案内漏れと次回予約を確認しましょう。"]
   ]);
 }
 function renderPhase1Director(){
@@ -104,7 +111,9 @@ function renderPhase1Director(){
   const today=iso(),todayEntry=s.entries.find(e=>e.date===today)||{},todaySales=Number(todayEntry.sales)||0,todayPatients=Number(todayEntry.patients)||0,unit=todayPatients?todaySales/todayPatients:0;
   const elapsed=operatingEntries(s.entries.filter(e=>e.date<=today)).length,totalDays=Number(set.businessDays)||expectedBusinessDays(m),left=Math.max(0,totalDays-elapsed),need=Math.max(0,target-s.sales)/Math.max(1,left);
   const progress=target?s.sales/target*100:0,profit=s.sales-s.expense,margin=s.sales?profit/s.sales*100:0,pace=elapsed?s.sales/elapsed:0;
+  const status=getAIDirectorStatus({sales:s.sales,progress,left,need,pace});
   const comment=generateAIDirectorComment({date:today,sales:s.sales,target,progress,margin,left,need,pace,todaySales,todayPatients,unit});
+  $("phase1DirectorStatus").textContent=status;$("phase1DirectorStatus").dataset.status=status;
   $("phase1DirectorComment").innerHTML=comment.map(line=>`<p>${line}</p>`).join("");
   $("phase1MonthSales").textContent=yen(s.sales);$("phase1NeedDaily").textContent=yen(left?need:0);$("phase1DaysLeft").textContent=`${left}日`;
 }
