@@ -35,32 +35,6 @@
 <main id="pageContainer">
 
 <section id="today" class="page active">
-  <details class="card" id="aiBriefCard" open>
-    <summary>
-      <span>🤖 今日のAI院長コメント</span>
-      <small>タップして開閉</small>
-    </summary>
-    <div id="aiBrief">おはようございます。今日の入力をお待ちしています。</div>
-  </details>
-  <article class="card management-insight-card" id="managementInsightCard" aria-labelledby="managementInsightTitle">
-    <div class="management-insight-heading">
-      <div><span class="eyebrow">AI MANAGEMENT INSIGHT</span><h2 id="managementInsightTitle">AI経営インサイト</h2></div>
-      <span class="insight-period" id="insightPeriod">今月</span>
-    </div>
-    <div class="management-insight-overview">
-      <div class="insight-score-ring" id="insightScoreRing" style="--insight-score:0"><div><small>AI経営スコア</small><strong id="insightScore">—</strong><span>/100</span></div></div>
-      <div class="insight-kpis">
-        <div><span>目標達成率</span><strong id="insightProgress">0%</strong></div>
-        <div><span>利益率評価</span><strong id="insightProfitRating">データ待ち</strong><small id="insightProfitRate">利益率 —</small></div>
-        <div><span>必要日商</span><strong id="insightNeedDaily">0円</strong></div>
-        <div><span>前営業日との比較</span><strong id="insightPrevious">比較データなし</strong><small id="insightPreviousDetail">売上実績をもとに比較</small></div>
-      </div>
-    </div>
-    <div class="management-insight-guidance">
-      <section><span class="insight-label">✓ 今日やること</span><p id="insightTodo">今日の記録を入力して、月間の進捗を確認しましょう。</p></section>
-      <section><span class="insight-label">✦ AI院長コメント</span><p id="insightComment">既存の売上・支出・診療データから、経営状況をまとめます。</p></section>
-    </div>
-  </article>
   <h2>今日の入力</h2>
   <div class="card weather-card" id="weatherCard" aria-live="polite">
     <div class="weather-icon" id="weatherIcon">⌁</div>
@@ -84,7 +58,7 @@
     <label>健診件数<input id="checkups" type="number" inputmode="numeric" min="0"></label>
     <label>トリミング件数<input id="trimmings" type="number" inputmode="numeric" min="0"></label>
     <label>セカンドオピニオン件数<input id="secondOpinions" type="number" inputmode="numeric" min="0"></label>
-    <label class="wide">メモ
+    <label class="wide">今日のメモ
       <textarea id="note" class="daily-note" maxlength="500" rows="4" placeholder="例：手術2件／熱中症1件／Google広告から初診／高額診療あり／看護師実習初日"></textarea>
       <small class="note-guide">数字だけでは分からない出来事を一言。AI月間レポートの分析に使います。</small>
     </label>
@@ -93,6 +67,49 @@
       <button id="clearEntry">クリア</button>
     </div>
   </div>
+  <article class="card phase1-director-card" id="phase1DirectorCard" aria-labelledby="phase1DirectorTitle">
+    <div class="phase1-director-heading">
+      <div><span class="eyebrow">MANAGEMENT ANALYSIS</span><h3 id="phase1DirectorTitle">💬 AI院長</h3></div>
+      <span id="phase1DirectorStatus" aria-live="polite">入力待ち</span>
+    </div>
+    <div id="phase1DirectorComment" class="phase1-director-comment" aria-live="polite">
+      <p>今日はまだ十分なデータが入力されていません。</p>
+      <p>売上と来院件数を入力すると、今月の状況を確認できます。</p>
+      <p>記録がそろってからで大丈夫です。</p>
+      <p>今日の診療が終わったら、一緒に振り返りましょう。</p>
+    </div>
+    <div class="phase1-director-kpis" aria-label="分析に使用した主な数値">
+      <span>今月売上<strong id="phase1MonthSales">0円</strong></span>
+      <span>必要日商<strong id="phase1NeedDaily">0円</strong></span>
+      <span>残営業日<strong id="phase1DaysLeft">0日</strong></span>
+    </div>
+  </article>
+  <details class="card" id="aiBriefCard" open>
+    <summary>
+      <span>😊 AIコメント</span>
+      <small>タップして開閉</small>
+    </summary>
+    <div id="aiBrief">おはようございます。今日の入力をお待ちしています。</div>
+  </details>
+  <article class="card management-insight-card" id="managementInsightCard" aria-labelledby="managementInsightTitle">
+    <div class="management-insight-heading">
+      <div><span class="eyebrow">AI MANAGEMENT INSIGHT</span><h2 id="managementInsightTitle">AI経営インサイト</h2></div>
+      <span class="insight-period" id="insightPeriod">今月</span>
+    </div>
+    <div class="management-insight-overview">
+      <div class="insight-score-ring" id="insightScoreRing" style="--insight-score:0"><div><small>AI経営スコア</small><strong id="insightScore">—</strong><span>/100</span></div></div>
+      <div class="insight-kpis">
+        <div><span>目標達成率</span><strong id="insightProgress">0%</strong></div>
+        <div><span>利益率評価</span><strong id="insightProfitRating">データ待ち</strong><small id="insightProfitRate">利益率 —</small></div>
+        <div><span>必要日商</span><strong id="insightNeedDaily">0円</strong></div>
+        <div><span>前営業日との比較</span><strong id="insightPrevious">比較データなし</strong><small id="insightPreviousDetail">売上実績をもとに比較</small></div>
+      </div>
+    </div>
+    <div class="management-insight-guidance">
+      <section><span class="insight-label">✓ 今日やること</span><p id="insightTodo">今日の記録を入力して、月間の進捗を確認しましょう。</p></section>
+      <section><span class="insight-label">✦ AI院長コメント</span><p id="insightComment">既存の売上・支出・診療データから、経営状況をまとめます。</p></section>
+    </div>
+  </article>
   <div class="metrics">
     <article><span>売上</span><strong id="todaySales">0円</strong></article>
     <article><span>来院件数</span><strong id="todayPatients">0件</strong></article>

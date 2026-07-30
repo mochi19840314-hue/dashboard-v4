@@ -69,6 +69,63 @@ async function fetchWeather(force=false){
   }
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
+function generateAIDirectorComment({date,sales,target,progress,margin,hasExpense,left,need,pace,todaySales,todayPatients,unit}){
+  const dayNumber=Math.floor(new Date(`${date}T00:00:00Z`).getTime()/86400000);
+  const variantFor=(templates,offset=0)=>templates[(dayNumber+offset)%templates.length];
+  const closings=[
+    "今日は診療品質を大切にしましょう。",
+    "焦らず、一件一件進めていきましょう。",
+    "先生らしい丁寧な診療を続けていきましょう。",
+    "今日は目の前の診療に集中していきましょう。",
+    "まずは今日の診療を気持ちよく進めましょう。"
+  ];
+  const result=(status,templates)=>({status,lines:[...variantFor(templates),variantFor(closings,2)]});
+  if(!sales)return result("入力待ち",[
+    ["今日はまだ十分なデータが入力されていません。","売上と来院件数を入力すると、今月の状況を確認できます。","記録がそろってからで大丈夫です。","今日の診療が終わったら、一緒に振り返りましょう。"],
+    ["今日はこれから実績を記録する段階ですね。","売上と来院件数が入ると、目標までのペースが分かります。","まずはいつも通り診療を進めてください。","一区切りついたところで今日の数字を残しましょう。"],
+    ["今月の状況は、今日の入力を待っているところです。","売上と来院件数から、必要なペースを確認できます。","急いで判断する必要はありません。","診療後に記録して、次の動きを一緒に考えましょう。"],
+    ["まだ判断に必要な実績がそろっていません。","今日の売上と来院件数が分かれば、月目標との距離を確認できます。","今は診療を優先して問題ありません。","記録が終わったら、落ち着いて振り返りましょう。"],
+    ["先生、今日はまだ数字が入っていないようです。","売上と来院件数がそろえば、今月のペースを一緒に確認できます。","入力は診療が落ち着いてからで大丈夫です。","記録できたところで、今日の流れを振り返りましょう。"]
+  ]);
+  if(hasExpense&&margin<20)return result("要改善",[
+    ["売上は積み上がっていますが、利益率は少し低めです。",`今月の売上は${yen(sales)}、利益率は${pct(margin)}です。`,"診療の流れそのものは悪くありません。","件数を追うより、必要な検査や処置を丁寧に積み上げましょう。"],
+    ["今月は利益面を少し意識したい状況です。",`売上${yen(sales)}に対して、利益率は${pct(margin)}です。`,"売上を確保できている点は良いですね。","今日は診療品質を保ちながら、必要な提案の漏れを確認しましょう。"],
+    ["売上の流れはありますが、利益率には改善の余地があります。",`現在の利益率は${pct(margin)}、今月売上は${yen(sales)}です。`,"焦って来院件数を増やす必要はありません。","一件ごとの検査・処置を丁寧に確認していきましょう。"],
+    ["今月は売上よりも利益の残り方を確認したいところです。",`売上は${yen(sales)}、利益率は${pct(margin)}となっています。`,"ここから整えていける範囲です。","今日は必要な診療を着実に行い、案内漏れを減らしましょう。"],
+    ["先生、売上は確保できていますが、利益の残り方を少し見ておきましょう。",`今月の利益率は${pct(margin)}です。`,"診療を急いで増やすより、内容を整えることで改善できます。","必要な検査や処置を、一件ずつ丁寧に確認していきましょう。"]
+  ]);
+  if(progress>=100)return result("順調",[
+    ["今月はすでに目標を達成しています。",`売上は${yen(sales)}${hasExpense?`、利益率は${pct(margin)}`:""}です。`,"とても良い流れを維持できています。","今日は焦って件数を追わず、一件一件丁寧に診療していきましょう。"],
+    ["今月の売上目標はクリアできています。",`現在の売上は${yen(sales)}で、目標${yen(target)}を上回りました。`,"日々の積み上げがしっかり結果につながっています。","今日は予約とスタッフの負荷を見ながら、診療品質を優先しましょう。"],
+    ["目標達成済みで、今月は順調に進んでいます。",`売上は${yen(sales)}${hasExpense?`、利益率は${pct(margin)}`:""}です。`,"安定した運営ができていますね。","無理な上積みはせず、今日も丁寧な診療を続けましょう。"],
+    ["今月は目標を達成し、余裕を持てる状況です。",`月目標${yen(target)}に対して、売上は${yen(sales)}です。`,"良い状態を保てています。","今日は一件ごとの対応とスタッフの負荷に目を配りましょう。"],
+    ["先生、今月の目標はもう達成できています。",`現在の売上は${yen(sales)}で、目標をしっかり上回っています。`,"ここまでの積み上げ、とても良いですね。","今日は余裕を活かして、患者さんとスタッフに目を配りましょう。"]
+  ]);
+  if(left&&pace>=need)return result("順調",[
+    ["今月は目標に向けて順調なペースです。",`今月売上は${yen(sales)}、必要日商は${yen(need)}です。`,"良い状態を維持できています。","今日も診療品質を大切にしていきましょう。"],
+    ["今月の進捗は、目標に届くペースを保てています。",`残り${left}営業日で、1日あたり${yen(need)}が目安です。`,"無理のない範囲で進められていますね。","今日は案内漏れを防ぎ、一件一件丁寧に対応しましょう。"],
+    ["今月は大きく崩れず、順調に進んでいます。",`現在の日商ペースは${yen(pace)}、必要日商は${yen(need)}です。`,"これまでの積み上げが効いています。","数字を追いすぎず、今日も必要な診療を着実に進めましょう。"],
+    ["目標に向けた流れは良好です。",`${todaySales?`今日の売上は${yen(todaySales)}、`:""}今月売上は${yen(sales)}です。`,"今のペースを保てれば十分です。","客単価だけに偏らず、診療品質を大切にしましょう。"],
+    ["先生、今月は無理のないペースで進められています。",`今月売上は${yen(sales)}で、1日の目安は${yen(need)}です。`,"今の取り組みがきちんと数字につながっています。","午後も普段通り、必要な診療を丁寧に進めましょう。"]
+  ]);
+  return result("要確認",[
+    ["今月は目標ペースを少し下回っています。",`残り${left}営業日を考えると、1日の目安は${yen(need)}です。`,"まだ十分に挽回できる範囲です。","必要な検査や処置を丁寧に提案していきましょう。"],
+    ["今月は少しペースを意識したい状況です。",`売上${yen(sales)}に対して、必要日商は${yen(need)}です。`,"焦って件数を増やす段階ではありません。","今日は必要な診療の案内漏れを減らしましょう。"],
+    ["目標までは、もう少し日々の積み上げが必要です。",`残り${left}営業日で、1日${yen(need)}が目安になります。`,"丁寧に進めれば取り戻せる範囲です。","来院内容を確認し、必要な検査や再診をご案内しましょう。"],
+    ["今月の進捗は目標ペースをやや下回っています。",`今月売上は${yen(sales)}、残りの必要日商は${yen(need)}です。`,"診療の質を崩してまで追う必要はありません。","一件ごとの必要な処置を着実に積み上げましょう。"],
+    ["先生、今月は少しだけペースを整えたいところです。",`残り${left}営業日は、1日${yen(need)}がひとつの目安です。`,"まだ落ち着いて取り戻せる範囲なので、心配しすぎなくて大丈夫です。","必要な検査や再診の案内を、今日から丁寧に積み上げましょう。"]
+  ]);
+}
+function renderAIDirector(){
+  const m=monthNow(),s=monthSummary(m),set=data.settings[m]||{target:MONTHLY_TARGET,businessDays:expectedBusinessDays(m)},target=Number(set.target)||MONTHLY_TARGET;
+  const today=iso(),todayEntry=s.entries.find(e=>e.date===today)||{},todaySales=Number(todayEntry.sales)||0,todayPatients=Number(todayEntry.patients)||0,unit=todayPatients?todaySales/todayPatients:0;
+  const elapsed=operatingEntries(s.entries.filter(e=>e.date<=today)).length,totalDays=Number(set.businessDays)||expectedBusinessDays(m),left=Math.max(0,totalDays-elapsed),need=Math.max(0,target-s.sales)/Math.max(1,left);
+  const progress=target?s.sales/target*100:0,profit=s.sales-s.expense,margin=s.sales?profit/s.sales*100:0,pace=elapsed?s.sales/elapsed:0;
+  const comment=generateAIDirectorComment({date:today,sales:s.sales,target,progress,margin,hasExpense:s.expense>0,left,need,pace,todaySales,todayPatients,unit});
+  $("phase1DirectorComment").innerHTML=comment.lines.map(line=>`<p>${line}</p>`).join("");
+  $("phase1DirectorStatus").textContent=comment.status;$("phase1DirectorStatus").dataset.status=comment.status;
+  $("phase1MonthSales").textContent=yen(s.sales);$("phase1NeedDaily").textContent=yen(left?need:0);$("phase1DaysLeft").textContent=`${left}日`;
+}
 function renderManagementInsight(){
   const m=monthNow(),s=monthSummary(m),set=data.settings[m]||{target:MONTHLY_TARGET,businessDays:expectedBusinessDays(m)};
   const target=Number(set.target)||MONTHLY_TARGET,progress=target?s.sales/target*100:0,profit=s.sales-s.expense,profitRate=s.sales?profit/s.sales*100:0;
@@ -607,7 +664,7 @@ function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator"
 function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:0,behavior:"smooth"})}
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
-function render(){recent();month();renderMonthlyReport();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();renderAIBrief();renderManagementInsight();$("memoText").value=data.memo||""}
+function render(){recent();month();renderMonthlyReport();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();renderAIBrief();renderAIDirector();renderManagementInsight();$("memoText").value=data.memo||""}
 function setupAIBriefFold(){const card=$("aiBriefCard");if(!card)return;const saved=localStorage.getItem("v9AlphaBriefOpen");if(saved!==null)card.open=saved==="1";card.addEventListener("toggle",()=>localStorage.setItem("v9AlphaBriefOpen",card.open?"1":"0"))}
 function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();$("reportMonthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("reportMonthPicker").onchange=renderMonthlyReport;$("reportPrevMonth").onclick=()=>moveReportMonth(-1);$("reportNextMonth").onclick=()=>moveReportMonth(1);$("saveReportLearning").onclick=saveReportLearning;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();setupAIBriefFold();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
