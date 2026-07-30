@@ -413,6 +413,54 @@ function reportScoreModel(s,prev,target,current){
 }
 function setKpiTone(id,tone){const el=$(id)?.closest('article');if(el){el.classList.remove('kpi-good','kpi-watch','kpi-neutral');el.classList.add(tone)}}
 
+function advisorModel(s,prev,target,memoAnalysis){
+  const profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,progress=target?s.sales/target*100:0;
+  const unit=s.patients?s.sales/s.patients:0,prevUnit=prev.patients?prev.sales/prev.patients:0;
+  const salesChange=prev.sales?(s.sales-prev.sales)/prev.sales*100:null;
+  const patientChange=prev.patients?(s.patients-prev.patients)/prev.patients*100:null;
+  const unitChange=prevUnit?(unit-prevUnit)/prevUnit*100:null;
+  const used=new Set();
+  const take=(items,fallback)=>{const item=items.find(x=>!used.has(x.key));if(!item)return fallback;used.add(item.key);return item.text};
+  const discovery=[];
+  if(salesChange!==null&&patientChange!==null&&unitChange!==null){
+    if(salesChange>=0&&patientChange<0&&unitChange>0)discovery.push({key:"patients",text:"売上は客単価に支えられています。今の診療価値は保てていますが、来院数の減少を単価だけで補う経営にはしないことが大切です。"});
+    if(salesChange<0&&patientChange>=0&&unitChange<0)discovery.push({key:"unit",text:"患者さんは来ているのに売上が伸びていません。件数不足より、検査・処置を含む診療内容が適切に提案できているかを見る月です。"});
+    if(salesChange>0&&patientChange>0&&unitChange>0)discovery.push({key:"growth",text:"来院数と客単価がそろって伸びています。無理な値上げや一部の高額診療に偏らない、再現性のある成長に近づいています。"});
+  }
+  if(s.sales&&s.expense&&salesChange!==null&&salesChange>0&&rate<30)discovery.push({key:"margin",text:"売上の伸びが、そのまま利益の伸びにはつながっていません。今月は『いくら売ったか』より『何が利益を残さなかったか』を見極めるべきです。"});
+  if(memoAnalysis.top[0])discovery.push({key:"memo-theme",text:`数字だけを見るより、院長メモで「${memoAnalysis.top[0].label}」が目立ったことに注目してください。今月の変化を説明する現場の手掛かりです。`});
+  if(prev.sales&&Math.abs(salesChange)<=3)discovery.push({key:"flat-sales",text:"売上は前月とほぼ同じです。安定と見るだけでなく、来院数や客単価の中身が入れ替わっていないかを確認する時期です。"});
+
+  const good=[];
+  if(progress>=100&&rate>=30)good.push({key:"target",text:"目標を達成しながら利益率も守れました。売上を追うだけで診療現場を疲弊させず、今の運営水準を標準にできる状態です。"});
+  if(rate>=35)good.push({key:"margin",text:"十分な利益を残せています。設備、人材、教育に投資できる余力をつくれたことが、今月いちばんの成果です。"});
+  if(prev.newPatients&&s.newPatients>prev.newPatients)good.push({key:"new-patients",text:"新患が増えています。将来の再診につながる入口が広がっており、今月だけでなく数か月先の経営にも効く良い動きです。"});
+  if(prev.surgeries&&s.surgeries>prev.surgeries)good.push({key:"surgery",text:"手術件数が伸びました。必要な治療を院内で完結できる力が、患者さんの信頼と病院の収益基盤の両方につながっています。"});
+  if(prev.patients&&s.patients>=prev.patients)good.push({key:"patients",text:"来院件数を前月以上に保てました。既存患者さんとの関係が維持できていることは、売上額以上に安定経営を支える成果です。"});
+
+  const caution=[];
+  if(s.sales&&rate<20)caution.push({key:"margin",text:"利益率が低く、忙しさの割に手元へ利益が残りにくい状態です。支出を一律に削る前に、増えた費目と診療内容の対応を確認してください。"});
+  if(patientChange!==null&&patientChange<=-10)caution.push({key:"patients",text:"来院数の落ち込みを見過ごさないでください。単月の季節要因で片づけず、再診漏れ、予約の取りづらさ、離脱の兆候を確認しましょう。"});
+  if(unitChange!==null&&unitChange<=-10)caution.push({key:"unit",text:"客単価が下がっています。安易な単価引き上げではなく、必要な検査や予防提案が忙しさの中で抜けていないかを確認してください。"});
+  if(progress<80&&s.sales)caution.push({key:"target",text:"目標との差が大きいままです。残り日数だけで無理に取り返そうとすると診療品質を崩します。まず不足の原因が来院数か客単価かを分けて考えましょう。"});
+  if(!s.expense)caution.push({key:"missing-expense",text:"支出が未入力のため、売上が残る経営かどうか判断できません。売上だけで好不調を決めず、月次の支出を確認してから意思決定してください。"});
+
+  const action=[];
+  if(prev.newPatients&&s.newPatients>prev.newPatients)action.push({key:"new-patients",text:"増えた新患が次の来院につながったか、翌月に再診率を確認しましょう。受付時の次回案内までを一つの流れとして整えてください。"});
+  if(s.checkups<10)action.push({key:"checkups",text:"来月は健診の案内対象を決め、会計時に声をかける運用を優先しましょう。全員に広く勧めるより、対象患者を確実に拾う方が続きます。"});
+  if(rate<30&&s.expense)action.push({key:"margin",text:"来月の最初に支出上位3項目を確認し、売上に連動した増加か、見直せる固定的な支出かを分けてください。削減額より判断の習慣を作りましょう。"});
+  if(patientChange!==null&&patientChange<0)action.push({key:"patients",text:"来月は来院が途切れている患者さんを一度洗い出し、必要な再診・予防の案内漏れをなくすことを優先しましょう。"});
+  if(unitChange!==null&&unitChange<0)action.push({key:"unit",text:"診察から検査・治療説明までの流れを一度振り返り、必要な提案を遠慮なく伝えられる共通手順をスタッフと確認しましょう。"});
+  if(progress>=100&&rate>=30)action.push({key:"target",text:"来月は売上の上積みより、予約の偏りとスタッフ負荷を確認してください。今の利益を守りながら診療品質を安定させることを優先しましょう。"});
+
+  return {
+    discovery:take(discovery,"今月は判断材料がまだ十分ではありません。まず日々の入力をそろえ、売上を来院数と客単価に分けて見るところから始めましょう。"),
+    good:take(good,"大きな成果を急いで決める段階ではありません。それでも記録を続けていることが、感覚ではなく数字で経営判断する土台になっています。"),
+    caution:take(caution,"今のところ強い警告はありません。ただし、好調な月ほど予約の偏りやスタッフの負荷が隠れやすいので、現場の無理がないか確認してください。"),
+    action:take(action,"来月は新しい施策を増やすより、売上・来院数・客単価・支出を同じ日に確認する月次レビューを定着させましょう。")
+  };
+}
+
 const NOTE_THEMES=[
   {key:"emergency",label:"救急・重症",words:["救急","緊急","重症","時間外","入院","ICU","熱中症","呼吸困難","ショック"]},
   {key:"surgery",label:"手術・処置",words:["手術","オペ","避妊","去勢","抜歯","歯科","麻酔","処置"]},
@@ -461,6 +509,7 @@ function renderMonthlyReport(){
   const current=m===monthNow(),days=s.entries.length;$("reportStatus").textContent=current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
   const model=reportScoreModel(s,prev,target,current);
   const memoAnalysis=renderReportMemoAnalysis(s.entries);
+  const advisor=advisorModel(s,prev,target,memoAnalysis);$("advisorDiscovery").textContent=advisor.discovery;$("advisorGood").textContent=advisor.good;$("advisorCaution").textContent=advisor.caution;$("advisorAction").textContent=advisor.action;
   $("reportPhrase").textContent=`「${model.phrase}」`;$("reportGrade").textContent=model.grade;$("reportScore").textContent=model.score;$("reportScoreStatus").textContent=model.status;$("reportScoreComment").textContent=model.comment;$("reportScoreRing").style.setProperty('--report-score',model.score);
   $("reportScoreSales").textContent=model.parts.sales;$("reportScoreProfit").textContent=model.parts.profit;$("reportScorePatients").textContent=model.parts.patients;$("reportScoreUnit").textContent=model.parts.unit;$("reportScoreExpense").textContent=model.parts.expense;$("reportScoreGrowth").textContent=model.parts.growth;
   setKpiTone('reportSales',progress>=100?'kpi-good':progress>=85?'kpi-watch':'kpi-neutral');setKpiTone('reportProfitRate',rate>=30?'kpi-good':rate>=20?'kpi-watch':'kpi-neutral');setKpiTone('reportPatients',prev.patients&&s.patients>=prev.patients?'kpi-good':'kpi-neutral');setKpiTone('reportUnit',model.prevUnit&&unit>=model.prevUnit?'kpi-good':'kpi-neutral');

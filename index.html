@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro V10.0.1</title>
+<title>院長 Dashboard Pro v10.4.0</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1022">
+<link rel="stylesheet" href="style.css?v=1040">
 </head>
 <body>
 <header class="app-header">
@@ -201,6 +201,15 @@
   <div class="report-kpis">
     <article><span>総売上</span><strong id="reportSales">0円</strong></article><article><span>目標達成率</span><strong id="reportProgress">0%</strong></article><article><span>月間利益</span><strong id="reportProfit">0円</strong></article><article><span>利益率</span><strong id="reportProfitRate">0%</strong></article><article><span>来院件数</span><strong id="reportPatients">0件</strong></article><article><span>客単価</span><strong id="reportUnit">0円</strong></article><article><span>新患数</span><strong id="reportNew">0件</strong></article><article><span>手術・健診</span><strong id="reportClinical">0件 / 0件</strong></article>
   </div>
+  <article class="card report-section ai-advisor-card">
+    <div class="report-section-title"><span>🧭</span><div><span class="eyebrow">AI MANAGEMENT ADVISOR</span><h3>AI経営アドバイザー</h3><small>数字を、次の経営判断へ</small></div></div>
+    <div class="ai-advisor-grid">
+      <section><span>今月の発見</span><p id="advisorDiscovery">データを分析しています。</p></section>
+      <section><span>良かったこと</span><p id="advisorGood">データを分析しています。</p></section>
+      <section><span>注意点</span><p id="advisorCaution">データを分析しています。</p></section>
+      <section><span>来月やること</span><p id="advisorAction">データを分析しています。</p></section>
+    </div>
+  </article>
   <article class="card report-section"><div class="report-section-title"><span>📈</span><div><h3>売上分析</h3><small>前月・目標との比較</small></div></div><p id="reportSalesAnalysis">データを集計しています。</p></article>
   <article class="card report-section"><div class="report-section-title"><span>💡</span><div><h3>支出分析</h3><small>注目する3項目のみ</small></div></div><div id="reportExpenseAnalysis" class="expense-analysis"></div></article>
   <div class="report-two-column"><article class="card report-section"><div class="report-section-title"><span>⭐</span><div><h3>良かった点</h3><small>最大3件</small></div></div><ul id="reportGoodPoints" class="report-list"></ul></article><article class="card report-section"><div class="report-section-title"><span>🔍</span><div><h3>改善点</h3><small>次の行動へ</small></div></div><ul id="reportImprovePoints" class="report-list"></ul></article></div>
@@ -337,7 +346,7 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1022"></script>
+<script src="app.js?v=1040"></script>
 <script src="ai-director.js?v=1021"></script>
 </body>
 </html>
