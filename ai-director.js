@@ -128,6 +128,31 @@
     }
     return block('経営データを確認します。','売上・来院数・支出をもとに判断します。','相談項目を選んでください。');
   };
+  const consultationAnswer=(message,m)=>{
+    const text=String(message||'').trim();
+    if(/疲れ|疲れた/.test(text))return block('今日も本当にお疲れさまでした。',[
+      m.previousEntry?`直近診療日は${Number(m.previousEntry.patients)||0}件・売上${yen(m.previousEntry.sales)}でした。`:'直近診療日のデータはまだありません。',
+      m.sales?`今月の売上は${yen(m.sales)}、来院は${m.patients.toLocaleString('ja-JP')}件です。`:'今月の診療データはまだ入力されていません。'
+    ],'数字を整えることより、まずは休息を優先してください。明日また一つずつ確認しましょう。');
+    if(/売上/.test(text))return answer('month',m);
+    if(/利益/.test(text))return answer('margin',m);
+    if(/不安/.test(text))return block('不安を一人で抱えなくて大丈夫です。',[
+      m.sales?`今月の売上は${yen(m.sales)}、目標達成率は${pct(m.target?m.sales/m.target*100:0)}です。`:'今月の売上データはまだありません。',
+      m.expense?`現在の利益は${yen(m.profit)}、利益率は${pct(m.margin)}です。`:'支出を入力すると、現在の利益と安全性を確認できます。'
+    ],m.forecast>=m.target?'今の診療品質を守りながら進めましょう。':'まず今日できる小さな改善を一つだけ選びましょう。');
+    if(/看護師|スタッフ/.test(text))return block('教育と人員配置は、段階的に整えるのがおすすめです。',[
+      m.personnelExpense?`現在の人件費は${yen(m.personnelExpense)}です。`:'人件費の内訳はまだ入力されていません。',
+      m.expense?`月間利益は${yen(m.profit)}、利益率は${pct(m.margin)}です。`:'総支出を入力すると、増員余力を判断できます。'
+    ],'業務を一つずつ標準化し、短い面談と教育チェックリストから始めましょう。採用判断は固定質問でも確認できます。');
+    if(/広告|新患/.test(text))return block('集客は、広告だけでなく来院後の定着まで一緒に見ましょう。',[
+      `今月の来院は${m.patients.toLocaleString('ja-JP')}件です。`,
+      m.sales?`来院1件あたりの売上目安は${yen(m.patients?m.clinicalSales/m.patients:0)}です。`:'売上データを入力すると、集客効果を詳しく確認できます。'
+    ],'広告媒体ごとの新患数を記録し、Googleマップ・口コミ・既存患者からの紹介を優先して改善しましょう。');
+    if(/GLC|車/i.test(text))return answer('glc',m);
+    return block('ご相談ありがとうございます。現在は試験版のため対応できる内容は限られていますが、今後さらに賢くなります。','「売上」「利益」「スタッフ」など、気になる言葉を含めて相談できます。','別の言葉でも相談してみてください。');
+  };
+  // 将来はこの関数の中をOpenAI API呼び出しに置き換える。
+  const requestConsultationResponse=async message=>consultationAnswer(message,metrics());
   const recommendation=m=>{
     const e=m.previousEntry;
     if(e){
@@ -198,6 +223,7 @@
       .aiDirectorBriefing{background:linear-gradient(180deg,#ffffff,#f3f9f7);border:1px solid rgba(8,127,107,.18);border-radius:18px;padding:15px;margin-bottom:12px}.aiDirectorBriefingEyebrow{display:block;color:#087f6b;font-size:12px;font-weight:800;margin-bottom:7px}.aiDirectorBriefing h3{font-size:19px;margin:0 0 9px;color:#20332f}.aiDirectorBriefing p{font-size:14px;line-height:1.6;color:#50635f;margin:0 0 7px}.aiDirectorBriefingFocus{margin:12px 0 9px;padding:11px 12px;background:#eaf5f1;border-radius:12px}.aiDirectorBriefingFocus span{display:block;font-size:11px;color:#60716d;margin-bottom:4px}.aiDirectorBriefingFocus strong{font-size:15px;color:#08705f}.aiDirectorBriefingClosing{font-weight:700;color:#24433e!important;margin-bottom:0!important}.aiDirectorRecommend{background:#fff;border:1px solid rgba(8,127,107,.18);border-radius:18px;padding:15px;margin-bottom:12px}.aiDirectorEyebrow{display:block;color:#087f6b;font-size:12px;font-weight:800;margin-bottom:7px}.aiDirectorRecommend h3{font-size:17px;margin:0 0 7px}.aiDirectorRecommend p{font-size:14px;line-height:1.6;color:#50635f;margin:0}.aiDirectorReason{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #e7eeec}.aiDirectorReason.is-open{display:block}.aiDirectorActions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.aiDirectorActions button{border:0;border-radius:11px;padding:9px 12px;font-weight:750}.aiDirectorReasonBtn{background:#eaf4f1;color:#08705f}.aiDirectorAccept{background:#087f6b;color:#fff}.aiDirectorLater{background:#edf1f0;color:#40534f}.aiDirectorStatus{font-size:12px;color:#687a76;margin-top:8px;min-height:1.2em}
       .aiDirectorSection{background:#fff;border:1px solid rgba(8,127,107,.14);border-radius:16px;padding:14px;margin-bottom:12px}.aiDirectorSectionTitle{font-size:14px;margin:0 0 10px;color:#24433e}.aiDirectorMetrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.aiDirectorMetrics div{background:#f1f6f4;border-radius:11px;padding:9px}.aiDirectorMetrics span{display:block;font-size:11px;color:#687a76;margin-bottom:4px}.aiDirectorMetrics strong{display:block;font-size:14px;color:#20332f}.aiDirectorDate,.aiDirectorTargetStatus{margin:9px 1px 0;font-size:12px;color:#60716d}.aiDirectorTargetMetrics{grid-template-columns:repeat(2,1fr)}.aiDirectorEmpty{font-size:13px;color:#687a76}.aiDirectorMessage{background:#fff;border:1px solid rgba(8,127,107,.15);border-radius:16px;padding:14px;line-height:1.65;color:#20332f;margin-bottom:12px}.aiDirectorMessage h3{font-size:15px;margin:0 0 5px}.aiDirectorMessage p{margin:0 0 10px}.aiDirectorMessage p:last-child{margin-bottom:0}.aiDirectorMessage ul{margin:0 0 10px;padding-left:20px}
       .aiDirectorQuick{display:grid;grid-template-columns:1fr 1fr;gap:10px}.aiDirectorQuick button{border:1px solid rgba(8,127,107,.22);background:#fff;color:#086f5e;border-radius:14px;padding:13px 10px;font-weight:750;font-size:14px}
+      .aiDirectorConsultation{border-top:1px solid #dce8e4;margin-top:16px;padding-top:16px}.aiDirectorConsultation h3{font-size:17px;color:#20332f;margin:0 0 11px}.aiDirectorConsultation label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.aiDirectorConsultation textarea{display:block;width:100%;min-height:92px;resize:vertical;box-sizing:border-box;border:1px solid rgba(8,127,107,.28);border-radius:14px;background:#fff;padding:12px;font:inherit;font-size:16px;line-height:1.5;color:#20332f}.aiDirectorConsultation textarea:focus{outline:3px solid rgba(8,127,107,.14);border-color:#087f6b}.aiDirectorConsultationSubmit{display:block;width:100%;border:0;border-radius:13px;margin-top:10px;padding:13px;background:#087f6b;color:#fff;font-size:15px;font-weight:800}.aiDirectorConsultationSubmit:disabled{opacity:.6}.aiDirectorConsultationAnswer{display:none;margin-top:12px}.aiDirectorConsultationAnswer.is-visible{display:block}
       .aiDirectorNote{font-size:12px;color:#60716d;margin:12px 2px 0;line-height:1.5}
       @media(max-width:390px){.aiDirectorMetrics{grid-template-columns:repeat(2,1fr)}}
       @media(max-width:360px){.aiDirectorQuick{grid-template-columns:1fr}#aiDirectorFab{right:12px}}
@@ -225,6 +251,11 @@
       <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📈 月目標ナビ</h3><div id="aiDirectorTargetNavigator"></div></section>
       <div id="aiDirectorMessage" class="aiDirectorMessage">相談項目を選んでください。</div>
       <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="glb">🚙 GLBなら？</button><button type="button" data-ai-question="endoscopy">🔬 内視鏡導入できる？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
+      <section class="aiDirectorConsultation" aria-labelledby="aiDirectorConsultationTitle">
+        <h3 id="aiDirectorConsultationTitle">👨‍⚕️ AI院長に相談（β）</h3>
+        <form id="aiDirectorConsultationForm"><label class="sr-only" for="aiDirectorConsultationInput">今日の出来事や相談</label><textarea id="aiDirectorConsultationInput" placeholder="今日の出来事や相談を書いてください" required></textarea><button class="aiDirectorConsultationSubmit" type="submit">相談する</button></form>
+        <div id="aiDirectorConsultationAnswer" class="aiDirectorMessage aiDirectorConsultationAnswer" aria-live="polite"></div>
+      </section>
       <p class="aiDirectorNote">端末内に保存されたデータだけを使用します。外部サーバーには送信しません。</p>
     </div>`;
     document.body.append(fab,overlay);
@@ -249,6 +280,18 @@
     const record=action=>{if(!currentRecommendation)return;const all=readFeedback();all[TODAY()]={id:currentRecommendation.id,action,at:new Date().toISOString()};saveFeedback(all);overlay.querySelector('#aiDirectorStatus').textContent=action==='accepted'?'おすすめを採用しました。':'あとで確認する設定にしました。';};
     overlay.querySelector('.aiDirectorAccept').addEventListener('click',()=>record('accepted'));overlay.querySelector('.aiDirectorLater').addEventListener('click',()=>record('later'));
     overlay.querySelectorAll('[data-ai-question]').forEach(btn=>btn.addEventListener('click',()=>{overlay.querySelector('#aiDirectorMessage').innerHTML=renderBlock(answer(btn.dataset.aiQuestion,metrics()));}));
+    overlay.querySelector('#aiDirectorConsultationForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const input=overlay.querySelector('#aiDirectorConsultationInput');
+      const output=overlay.querySelector('#aiDirectorConsultationAnswer');
+      const submit=e.currentTarget.querySelector('button[type="submit"]');
+      if(!input.value.trim()){input.focus();return;}
+      submit.disabled=true;submit.textContent='考えています…';
+      const response=await requestConsultationResponse(input.value);
+      output.innerHTML=renderBlock(response);output.classList.add('is-visible');
+      submit.disabled=false;submit.textContent='相談する';
+      output.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
     const maybeOpenMorningBriefing=()=>{
       const hour=new Date().getHours();
       if(hour<5||hour>=12)return;
