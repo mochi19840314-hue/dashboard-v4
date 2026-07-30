@@ -183,12 +183,19 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 @media(max-width:850px){.report-score-breakdown{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.report-score-main{grid-template-columns:1fr auto}.report-score-main>p{grid-column:1/-1}.report-score-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}.report-month-phrase{display:block}.report-month-phrase strong{display:block;text-align:left;margin-top:5px}.report-grade strong{font-size:46px}}
 
-/* v10.0.4 — interactive chart detail card */
+/* Annual chart detail card */
 .year-chart{position:relative;touch-action:manipulation}
-.chart-detail{transform-origin:center;will-change:opacity,transform}
-.chart-detail.detail-updating{animation:chartDetailChange .28s cubic-bezier(.2,.8,.2,1)}
-@keyframes chartDetailChange{0%{opacity:.36;transform:translateY(4px) scale(.985)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.chart-detail{display:block;min-width:0;min-height:0;margin:12px 6px 2px;padding:17px;border:1px solid rgba(20,60,65,.06);border-radius:18px;background:rgba(242,246,247,.88);color:var(--text);overflow:hidden;white-space:normal;transform-origin:center;will-change:opacity}
+.chart-detail h4{margin:0 0 13px;font-size:18px;letter-spacing:-.3px}
+.chart-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0}
+.chart-detail-grid div{min-width:0;padding:11px;border-radius:13px;background:rgba(255,255,255,.86)}
+.chart-detail-grid dt{color:var(--muted);font-size:11px;font-weight:800}.chart-detail-grid dd{margin:5px 0 0;font-size:15px;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.chart-detail-ai{margin-top:11px;padding:13px 14px;border-radius:14px;background:linear-gradient(145deg,#e8f7f5,#f3f7fb)}
+.chart-detail-ai span{display:block;color:var(--pd);font-size:11px;font-weight:900;letter-spacing:.04em}.chart-detail-ai p{margin:6px 0 0;color:var(--muted);font-size:13px;font-weight:700;line-height:1.65}
+.chart-detail.detail-updating{animation:chartDetailChange .18s ease-out}
+@keyframes chartDetailChange{0%{opacity:.45}100%{opacity:1}}
 .chart-hit.selected .sales-dot{r:9}.chart-hit.selected .profit-dot{r:7}.chart-hit.selected .focus-line{opacity:.95}
+@media(max-width:600px){.chart-detail{margin:10px 7px 2px;padding:14px}.chart-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.chart-detail-grid div{padding:10px}.chart-detail-grid dd{font-size:14px}.chart-detail-ai{padding:12px}}
 @media(prefers-reduced-motion:reduce){.chart-detail.detail-updating{animation:none!important}.chart-dot,.focus-line{transition:none!important}}
 
 

@@ -208,24 +208,58 @@ function smoothPath(points){
   }
   return d;
 }
-function renderYearChart(rows){
+function monthDetailState(month,row){
+  const entries=data.entries.filter(e=>e.date.startsWith(month)),hist=data.historical[month]||{},mf=data.financeByMonth[month]||{};
+  const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key),hasEntry=entries.length>0;
+  const hasEc=["morikuboOnline","royalCanin","purina"].some(k=>own(mf,k))||(month===monthNow()&&["morikuboOnline","royalCanin","purina"].some(k=>Number(data.finance[k])>0));
+  const hasSales=hasEntry||own(hist,"sales")||hasEc,hasExpense=own(mf,"monthlyExpense")||own(hist,"expense")||(month===monthNow()&&Number(data.finance.monthlyExpense)>0);
+  return {hasData:hasEntry||Object.keys(hist).length>0||Object.keys(mf).length>0||hasEc||hasExpense,hasSales,hasExpense,hasClinical:hasEntry,row};
+}
+function monthlyAiComment(state){
+  const {row,hasSales,hasExpense,hasClinical}=state;
+  if(!hasSales&&!hasExpense&&!hasClinical)return "入力データがないため、コメントはまだ生成できません。";
+  const notes=[],profit=row.sales-row.expense,rate=row.sales?profit/row.sales*100:null;
+  if(hasSales&&hasExpense&&rate!==null){
+    if(rate>=25)notes.push("利益率は良好な水準です");
+    else if(rate>=15)notes.push("利益を確保しながら安定して運営できています");
+    else if(rate>=0)notes.push("利益率が低めのため、支出の大きい項目を確認しましょう");
+    else notes.push("支出が売上を上回っているため、費用の内訳を優先して確認しましょう");
+  }else if(hasSales)notes.push("支出を入力すると、利益面も含めて評価できます");
+  if(hasClinical){
+    if(row.patients>0)notes.push(`来院${Math.round(row.patients).toLocaleString("ja-JP")}件、客単価${yen(row.sales/row.patients)}の実績です`);
+    else notes.push("来院件数を入力すると、客単価と診療動向を確認できます");
+    if(row.newPatients>0)notes.push(`新患${Math.round(row.newPatients).toLocaleString("ja-JP")}件を次回の再診につなげましょう`);
+    if(row.surgeries>0)notes.push(`手術${Math.round(row.surgeries).toLocaleString("ja-JP")}件を安全に実施できています`);
+  }else notes.push("来院数などの診療データは未入力です");
+  return `${notes.join("。")}。`;
+}
+function renderYearChart(rows,yearValue){
   const el=$("yearChart"),detail=$("chartDetail"),w=760,h=340,pad={l:30,r:18,t:20,b:38},target=MONTHLY_TARGET;
-  const lastIndex=rows.reduce((last,r,i)=>(r.sales>0||r.expense>0)?i:last,-1);
-  if(lastIndex<0){el.innerHTML='<div class="chart-empty">年間データがまだありません。</div>';detail.innerHTML='<span>データを入力するとグラフを表示します</span>';return}
+  const states=rows.map((row,i)=>monthDetailState(`${yearValue}-${String(i+1).padStart(2,"0")}`,row));
+  const lastIndex=states.reduce((last,state,i)=>state.hasData?i:last,-1);
+  if(lastIndex<0){
+    el.innerHTML='<div class="chart-empty">年間データがまだありません。</div>';$('chartDetailMonth').textContent=`${yearValue}年`;
+    ['chartDetailSales','chartDetailExpense','chartDetailProfit','chartDetailRate','chartDetailPatients','chartDetailUnit','chartDetailSurgeries','chartDetailNewPatients'].forEach(id=>$(id).textContent='—');
+    $('chartDetailAi').textContent='入力データがないため、コメントはまだ生成できません。';return
+  }
   const visible=rows.slice(0,lastIndex+1),profits=visible.map(r=>r.sales-r.expense),maxValue=Math.max(target,...visible.map(r=>r.sales),...profits,1);
   const max=Math.ceil(maxValue/1000000)*1000000+500000,plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;
   const x=i=>visible.length===1?pad.l+plotW/2:pad.l+i*plotW/(visible.length-1),y=v=>pad.t+plotH*(1-v/max);
   const salesPts=visible.map((r,i)=>[x(i),y(r.sales)]),profitPts=visible.map((r,i)=>[x(i),y(Math.max(0,r.sales-r.expense))]);
   const salesPath=salesPts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(""),profitPath=profitPts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(""),area=`${salesPath} L${x(visible.length-1).toFixed(1)},${(h-pad.b).toFixed(1)} L${x(0).toFixed(1)},${(h-pad.b).toFixed(1)} Z`;
   const targetY=y(target),months=visible.map((r,i)=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
-  const hits=visible.map((r,i)=>{const profit=r.sales-r.expense,rate=r.sales?profit/r.sales*100:0,left=i?((x(i-1)+x(i))/2):pad.l,right=i<visible.length-1?((x(i)+x(i+1))/2):w-pad.r;return `<g class="chart-hit" tabindex="0" role="button" aria-label="${i+1}月の数値を表示" data-month="${i+1}" data-sales="${r.sales}" data-profit="${profit}" data-rate="${rate.toFixed(1)}" data-x="${x(i)}" data-y="${y(r.sales)}"><rect x="${left}" y="${pad.t}" width="${Math.max(30,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="7" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(Math.max(0,profit))}" r="6" class="chart-dot profit-dot"/></g>`}).join('');
+  const hits=visible.map((r,i)=>{const profit=r.sales-r.expense,left=i?((x(i-1)+x(i))/2):pad.l,right=i<visible.length-1?((x(i)+x(i+1))/2):w-pad.r;return `<g class="chart-hit" tabindex="0" role="button" aria-label="${i+1}月の数値を表示" data-index="${i}"><rect x="${left}" y="${pad.t}" width="${Math.max(30,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="7" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(Math.max(0,profit))}" r="6" class="chart-dot profit-dot"/></g>`}).join('');
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".28"/><stop offset="62%" stop-color="#00a99d" stop-opacity=".08"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient><filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><line x1="${pad.l}" y1="${targetY}" x2="${w-pad.r}" y2="${targetY}" class="target-line"/><text x="${w-pad.r}" y="${targetY-8}" text-anchor="end" class="target-label">目標 500万円</text><path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line premium-line"/><path d="${profitPath}" class="profit-line"/>${months}${hits}</svg>`;
   const select=g=>{
     el.querySelectorAll('.chart-hit').forEach(x=>x.classList.toggle('selected',x===g));
-    detail.classList.remove('detail-updating');
-    void detail.offsetWidth;
-    detail.innerHTML=`<strong>${g.dataset.month}月</strong><span>売上 ${yen(g.dataset.sales)}</span><span>利益 ${yen(g.dataset.profit)}</span><span>利益率 ${g.dataset.rate}%</span>`;
-    detail.classList.add('detail-updating');
+    const i=Number(g.dataset.index),row=visible[i],state=states[i],profit=row.sales-row.expense,rate=row.sales?profit/row.sales*100:null;
+    detail.classList.remove('detail-updating');void detail.offsetWidth;
+    $('chartDetailMonth').textContent=`${yearValue}年${i+1}月`;
+    $('chartDetailSales').textContent=state.hasSales?yen(row.sales):'—';$('chartDetailExpense').textContent=state.hasExpense?yen(row.expense):'—';
+    $('chartDetailProfit').textContent=state.hasSales&&state.hasExpense?yen(profit):'—';$('chartDetailRate').textContent=state.hasSales&&state.hasExpense&&rate!==null?pct(rate):'—';
+    $('chartDetailPatients').textContent=state.hasClinical?`${Math.round(row.patients).toLocaleString("ja-JP")}件`:'—';$('chartDetailUnit').textContent=state.hasClinical&&state.hasSales&&row.patients>0?yen(row.sales/row.patients):'—';
+    $('chartDetailSurgeries').textContent=state.hasClinical?`${Math.round(row.surgeries).toLocaleString("ja-JP")}件`:'—';$('chartDetailNewPatients').textContent=state.hasClinical?`${Math.round(row.newPatients).toLocaleString("ja-JP")}件`:'—';
+    $('chartDetailAi').textContent=monthlyAiComment(state);detail.classList.add('detail-updating');
   };
   el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',e=>{e.stopPropagation();select(g)});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});
   select(el.querySelector('.chart-hit:last-of-type'));
@@ -286,7 +320,7 @@ function year(){
   animateNumber($("yearSalesForecast"),salesForecast,yen);animateNumber($("yearProfitForecast"),profitForecast,yen);animateNumber($("bestMonthSales"),best.sales,yen);
   if(incomeTarget>0){const progress=Math.max(0,Math.min(100,profitForecast/incomeTarget*100));$("incomeProgressText").textContent=`目標 ${yen(incomeTarget)}に対して ${progress.toFixed(0)}%`;$("incomeProgressBar").style.width=`${progress}%`}else{$("incomeProgressText").textContent='目標年収は財務タブで設定できます';$("incomeProgressBar").style.width='0%'}
   renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast);
-  renderYearChart(rows)
+  renderYearChart(rows,y)
 }
 
 function financeSnapshot(month){
