@@ -13,6 +13,20 @@ function renderAIBrief(){
  el.innerHTML=msg;
 }
 
+function generateKagemushaGreeting({hour,patients=0,sales=0,profitRate=0,progress=0,hasProfitData=false}){
+ const value=v=>Math.max(0,Number(v)||0);
+ const formatYen=v=>`${Math.round(value(v)).toLocaleString("ja-JP")}円`;
+ const formatPct=v=>`${value(v).toFixed(1)}%`;
+ const h=Number(hour);
+ const greeting=h>=5&&h<12?"おはようございます":h>=12&&h<18?"こんにちは":h>=18&&h<24?"こんばんは":"お疲れさまです";
+ const patientComment=value(patients)>0?`今日の来院は${value(patients)}件`:`今日の来院件数はまだ未入力`;
+ const salesComment=value(sales)>0?`売上は${formatYen(sales)}`:`売上はまだ未入力`;
+ const profitComment=hasProfitData?`利益率は${formatPct(profitRate)}`:"利益率は支出入力後に確定";
+ const progressComment=`目標達成率は${formatPct(progress)}`;
+ const analysis=value(progress)>=100?"目標を達成した安定した推移です":hasProfitData&&value(profitRate)>=30?"利益を保ちながら着実に積み上がっています":"現在地が分かると、次の一手も冷静に選べます";
+ return `${greeting}、先生。私が数字を確認します。${patientComment}、${salesComment}、${profitComment}、${progressComment}です。${analysis}。今日も一歩ずつ、前向きに進んでいきましょう。`;
+}
+
 (()=>{"use strict";
 const KEY="keitaDashboardSimpleV1";
 const PAGE_IDS=["today","month","report","year","finance","memo","settings","data"];
@@ -70,8 +84,11 @@ async function fetchWeather(force=false){
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
 function renderKagemusha(){
-  const quote=$("kagemushaQuote");if(!quote)return;
-  const s=monthSummary(monthNow()),profitRate=s.sales?(s.sales-s.expense)/s.sales*100:0;
+  const quote=$("kagemushaQuote"),greeting=$("kagemushaGreeting");if(!quote&&!greeting)return;
+  const s=monthSummary(monthNow()),todayEntry=data.entries.find(e=>e.date===iso())||{},target=Number(data.settings[monthNow()]?.target)||MONTHLY_TARGET;
+  const profitRate=s.sales?(s.sales-s.expense)/s.sales*100:0,progress=target?s.sales/target*100:0;
+  if(greeting)greeting.textContent=generateKagemushaGreeting({hour:new Date().getHours(),patients:todayEntry.patients,sales:todayEntry.sales,profitRate,progress,hasProfitData:Boolean(s.sales&&s.expense)});
+  if(!quote)return;
   if(s.sales&&s.expense&&profitRate>=30)quote.textContent="利益率は良好です。焦る必要はありません。";
   else if(s.patients>=10&&s.newPatients===0)quote.textContent="広告より再診率を確認したいです。";
   else if(s.sales||s.patients)quote.textContent="私なら今日は件数より診療内容を評価します。";
