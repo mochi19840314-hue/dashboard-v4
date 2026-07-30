@@ -170,6 +170,7 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 #aiBriefCard summary small{margin-left:auto;color:var(--muted);font-size:9px;font-weight:800}
 #aiBrief{padding:0 18px 18px;color:#184b48;line-height:1.8;font-size:14px;border-top:1px solid rgba(0,159,145,.08)}
 #aiBrief:not(:empty){padding-top:14px}
+.kagemusha-greeting{padding:14px 18px 0;color:#184b48;font-size:14px;font-weight:750;line-height:1.8;border-top:1px solid rgba(0,159,145,.08)}
 @media(max-width:430px){#aiBriefCard summary{padding:15px}#aiBriefCard summary small{display:none}#aiBrief{padding-left:15px;padding-right:15px;font-size:13px}}
 
 /* Kagemusha — the director's calm, data-minded companion */
