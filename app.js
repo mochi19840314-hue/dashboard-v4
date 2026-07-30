@@ -90,7 +90,7 @@ function renderKagemusha(){
  const values=currentKagemushaData(),mood=values.mood;
  [card,button].forEach(element=>{if(element){element.dataset.mood=mood;if(element===button)element.className=`kagemusha-button kagemusha-character kagemusha--${mood}`}});
  const image=$("kagemushaImage"),emoji=$("kagemushaEmoji"),symbols={normal:"🥷",smile:"🥷✨",thinking:"🥷💭",warning:"🥷⚠️"};if(emoji)emoji.textContent=symbols[mood];
- if(image){image.hidden=true;image.onload=()=>{image.hidden=false;if(emoji)emoji.hidden=true};image.onerror=()=>{image.hidden=true;if(emoji)emoji.hidden=false};image.src=`assets/kagemusha-${mood}.png`}
+ if(image){image.hidden=true;if(emoji)emoji.hidden=false;image.onload=()=>{image.hidden=false;if(emoji)emoji.hidden=true};image.onerror=()=>{image.hidden=true;if(emoji)emoji.hidden=false};image.src=`assets/kagemusha-${mood}.png`}
  if(greeting)greeting.textContent=generateKagemushaGreeting({hour:new Date().getHours(),...values,hasProfitData:values.profitRate!==null});if(quote)quote.textContent=generateKagemushaMessage(values)
 }
 function loadKagemushaDiaries(){try{const value=JSON.parse(localStorage.getItem(KAGEMUSHA_DIARY_KEY)||"[]");return Array.isArray(value)?value:[]}catch{return []}}
