@@ -86,17 +86,37 @@ async function fetchWeather(force=false){
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
 function stableKagemushaIndex(date,mood,length){return [...`${date}:${mood}`].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7)%length}
 function generateKagemushaMessage(values){const templates=KAGEMUSHA_MESSAGES[values.mood]||KAGEMUSHA_MESSAGES.normal,baseMessage=templates[stableKagemushaIndex(values.date,values.mood,templates.length)],fact=values.mood==="thinking"?"":` 今月売上${yen(values.monthSales)}、達成率${pct(values.progress)}です。`;return `${baseMessage}${fact}`.slice(0,120)}
+function isLastDayOfMonth(date=new Date()){const value=date instanceof Date?date:new Date(`${date}T12:00:00`);return !Number.isNaN(value.getTime())&&value.getDate()===new Date(value.getFullYear(),value.getMonth()+1,0).getDate()}
+function generateMonthlyKagemushaSummary({sales=0,patients=0,expense=null,target=0,previousMonth=null,previousYear=null,events=[],diaries=[]}={}){
+ const amount=Math.max(0,Number(sales)||0),visits=Math.max(0,Number(patients)||0),goal=Math.max(0,Number(target)||0),cost=expense==null?null:Math.max(0,Number(expense)||0);
+ const unit=visits?amount/visits:0,profitRate=amount&&cost!=null?(amount-cost)/amount*100:null,progress=goal?amount/goal*100:null;
+ const figures=[];
+ if(amount)figures.push(`診療報酬は${yen(amount)}`);if(visits)figures.push(`来院件数は${visits.toLocaleString("ja-JP")}件`);if(unit)figures.push(`平均客単価は${yen(unit)}`);if(profitRate!=null)figures.push(`利益率は${pct(profitRate)}`);if(progress!=null)figures.push(`目標達成率は${pct(progress)}`);
+ const numbers=figures.length?`${figures.join("、")}でした。`:"今月は集計できる数字がまだありません。記録された範囲で振り返ります。";
+ let analysis="数字を確認しながら、診療品質を優先できた一か月でした。";
+ if(progress!=null&&progress>=100&&profitRate!=null&&profitRate>=20)analysis="目標を達成し、利益率も安定していました。件数と内容のバランスが取れています。";
+ else if(profitRate!=null&&profitRate<10)analysis="実績は否定せず、来月は支出の内訳を冷静に見直す余地があります。";
+ else if(progress!=null&&progress<100&&unit>0)analysis="目標には届きませんでしたが、客単価が診療内容の濃さを支えています。";
+ const closing=profitRate!=null&&profitRate<10?"私なら来月は診療品質を守りながら、利益率を一つずつ整えます。":"私なら来月も数字を冷静に見ながら、診療品質をさらに高めます。";
+ const monthlyWord=progress!=null&&progress>=100?"積み重ねが目標達成につながった一か月でした。":profitRate!=null&&profitRate>=20?"守るべきものを守れた一か月でした。":"来月への土台を作れた一か月でした。";
+ // 比較データ・イベント・日誌を引数に含め、将来の分析拡張時にも保存形式を変えずに利用できるようにする。
+ void previousMonth;void previousYear;void events;void diaries;
+ return `先生、今月もお疲れさまでした。\n\n${numbers}\n\n${analysis}\n\n${closing}\n\n今月の一言「${monthlyWord}」`;
+}
 function renderKagemusha(){
- const quote=$("kagemushaQuote"),greeting=$("kagemushaGreeting"),card=$("aiBriefCard"),button=$("kagemushaButton");if(!quote&&!greeting)return;
+ const quote=$("kagemushaQuote"),greeting=$("kagemushaGreeting"),heading=$("kagemushaMessageTitle"),card=$("aiBriefCard"),button=$("kagemushaButton");if(!quote&&!greeting)return;
  const values=currentKagemushaData(),mood=values.mood;
  [card,button].forEach(element=>{if(element){element.dataset.mood=mood;if(element===button)element.className=`kagemusha-button kagemusha-character kagemusha--${mood}`}});
  const emoji=$("kagemushaEmoji"),symbols={normal:"🥷",smile:"🥷✨",thinking:"🥷💭",warning:"🥷⚠️"};if(emoji)emoji.textContent=symbols[mood];
  if(USE_KAGEMUSHA_IMAGES&&button){let image=$("kagemushaImage");if(!image){image=document.createElement("img");image.id="kagemushaImage";image.alt="";image.hidden=true;button.insertBefore(image,emoji)}image.onload=()=>{image.hidden=false;if(emoji)emoji.hidden=true};image.onerror=()=>{image.hidden=true;if(emoji)emoji.hidden=false};image.src=`assets/kagemusha-${mood}.png`}
- if(greeting)greeting.textContent=generateKagemushaGreeting({hour:new Date().getHours(),...values,hasProfitData:values.profitRate!==null});if(quote)quote.textContent=generateKagemushaMessage(values)
+ const monthEnd=isLastDayOfMonth(values.date);
+ if(heading)heading.textContent=monthEnd?"🥷 影武者 月間総括":"影武者のひとこと";
+ if(greeting){greeting.hidden=monthEnd;greeting.textContent=monthEnd?"":generateKagemushaGreeting({hour:new Date().getHours(),...values,hasProfitData:values.profitRate!==null})}
+ if(quote)quote.textContent=monthEnd?generateMonthlyKagemushaSummary({sales:values.monthSales,patients:values.monthPatients,expense:values.monthExpense,target:values.monthTarget,diaries:loadKagemushaDiaries()}):generateKagemushaMessage(values)
 }
 function loadKagemushaDiaries(){try{const value=JSON.parse(localStorage.getItem(KAGEMUSHA_DIARY_KEY)||"[]");return Array.isArray(value)?value:[]}catch{return []}}
 function saveKagemushaDiaries(entries){localStorage.setItem(KAGEMUSHA_DIARY_KEY,JSON.stringify(entries))}
-function currentKagemushaData(){const date=iso(),s=monthSummary(monthNow()),entry=data.entries.find(e=>e.date===date)||{},target=Number(data.settings[monthNow()]?.target)||MONTHLY_TARGET,profitRate=s.sales?(s.sales-s.expense)/s.sales*100:0,progress=target?s.sales/target*100:0,set=data.settings[monthNow()]||{},elapsed=operatingEntries(s.entries.filter(e=>e.date<=date)).length,remainingBusinessDays=Math.max(0,(Number(set.businessDays)||expectedBusinessDays(monthNow()))-elapsed),mood=getKagemushaMood({patients:entry.patients,sales:entry.sales,profitRate,progress,hasProfitData:Boolean(s.sales&&s.expense)});return {date,patients:Number(entry.patients)||0,newPatients:Number(entry.newPatients)||0,sales:Number(entry.sales)||0,monthSales:s.sales,profitRate:s.sales&&s.expense?profitRate:null,progress,remainingBusinessDays,mood,directorMemo:entry.note||""}}
+function currentKagemushaData(){const date=iso(),s=monthSummary(monthNow()),entry=data.entries.find(e=>e.date===date)||{},target=Number(data.settings[monthNow()]?.target)||MONTHLY_TARGET,profitRate=s.sales?(s.sales-s.expense)/s.sales*100:0,progress=target?s.sales/target*100:0,set=data.settings[monthNow()]||{},elapsed=operatingEntries(s.entries.filter(e=>e.date<=date)).length,remainingBusinessDays=Math.max(0,(Number(set.businessDays)||expectedBusinessDays(monthNow()))-elapsed),mood=getKagemushaMood({patients:entry.patients,sales:entry.sales,profitRate,progress,hasProfitData:Boolean(s.sales&&s.expense)});return {date,patients:Number(entry.patients)||0,newPatients:Number(entry.newPatients)||0,sales:Number(entry.sales)||0,monthSales:s.sales,monthPatients:s.patients,monthExpense:s.expense||null,monthTarget:target,profitRate:s.sales&&s.expense?profitRate:null,progress,remainingBusinessDays,mood,directorMemo:entry.note||""}}
 function generateKagemushaDiaryMessage(values){const opening=values.patients?`本日は${values.patients}件、売上は${yen(values.sales)}でした。`:"本日の実績はまだ未入力です。";return `${opening}
 月間目標への進捗は${pct(values.progress)}です。
 
