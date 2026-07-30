@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1044">
+<link rel="stylesheet" href="style.css?v=1045">
 </head>
 <body>
 <header class="app-header">
@@ -94,13 +94,13 @@
         <div class="kagemusha-message-heading"><span>影武者のひとこと</span><button id="kagemushaClose" type="button" aria-label="影武者のひとことを閉じる">×</button></div>
         <p id="kagemushaQuote">私なら今日は件数より診療内容を評価します。</p>
         <small>数字は私が冷静に見ます。最後に決めるのは先生です。</small>
+        <button class="kagemusha-diary-save" id="saveKagemushaDiary" type="button" aria-label="今日の影武者日誌を保存する">今日の日誌を保存</button>
       </div>
-      <button class="kagemusha-button" id="kagemushaButton" type="button" aria-label="影武者のひとことを開く" aria-expanded="false" aria-controls="kagemushaMessage">
-        <svg viewBox="0 0 64 64" role="img" aria-label="肉球マークをつけた黒い忍者の影武者">
-          <path class="kagemusha-tail" d="M50 43c8 0 9 8 4 11-3 2-7 0-6-3 1-2 4 0 4-2 0-1-2-2-4-1"/><path class="kagemusha-body" d="M16 31c0-14 7-23 16-23s16 9 16 23v17c0 6-6 10-16 10s-16-4-16-10z"/><path class="kagemusha-hood" d="M17 25 12 13l12 5M47 25l5-12-12 5"/><rect class="kagemusha-face" x="19" y="23" width="26" height="14" rx="7"/><path class="kagemusha-eye" d="M24 30c2-2 4-2 6 0M34 30c2-2 4-2 6 0"/><g class="kagemusha-paw" transform="translate(32 47)"><circle cx="0" cy="2" r="4"/><circle cx="-5" cy="-3" r="2"/><circle cx="0" cy="-5" r="2"/><circle cx="5" cy="-3" r="2"/></g>
-        </svg><span>影武者に相談</span>
+      <button class="kagemusha-button kagemusha-character" id="kagemushaButton" type="button" aria-label="影武者のひとことを開く" aria-expanded="false" aria-controls="kagemushaMessage">
+        <img id="kagemushaImage" alt="" hidden><span id="kagemushaEmoji" class="kagemusha-emoji" aria-hidden="true">🥷</span><span>影武者に相談</span>
       </button>
     </div>
+    <section class="kagemusha-diary" aria-labelledby="kagemushaDiaryTitle"><div><h3 id="kagemushaDiaryTitle">影武者日誌</h3><small>直近7件</small></div><div id="kagemushaDiaryList" class="kagemusha-diary-list"><p class="empty">保存した日誌はまだありません。</p></div></section>
   </details>
   <article class="card management-insight-card" id="managementInsightCard" aria-labelledby="managementInsightTitle">
     <div class="management-insight-heading">
@@ -383,7 +383,8 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1044"></script>
-<script src="ai-director.js?v=1044"></script>
+<div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
+<script src="app.js?v=1045"></script>
+<script src="ai-director.js?v=1045"></script>
 </body>
 </html>

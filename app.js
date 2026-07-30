@@ -22,6 +22,13 @@ function getKagemushaMood({patients=0,sales=0,profitRate=0,progress=0,hasProfitD
 
 (()=>{"use strict";
 const KEY="keitaDashboardSimpleV1";
+const KAGEMUSHA_DIARY_KEY="kagemushaDiaryV1";
+const KAGEMUSHA_MESSAGES={
+ normal:["先生、数字は安定しています。私なら今の流れを維持します。","先生、私なら今日は大きく方針を変えません。数字を静かに見ておきます。","先生、今は落ち着いた推移です。最終判断は先生にお任せします。"],
+ smile:["先生、目標に届きました。積み重ねの結果です。","先生、数字は良好です。今日は素直に評価してよいと思います。","先生、目標達成です。私なら守りながら次の一手を考えます。"],
+ thinking:["先生、まだ判断材料が揃っていません。今日の数字が入れば正確に見られます。","先生、今日の実績は未入力です。私なら今は結論を急ぎません。","先生、数字を待っているところです。揃ってから冷静に判断しましょう。"],
+ warning:["先生、少し慎重に見たい数字です。私なら支出と利益率を確認します。","先生、利益率に注意したい状態です。焦らず原因だけ確認しておきたいです。","先生、数字は否定しません。私なら支出の内訳を一度見直します。"]
+};
 const PAGE_IDS=["today","month","report","year","finance","memo","settings","data"];
 const MONTHLY_TARGET=5000000;
 const HISTORICAL={
@@ -76,20 +83,31 @@ async function fetchWeather(force=false){
   }
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
+function stableKagemushaIndex(date,mood,length){return [...`${date}:${mood}`].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7)%length}
+function generateKagemushaMessage(values){const templates=KAGEMUSHA_MESSAGES[values.mood]||KAGEMUSHA_MESSAGES.normal,baseMessage=templates[stableKagemushaIndex(values.date,values.mood,templates.length)],fact=values.mood==="thinking"?"":` 今月売上${yen(values.monthSales)}、達成率${pct(values.progress)}です。`;return `${baseMessage}${fact}`.slice(0,120)}
 function renderKagemusha(){
-  const quote=$("kagemushaQuote"),greeting=$("kagemushaGreeting"),card=$("aiBriefCard"),button=$("kagemushaButton");if(!quote&&!greeting)return;
-  const s=monthSummary(monthNow()),todayEntry=data.entries.find(e=>e.date===iso())||{},target=Number(data.settings[monthNow()]?.target)||MONTHLY_TARGET;
-  const profitRate=s.sales?(s.sales-s.expense)/s.sales*100:0,progress=target?s.sales/target*100:0;
-  const moodData={patients:todayEntry.patients,sales:todayEntry.sales,profitRate,progress,hasProfitData:Boolean(s.sales&&s.expense)};
-  const mood=getKagemushaMood(moodData);
-  [card,button].forEach(element=>{if(element)element.dataset.mood=mood});
-  if(greeting)greeting.textContent=generateKagemushaGreeting({hour:new Date().getHours(),...moodData});
-  if(!quote)return;
-  if(s.sales&&s.expense&&profitRate>=30)quote.textContent="利益率は良好です。焦る必要はありません。";
-  else if(s.patients>=10&&s.newPatients===0)quote.textContent="広告より再診率を確認したいです。";
-  else if(s.sales||s.patients)quote.textContent="私なら今日は件数より診療内容を評価します。";
-  else quote.textContent="私は数字を静かに見ておきます。先生は、まず今日の診療に集中してください。";
+ const quote=$("kagemushaQuote"),greeting=$("kagemushaGreeting"),card=$("aiBriefCard"),button=$("kagemushaButton");if(!quote&&!greeting)return;
+ const values=currentKagemushaData(),mood=values.mood;
+ [card,button].forEach(element=>{if(element){element.dataset.mood=mood;if(element===button)element.className=`kagemusha-button kagemusha-character kagemusha--${mood}`}});
+ const image=$("kagemushaImage"),emoji=$("kagemushaEmoji"),symbols={normal:"🥷",smile:"🥷✨",thinking:"🥷💭",warning:"🥷⚠️"};if(emoji)emoji.textContent=symbols[mood];
+ if(image){image.hidden=true;image.onload=()=>{image.hidden=false;if(emoji)emoji.hidden=true};image.onerror=()=>{image.hidden=true;if(emoji)emoji.hidden=false};image.src=`assets/kagemusha-${mood}.png`}
+ if(greeting)greeting.textContent=generateKagemushaGreeting({hour:new Date().getHours(),...values,hasProfitData:values.profitRate!==null});if(quote)quote.textContent=generateKagemushaMessage(values)
 }
+function loadKagemushaDiaries(){try{const value=JSON.parse(localStorage.getItem(KAGEMUSHA_DIARY_KEY)||"[]");return Array.isArray(value)?value:[]}catch{return []}}
+function saveKagemushaDiaries(entries){localStorage.setItem(KAGEMUSHA_DIARY_KEY,JSON.stringify(entries))}
+function currentKagemushaData(){const date=iso(),s=monthSummary(monthNow()),entry=data.entries.find(e=>e.date===date)||{},target=Number(data.settings[monthNow()]?.target)||MONTHLY_TARGET,profitRate=s.sales?(s.sales-s.expense)/s.sales*100:0,progress=target?s.sales/target*100:0,set=data.settings[monthNow()]||{},elapsed=operatingEntries(s.entries.filter(e=>e.date<=date)).length,remainingBusinessDays=Math.max(0,(Number(set.businessDays)||expectedBusinessDays(monthNow()))-elapsed),mood=getKagemushaMood({patients:entry.patients,sales:entry.sales,profitRate,progress,hasProfitData:Boolean(s.sales&&s.expense)});return {date,patients:Number(entry.patients)||0,newPatients:Number(entry.newPatients)||0,sales:Number(entry.sales)||0,monthSales:s.sales,profitRate:s.sales&&s.expense?profitRate:null,progress,remainingBusinessDays,mood,directorMemo:entry.note||""}}
+function generateKagemushaDiaryMessage(values){const opening=values.patients?`本日は${values.patients}件、売上は${yen(values.sales)}でした。`:"本日の実績はまだ未入力です。";return `${opening}
+月間目標への進捗は${pct(values.progress)}です。
+
+${generateKagemushaMessage(values)}
+
+今日もお疲れさまでした、先生。`}
+function generateKagemushaDiaryEntry(values,existing){const now=new Date().toISOString();return {...values,message:generateKagemushaDiaryMessage(values),createdAt:existing?.createdAt||now,updatedAt:now}}
+function saveTodayKagemushaDiary(){const values=currentKagemushaData(),entries=loadKagemushaDiaries(),index=entries.findIndex(entry=>entry.date===values.date);if(index>=0&&!confirm("今日の日誌は保存済みです。上書きしますか？"))return;const next=generateKagemushaDiaryEntry(values,index>=0?entries[index]:null);if(index>=0)entries[index]=next;else entries.push(next);saveKagemushaDiaries(entries);renderKagemushaDiary();toast("影武者日誌を保存しました")}
+function escapeHtml(value){return String(value??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function renderKagemushaDiary(){const list=$("kagemushaDiaryList");if(!list)return;const entries=loadKagemushaDiaries().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,7);list.innerHTML=entries.length?entries.map((entry,index)=>`<button type="button" data-diary-index="${index}" aria-label="${entry.date}の影武者日誌を開く"><span><strong>${entry.date}</strong><small>${entry.newPatients??0}新患・${yen(entry.sales)}・${{normal:"通常",smile:"笑顔",thinking:"思案",warning:"注意"}[entry.mood]||entry.mood}</small></span><p>${escapeHtml(String(entry.message||"").replace(/\n/g," ").slice(0,55))}</p></button>`).join(""):"<p class=\"empty\">保存した日誌はまだありません。</p>";list.querySelectorAll("button").forEach(button=>button.onclick=()=>openKagemushaDiary(entries[Number(button.dataset.diaryIndex)]))}
+function openKagemushaDiary(entry){const modal=$("kagemushaDiaryModal"),full=$("kagemushaDiaryFull");if(!modal||!full)return;full.innerHTML=`<h2 id="kagemushaDiaryModalTitle">${new Date(`${entry.date}T00:00:00`).toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric"})}</h2><dl><div><dt>来院 / 新患</dt><dd>${entry.patients}件 / ${entry.newPatients??0}件</dd></div><div><dt>売上 / 今月</dt><dd>${yen(entry.sales)} / ${yen(entry.monthSales)}</dd></div><div><dt>利益率 / 達成率</dt><dd>${entry.profitRate==null?"判定前":pct(entry.profitRate)} / ${pct(entry.progress)}</dd></div><div><dt>残営業日 / ムード</dt><dd>${entry.remainingBusinessDays}日 / ${entry.mood}</dd></div></dl><p>${escapeHtml(entry.message).replace(/\n/g,"<br>")}</p>${entry.directorMemo?`<aside><strong>院長メモ</strong><p>${escapeHtml(entry.directorMemo)}</p></aside>`:""}`;modal.hidden=false;$("closeKagemushaDiary").focus()}
+function closeKagemushaDiary(){const modal=$("kagemushaDiaryModal");if(modal)modal.hidden=true}
 function setupKagemusha(){
   const button=$("kagemushaButton"),message=$("kagemushaMessage"),close=$("kagemushaClose");if(!button||!message||!close)return;
   const setOpen=open=>{message.hidden=!open;button.setAttribute("aria-expanded",String(open));button.setAttribute("aria-label",open?"影武者のひとことを閉じる":"影武者のひとことを開く");if(open)renderKagemusha()};
@@ -647,7 +665,7 @@ function saveClinicSettings(){
 }
 function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage").textContent=`日別記録 ${data.entries.length}件、月間過去データ ${Object.keys(data.historical).length}か月、使用容量 約${(size/1024).toFixed(1)}KB`}
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
-function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify(data,null,2),"application/json")}
+function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify({...data,kagemushaDiary:loadKagemushaDiaries()},null,2),"application/json")}
 function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),months=[...new Set([...Object.keys(data.historical),...Object.keys(data.financeByMonth)])].sort(),monthly=[["month","clinicalSales","morikuboOnline","royalCanin","purina","ecSales","totalSales","expense","profit"],...months.map(m=>{const s=monthSummary(m);return [m,s.clinicalSales,s.morikuboOnline,s.royalCanin,s.purina,s.ecSales,s.sales,s.expense,s.sales-s.expense]})];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
 function normalizeBackup(raw){
   let x=raw;
@@ -669,7 +687,7 @@ async function importJson(file){
     const text=(await file.text()).replace(/^\uFEFF/,"").trim();
     const parsed=JSON.parse(text);
     const restored=normalizeBackup(parsed);
-    data=restored;save();render();toast(`復元しました（${data.entries.length}件）`);
+    data=restored;save();if(Array.isArray(parsed?.kagemushaDiary)){const existing=loadKagemushaDiaries(),merged=new Map(existing.map(entry=>[entry.date,entry]));parsed.kagemushaDiary.forEach(entry=>{if(entry?.date)merged.set(entry.date,entry)});saveKagemushaDiaries([...merged.values()])}render();toast(`復元しました（${data.entries.length}件）`);
     $("importJson").value="";
   }catch(err){
     console.error("backup import failed",err);
@@ -682,8 +700,8 @@ function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator"
 function switchPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:0,behavior:"smooth"})}
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
-function render(){recent();month();renderMonthlyReport();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();renderKagemusha();renderPhase1Director();renderManagementInsight();$("memoText").value=data.memo||""}
+function render(){recent();month();renderMonthlyReport();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();renderKagemusha();renderKagemushaDiary();renderPhase1Director();renderManagementInsight();$("memoText").value=data.memo||""}
 function setupAIBriefFold(){const card=$("aiBriefCard");if(!card)return;const saved=localStorage.getItem("v9AlphaBriefOpen");if(saved!==null)card.open=saved==="1";card.addEventListener("toggle",()=>localStorage.setItem("v9AlphaBriefOpen",card.open?"1":"0"))}
-function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();$("reportMonthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("reportMonthPicker").onchange=renderMonthlyReport;$("reportPrevMonth").onclick=()=>moveReportMonth(-1);$("reportNextMonth").onclick=()=>moveReportMonth(1);$("saveReportLearning").onclick=saveReportLearning;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();setupAIBriefFold();setupKagemusha();$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();$("reportMonthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("reportMonthPicker").onchange=renderMonthlyReport;$("reportPrevMonth").onclick=()=>moveReportMonth(-1);$("reportNextMonth").onclick=()=>moveReportMonth(1);$("saveReportLearning").onclick=saveReportLearning;$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();setupAIBriefFold();setupKagemusha();$("saveKagemushaDiary").onclick=saveTodayKagemushaDiary;$("closeKagemushaDiary").onclick=closeKagemushaDiary;$("kagemushaDiaryModal").onclick=e=>{if(e.target===$("kagemushaDiaryModal"))closeKagemushaDiary()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeKagemushaDiary()});$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();
