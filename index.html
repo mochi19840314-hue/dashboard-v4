@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1043">
+<link rel="stylesheet" href="style.css?v=1044">
 </head>
 <body>
 <header class="app-header">
@@ -69,7 +69,7 @@
   </div>
   <article class="card phase1-director-card" id="phase1DirectorCard" aria-labelledby="phase1DirectorTitle">
     <div class="phase1-director-heading">
-      <div><span class="eyebrow">MANAGEMENT ANALYSIS</span><h3 id="phase1DirectorTitle">💬 AI院長</h3></div>
+      <div><span class="eyebrow">MANAGEMENT ANALYSIS</span><h3 id="phase1DirectorTitle">💬 影武者</h3></div>
       <span id="phase1DirectorStatus">入力待ち</span>
     </div>
     <div id="phase1DirectorComment" class="phase1-director-comment" aria-live="polite">
@@ -89,7 +89,6 @@
       <small>タップして開閉</small>
     </summary>
     <div id="kagemushaGreeting" class="kagemusha-greeting" aria-live="polite"></div>
-    <div id="aiBrief">おはようございます。今日の入力をお待ちしています。</div>
     <div class="kagemusha-wrap">
       <div class="kagemusha-message" id="kagemushaMessage" role="status" aria-live="polite" hidden>
         <div class="kagemusha-message-heading"><span>影武者のひとこと</span><button id="kagemushaClose" type="button" aria-label="影武者のひとことを閉じる">×</button></div>
@@ -99,7 +98,7 @@
       <button class="kagemusha-button" id="kagemushaButton" type="button" aria-label="影武者のひとことを開く" aria-expanded="false" aria-controls="kagemushaMessage">
         <svg viewBox="0 0 64 64" role="img" aria-label="肉球マークをつけた黒い忍者の影武者">
           <path class="kagemusha-tail" d="M50 43c8 0 9 8 4 11-3 2-7 0-6-3 1-2 4 0 4-2 0-1-2-2-4-1"/><path class="kagemusha-body" d="M16 31c0-14 7-23 16-23s16 9 16 23v17c0 6-6 10-16 10s-16-4-16-10z"/><path class="kagemusha-hood" d="M17 25 12 13l12 5M47 25l5-12-12 5"/><rect class="kagemusha-face" x="19" y="23" width="26" height="14" rx="7"/><path class="kagemusha-eye" d="M24 30c2-2 4-2 6 0M34 30c2-2 4-2 6 0"/><g class="kagemusha-paw" transform="translate(32 47)"><circle cx="0" cy="2" r="4"/><circle cx="-5" cy="-3" r="2"/><circle cx="0" cy="-5" r="2"/><circle cx="5" cy="-3" r="2"/></g>
-        </svg><span>影武者</span>
+        </svg><span>影武者に相談</span>
       </button>
     </div>
   </details>
@@ -119,7 +118,7 @@
     </div>
     <div class="management-insight-guidance">
       <section><span class="insight-label">✓ 今日やること</span><p id="insightTodo">今日の記録を入力して、月間の進捗を確認しましょう。</p></section>
-      <section><span class="insight-label">✦ AI院長コメント</span><p id="insightComment">既存の売上・支出・診療データから、経営状況をまとめます。</p></section>
+      <section><span class="insight-label">✦ 影武者コメント</span><p id="insightComment">既存の売上・支出・診療データから、経営状況をまとめます。</p></section>
     </div>
   </article>
   <div class="metrics">
@@ -243,7 +242,7 @@
   <article class="card report-section"><div class="report-section-title"><span>💡</span><div><h3>支出分析</h3><small>注目する3項目のみ</small></div></div><div id="reportExpenseAnalysis" class="expense-analysis"></div></article>
   <div class="report-two-column"><article class="card report-section"><div class="report-section-title"><span>⭐</span><div><h3>良かった点</h3><small>最大3件</small></div></div><ul id="reportGoodPoints" class="report-list"></ul></article><article class="card report-section"><div class="report-section-title"><span>🔍</span><div><h3>改善点</h3><small>次の行動へ</small></div></div><ul id="reportImprovePoints" class="report-list"></ul></article></div>
   <article class="card report-section report-memo-section">
-    <div class="report-section-title"><span>📝</span><div><h3>メモから見えた傾向</h3><small>日々の出来事をAI院長が整理</small></div></div>
+    <div class="report-section-title"><span>📝</span><div><h3>メモから見えた傾向</h3><small>日々の出来事を影武者が整理</small></div></div>
     <p id="reportMemoTrend">メモを分析しています。</p>
     <div id="reportMemoTags" class="report-memo-tags"></div>
     <div class="report-memo-excerpts"><strong>今月の主な記録</strong><ul id="reportMemoExcerpts" class="report-list"></ul></div>
@@ -384,7 +383,7 @@
 </section>
 </main>
 <div id="toast"></div>
-<script src="app.js?v=1043"></script>
-<script src="ai-director.js?v=1021"></script>
+<script src="app.js?v=1044"></script>
+<script src="ai-director.js?v=1044"></script>
 </body>
 </html>

@@ -226,7 +226,8 @@
       .aiDirectorConsultation{border-top:1px solid #dce8e4;margin-top:16px;padding-top:16px}.aiDirectorConsultation h3{font-size:17px;color:#20332f;margin:0 0 11px}.aiDirectorConsultation label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.aiDirectorConsultation textarea{display:block;width:100%;min-height:92px;resize:vertical;box-sizing:border-box;border:1px solid rgba(8,127,107,.28);border-radius:14px;background:#fff;padding:12px;font:inherit;font-size:16px;line-height:1.5;color:#20332f}.aiDirectorConsultation textarea:focus{outline:3px solid rgba(8,127,107,.14);border-color:#087f6b}.aiDirectorConsultationSubmit{display:block;width:100%;border:0;border-radius:13px;margin-top:10px;padding:13px;background:#087f6b;color:#fff;font-size:15px;font-weight:800}.aiDirectorConsultationSubmit:disabled{opacity:.6}.aiDirectorConsultationAnswer{display:none;margin-top:12px}.aiDirectorConsultationAnswer.is-visible{display:block}
       .aiDirectorNote{font-size:12px;color:#60716d;margin:12px 2px 0;line-height:1.5}
       @media(max-width:390px){.aiDirectorMetrics{grid-template-columns:repeat(2,1fr)}}
-      @media(max-width:360px){.aiDirectorQuick{grid-template-columns:1fr}#aiDirectorFab{right:12px}}
+      @media(max-width:600px){body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}#aiDirectorFab{right:12px;bottom:calc(92px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px)}}
+      @media(max-width:360px){.aiDirectorQuick{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
   }
@@ -235,11 +236,11 @@
     if(document.getElementById('aiDirectorFab'))return;
     injectStyles();
     const fab=document.createElement('button');
-    fab.id='aiDirectorFab';fab.type='button';fab.setAttribute('aria-controls','aiDirectorOverlay');fab.setAttribute('aria-expanded','false');fab.textContent='💬 AI院長';
+    fab.id='aiDirectorFab';fab.type='button';fab.setAttribute('aria-controls','aiDirectorOverlay');fab.setAttribute('aria-expanded','false');fab.textContent='💬 影武者に相談';
     const overlay=document.createElement('div');
     overlay.id='aiDirectorOverlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','aiDirectorTitle');
     overlay.innerHTML=`<div id="aiDirectorPanel">
-      <div class="aiDirectorHead"><h2 id="aiDirectorTitle">💬 AI院長</h2><button class="aiDirectorClose" type="button" aria-label="閉じる">×</button></div>
+      <div class="aiDirectorHead"><h2 id="aiDirectorTitle">💬 影武者</h2><button class="aiDirectorClose" type="button" aria-label="閉じる">×</button></div>
       <div id="aiDirectorBriefing"></div>
       <section class="aiDirectorRecommend" aria-labelledby="aiDirectorRecommendTitle">
         <span class="aiDirectorEyebrow">💡 今日のおすすめ</span><h3 id="aiDirectorRecommendTitle"></h3><p id="aiDirectorRecommendSummary"></p>
@@ -252,7 +253,7 @@
       <div id="aiDirectorMessage" class="aiDirectorMessage">相談項目を選んでください。</div>
       <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="glb">🚙 GLBなら？</button><button type="button" data-ai-question="endoscopy">🔬 内視鏡導入できる？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
       <section class="aiDirectorConsultation" aria-labelledby="aiDirectorConsultationTitle">
-        <h3 id="aiDirectorConsultationTitle">👨‍⚕️ AI院長に相談（β）</h3>
+        <h3 id="aiDirectorConsultationTitle">🥷 影武者に相談（β）</h3>
         <form id="aiDirectorConsultationForm"><label class="sr-only" for="aiDirectorConsultationInput">今日の出来事や相談</label><textarea id="aiDirectorConsultationInput" placeholder="今日の出来事や相談を書いてください" required></textarea><button class="aiDirectorConsultationSubmit" type="submit">相談する</button></form>
         <div id="aiDirectorConsultationAnswer" class="aiDirectorMessage aiDirectorConsultationAnswer" aria-live="polite"></div>
       </section>
