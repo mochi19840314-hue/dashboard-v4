@@ -349,28 +349,47 @@ function monthlyAiComment(state){
   }else notes.push("来院数などの診療データは未入力です");
   return `${notes.join("。")}。`;
 }
+function japaneseEraYear(year){
+  const y=Number(year);
+  return y>=2019?`R${y-2018}`:String(y);
+}
+function availableChartYears(selectedYear){
+  const years=new Set([...data.entries.map(e=>e.date.slice(0,4)),...Object.keys(data.historical).map(m=>m.slice(0,4))]);
+  years.add(String(selectedYear));
+  return [...years].filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>Number(a)-Number(b)).slice(-4);
+}
 function renderYearChart(rows,yearValue){
-  const el=$("yearChart"),detail=$("chartDetail"),w=760,h=340,pad={l:30,r:18,t:20,b:38},target=MONTHLY_TARGET;
-  const states=rows.map((row,i)=>monthDetailState(`${yearValue}-${String(i+1).padStart(2,"0")}`,row));
-  const lastIndex=states.reduce((last,state,i)=>state.hasData?i:last,-1);
-  if(lastIndex<0){
+  const el=$("yearChart"),detail=$("chartDetail"),legend=$("yearChartLegend"),w=760,h=390,pad={l:58,r:18,t:20,b:42};
+  const colors=["#718096","#d67a43","#7357b5","#00a99d"],years=availableChartYears(yearValue);
+  const series=years.map((year,index)=>{
+    const yearRows=year===String(yearValue)?rows:Array.from({length:12},(_,i)=>monthSummary(`${year}-${String(i+1).padStart(2,"0")}`));
+    const states=yearRows.map((row,i)=>monthDetailState(`${year}-${String(i+1).padStart(2,"0")}`,row));
+    return {year,rows:yearRows,states,color:colors[index]};
+  });
+  const populated=series.filter(s=>s.states.some(state=>state.hasData));
+  legend.innerHTML=series.map(s=>`<span><i class="annual-legend" style="background:${s.color}"></i>${japaneseEraYear(s.year)}</span>`).join("");
+  if(!populated.length){
     el.innerHTML='<div class="chart-empty">年間データがまだありません。</div>';$('chartDetailMonth').textContent=`${yearValue}年`;
     ['chartDetailSales','chartDetailExpense','chartDetailProfit','chartDetailRate','chartDetailPatients','chartDetailUnit','chartDetailSurgeries','chartDetailNewPatients'].forEach(id=>$(id).textContent='—');
     $('chartDetailAi').textContent='入力データがないため、コメントはまだ生成できません。';return
   }
-  const visible=rows.slice(0,lastIndex+1),profits=visible.map(r=>r.sales-r.expense),maxValue=Math.max(target,...visible.map(r=>r.sales),...profits,1);
-  const max=Math.ceil(maxValue/1000000)*1000000+500000,plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b;
-  const x=i=>visible.length===1?pad.l+plotW/2:pad.l+i*plotW/(visible.length-1),y=v=>pad.t+plotH*(1-v/max);
-  const salesPts=visible.map((r,i)=>[x(i),y(r.sales)]),profitPts=visible.map((r,i)=>[x(i),y(Math.max(0,r.sales-r.expense))]);
-  const salesPath=salesPts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(""),profitPath=profitPts.map((p,i)=>(i?" L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(""),area=`${salesPath} L${x(visible.length-1).toFixed(1)},${(h-pad.b).toFixed(1)} L${x(0).toFixed(1)},${(h-pad.b).toFixed(1)} Z`;
-  const targetY=y(target),months=visible.map((r,i)=>`<text x="${x(i)}" y="${h-12}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
-  const hits=visible.map((r,i)=>{const profit=r.sales-r.expense,left=i?((x(i-1)+x(i))/2):pad.l,right=i<visible.length-1?((x(i)+x(i+1))/2):w-pad.r;return `<g class="chart-hit" tabindex="0" role="button" aria-label="${i+1}月の数値を表示" data-index="${i}"><rect x="${left}" y="${pad.t}" width="${Math.max(30,right-left)}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${x(i)}" cy="${y(r.sales)}" r="7" class="chart-dot sales-dot"/><circle cx="${x(i)}" cy="${y(Math.max(0,profit))}" r="6" class="chart-dot profit-dot"/></g>`}).join('');
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a99d" stop-opacity=".28"/><stop offset="62%" stop-color="#00a99d" stop-opacity=".08"/><stop offset="100%" stop-color="#00a99d" stop-opacity="0"/></linearGradient><filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><line x1="${pad.l}" y1="${targetY}" x2="${w-pad.r}" y2="${targetY}" class="target-line"/><text x="${w-pad.r}" y="${targetY-8}" text-anchor="end" class="target-label">目標 500万円</text><path d="${area}" class="sales-area"/><path d="${salesPath}" class="sales-line premium-line"/><path d="${profitPath}" class="profit-line"/>${months}${hits}</svg>`;
+  const maxValue=Math.max(...populated.flatMap(s=>s.rows.map((r,i)=>s.states[i].hasData?r.sales:0)),1),step=Math.max(1000000,Math.ceil(maxValue/4/1000000)*1000000),max=step*4;
+  const plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b,x=i=>pad.l+i*plotW/11,y=v=>pad.t+plotH*(1-Math.max(0,v)/max);
+  const grid=Array.from({length:5},(_,i)=>{const value=step*i,py=y(value),label=value===0?'0':`${value/1000000}万`;return `<line x1="${pad.l}" y1="${py}" x2="${w-pad.r}" y2="${py}" class="chart-grid"/><text x="${pad.l-9}" y="${py+4}" text-anchor="end" class="chart-axis-label">${label}</text>`}).join('');
+  const months=Array.from({length:12},(_,i)=>`<text x="${x(i)}" y="${h-13}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
+  const drawings=populated.map(s=>{
+    const last=s.states.reduce((value,state,i)=>state.hasData?i:value,-1),points=s.rows.slice(0,last+1).map((row,i)=>[x(i),y(row.sales)]);
+    // Deliberately use only straight SVG line segments: no Bezier/spline interpolation.
+    const lines=points.slice(1).map((point,i)=>`<line x1="${points[i][0]}" y1="${points[i][1]}" x2="${point[0]}" y2="${point[1]}" class="annual-line" stroke="${s.color}"/>`).join('');
+    const hits=points.map((point,i)=>`<g class="chart-hit" tabindex="0" role="button" aria-label="${s.year}年${i+1}月の数値を表示" data-year="${s.year}" data-index="${i}"><rect x="${Math.max(pad.l,x(i)-plotW/24)}" y="${pad.t}" width="${plotW/12}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${point[0]}" cy="${point[1]}" r="7" class="annual-dot" fill="${s.color}"/></g>`).join('');
+    return lines+hits;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${grid}${months}${drawings}</svg>`;
   const select=g=>{
-    el.querySelectorAll('.chart-hit').forEach(x=>x.classList.toggle('selected',x===g));
-    const i=Number(g.dataset.index),row=visible[i],state=states[i],profit=row.sales-row.expense,rate=row.sales?profit/row.sales*100:null;
+    el.querySelectorAll('.chart-hit').forEach(node=>node.classList.toggle('selected',node===g));
+    const i=Number(g.dataset.index),selected=series.find(s=>s.year===g.dataset.year),row=selected.rows[i],state=selected.states[i],profit=row.sales-row.expense,rate=row.sales?profit/row.sales*100:null;
     detail.classList.remove('detail-updating');void detail.offsetWidth;
-    $('chartDetailMonth').textContent=`${yearValue}年${i+1}月`;
+    $('chartDetailMonth').textContent=`${japaneseEraYear(selected.year)}（${selected.year}年） ${i+1}月`;
     $('chartDetailSales').textContent=state.hasSales?yen(row.sales):'—';$('chartDetailExpense').textContent=state.hasExpense?yen(row.expense):'—';
     $('chartDetailProfit').textContent=state.hasSales&&state.hasExpense?yen(profit):'—';$('chartDetailRate').textContent=state.hasSales&&state.hasExpense&&rate!==null?pct(rate):'—';
     $('chartDetailPatients').textContent=state.hasClinical?`${Math.round(row.patients).toLocaleString("ja-JP")}件`:'—';$('chartDetailUnit').textContent=state.hasClinical&&state.hasSales&&row.patients>0?yen(row.sales/row.patients):'—';
@@ -378,7 +397,7 @@ function renderYearChart(rows,yearValue){
     $('chartDetailAi').textContent=monthlyAiComment(state);detail.classList.add('detail-updating');
   };
   el.querySelectorAll('.chart-hit').forEach(g=>{g.addEventListener('click',e=>{e.stopPropagation();select(g)});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(g)}})});
-  select(el.querySelector('.chart-hit:last-of-type'));
+  const preferred=[...el.querySelectorAll(`.chart-hit[data-year="${yearValue}"]`)].at(-1)||el.querySelector('.chart-hit:last-of-type');select(preferred);
 }
 
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}

@@ -200,6 +200,16 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 @media(max-width:600px){.chart-detail{margin:10px 7px 2px;padding:14px}.chart-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.chart-detail-grid div{padding:10px}.chart-detail-grid dd{font-size:14px}.chart-detail-ai{padding:12px}}
 @media(prefers-reduced-motion:reduce){.chart-detail.detail-updating{animation:none!important}.chart-dot,.focus-line{transition:none!important}}
 
+/* v10.4.2 — mobile-first, straight annual comparison chart */
+.apple-chart-card{min-height:560px}
+.year-chart svg{min-height:390px!important}
+.annual-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.annual-dot{stroke:#fff;stroke-width:2;opacity:1}
+.chart-legend i.annual-legend{width:20px;height:3px}
+.chart-axis-label{fill:var(--muted);font-size:11px;font-weight:750}
+.chart-detail h4{font-size:22px}.chart-detail-grid dd{font-size:17px}
+@media(max-width:600px){.apple-chart-card{min-height:590px;padding-bottom:14px}.year-chart svg{min-height:410px!important}.annual-line{stroke-width:2.25}.annual-dot{stroke-width:2}.chart-detail h4{font-size:24px}.chart-detail-grid dd{font-size:17px}.chart-heading p{line-height:1.5}}
+
 
 
 /* v10.2.1 — memo accumulation & monthly AI analysis */

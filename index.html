@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1051">
+<link rel="stylesheet" href="style.css?v=1053">
 </head>
 <body>
 <header class="app-header">
@@ -298,8 +298,8 @@
     <article><span>平均月商</span><strong id="yearAvg">0円</strong><small id="yearAvgSub">データ月平均</small></article>
   </div>
   <div class="card chart-card apple-chart-card">
-    <div class="chart-heading"><div><span class="eyebrow">ANNUAL PERFORMANCE</span><h3>月別売上・利益</h3><p>入力済みの月までを表示します。</p></div><div class="chart-legend"><span><i class="legend-sales"></i>売上</span><span><i class="legend-profit"></i>利益</span><span><i class="legend-target"></i>目標</span></div></div>
-    <div id="yearChart" class="year-chart" role="img" aria-label="月別売上と利益の折れ線グラフ"></div>
+    <div class="chart-heading"><div><span class="eyebrow">ANNUAL PERFORMANCE</span><h3>月別売上推移</h3><p>各年の月別売上を直線で比較できます。</p></div><div id="yearChartLegend" class="chart-legend" aria-label="表示年の凡例"></div></div>
+    <div id="yearChart" class="year-chart" role="img" aria-label="複数年の月別売上を比較する折れ線グラフ"></div>
     <section id="chartDetail" class="chart-detail" aria-live="polite" aria-labelledby="chartDetailMonth">
       <h4 id="chartDetailMonth">月別詳細</h4>
       <dl class="chart-detail-grid">
@@ -392,7 +392,7 @@
 <div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
 <div class="clinical-trend-modal" id="clinicalTrendModal" role="dialog" aria-modal="true" aria-labelledby="clinicalTrendModalTitle" hidden><div class="clinical-trend-dialog"><button id="closeClinicalTrends" class="modal-close" type="button" aria-label="診療傾向を閉じる">×</button><div id="clinicalTrendDetail"></div></div></div>
 <script src="clinical-trends.js?v=1050"></script>
-<script src="app.js?v=1052"></script>
+<script src="app.js?v=1053"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
