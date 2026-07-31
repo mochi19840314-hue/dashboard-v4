@@ -129,10 +129,19 @@ async function fetchWeather(force=false){
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
 function renderDailyShadowBrief(){
- const list=$("dailyShadowInsights");if(!list||typeof DailyShadowBrief==="undefined")return;
- const today=iso(),month=today.slice(0,7),setting=data.settings[month]||{},day=dayProfile(today);
- const result=DailyShadowBrief.generateDailyBrief({today,hour:new Date().getHours(),entries:data.entries,dailyTarget:day.target,monthlyTarget:Number(setting.target)||MONTHLY_TARGET});
- list.innerHTML=result.insights.map((insight,index)=>`<li style="--brief-delay:${index*120}ms" data-confidence="${insight.confidence}">${escapeHtml(insight.text)}</li>`).join("");
+ const emptyMessage="今日はまだ分析できるデータがありません。";
+ const showEmpty=()=>{try{const list=$("dailyShadowInsights");if(list)list.innerHTML=`<li data-confidence="high">${emptyMessage}</li>`}catch(error){console.error(error)}};
+ try{
+  const list=$("dailyShadowInsights");if(!list)return;
+  const dailyShadow=data?.dailyShadow??{},weatherCache=data?.weatherCache??{},goal=dailyShadow?.goal??{},today=dailyShadow?.today??{},history=dailyShadow?.history??{},progress=dailyShadow?.progress??{};
+  const todayDate=typeof today?.date==="string"?today?.date:iso(),month=todayDate?.slice?.(0,7)??"",setting=data?.settings?.[month]??{},day=dayProfile?.(todayDate)??{};
+  const entries=Array.isArray(history)?history:Array.isArray(history?.entries)?history?.entries:Array.isArray(data?.entries)?data?.entries:[];
+  const generator=globalThis?.DailyShadowBrief?.generateDailyBrief;if(typeof generator!=="function"){showEmpty();return}
+  const result=generator({today:todayDate,hour:new Date()?.getHours?.()??0,entries,dailyTarget:Number(goal?.dailyTarget??day?.target??0)||0,monthlyTarget:Number(goal?.monthlyTarget??setting?.target??0)||MONTHLY_TARGET,weatherCache,progress});
+  const insights=Array.isArray(result?.insights)?result?.insights:[];
+  if(result?.empty||!insights?.length){showEmpty();return}
+  list.innerHTML=insights?.map?.((insight,index)=>`<li style="--brief-delay:${index*120}ms" data-confidence="${insight?.confidence??"high"}">${escapeHtml?.(insight?.text??emptyMessage)??emptyMessage}</li>`)?.join?.("")??`<li data-confidence="high">${emptyMessage}</li>`;
+ }catch(error){console.error(error);showEmpty()}
 }
 function stableKagemushaIndex(date,mood,length){return [...`${date}:${mood}`].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7)%length}
 function generateKagemushaMessage(values){const templates=KAGEMUSHA_MESSAGES[values.mood]||KAGEMUSHA_MESSAGES.normal,baseMessage=templates[stableKagemushaIndex(values.date,values.mood,templates.length)],fact=values.mood==="thinking"?"":` 今月売上${yen(values.monthSales)}、達成率${pct(values.progress)}です。`;return `${baseMessage}${fact}`.slice(0,120)}
@@ -873,7 +882,11 @@ function switchPage(id){
 }
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
-function render(){recent();month();renderMonthlyReport();renderClinicalTrends();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyShadowBrief();renderDailyAI();renderKagemusha();renderKagemushaDiary();renderPhase1Director();renderManagementInsight();$("memoText").value=data.memo||""}
+function render(){
+ const sections=[recent,month,renderMonthlyReport,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderDailyAI,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
+ sections.forEach(section=>{try{section()}catch(error){console.error(error)}});
+ try{const memo=$("memoText");if(memo)memo.value=data?.memo??""}catch(error){console.error(error)}
+}
 function setupMonthRollover(){
   if(typeof MonthRollover==="undefined")return;
   const current=monthNow(),state=MonthRollover.needsConfirmation(data,current),modal=$("monthRolloverModal");
