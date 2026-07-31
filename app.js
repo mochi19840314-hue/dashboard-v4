@@ -33,6 +33,9 @@ const KAGEMUSHA_MESSAGES={
 const PAGE_IDS=["today","month","report","year","finance","memo","settings","data"];
 const reducedMotion=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const scoreAnimations=new WeakMap();
+function setScoreRingValue(ring,value,property,number){
+ const target=Math.max(0,Math.min(100,Number(value)||0));ring.style.setProperty(property,target);ring.dataset.animatedValue=target;if(number)number.textContent=value==null?"—":String(Math.round(target));
+}
 function animateScoreRing(ring,value,property,number){
  if(!ring)return;const target=Math.max(0,Math.min(100,Number(value)||0)),start=Number(ring.dataset.animatedValue)||0,existing=scoreAnimations.get(ring),finalText=value==null?"—":String(Math.round(target));
  if(existing)cancelAnimationFrame(existing);
@@ -40,6 +43,34 @@ function animateScoreRing(ring,value,property,number){
  const began=performance.now(),duration=800,ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
  const frame=now=>{const progress=Math.min(1,(now-began)/duration),current=start+(target-start)*ease(progress);ring.style.setProperty(property,current);if(number)number.textContent=value==null?"—":String(Math.round(current));ring.dataset.animatedValue=current;if(progress<1)scoreAnimations.set(ring,requestAnimationFrame(frame));else{ring.style.setProperty(property,target);ring.dataset.animatedValue=target;if(number)number.textContent=finalText;scoreAnimations.delete(ring)}};
  scoreAnimations.set(ring,requestAnimationFrame(frame));
+}
+const insightScoreViewport={active:false,visible:false,played:false,pending:false,target:null,observer:null};
+function showInsightScoreImmediately(){setScoreRingValue($("insightScoreRing"),insightScoreViewport.target,"--insight-score",$("insightScore"))}
+function playInsightScore(){
+ if(!insightScoreViewport.active||!insightScoreViewport.visible)return;
+ insightScoreViewport.played=true;insightScoreViewport.pending=false;animateScoreRing($("insightScoreRing"),insightScoreViewport.target,"--insight-score",$("insightScore"));
+}
+function updateInsightScore(value){
+ insightScoreViewport.target=value;insightScoreViewport.pending=true;
+ if(reducedMotion()){insightScoreViewport.pending=false;showInsightScoreImmediately();return}
+ if(insightScoreViewport.active&&insightScoreViewport.visible)playInsightScore();
+}
+function deactivateInsightScore(){
+ const ring=$("insightScoreRing"),animation=ring&&scoreAnimations.get(ring);if(animation)cancelAnimationFrame(animation);if(ring)scoreAnimations.delete(ring);
+ insightScoreViewport.observer?.disconnect();insightScoreViewport.active=false;insightScoreViewport.visible=false;insightScoreViewport.played=false;insightScoreViewport.pending=false;
+}
+function activateInsightScore(){
+ const ring=$("insightScoreRing");if(!ring||insightScoreViewport.active)return;
+ insightScoreViewport.active=true;insightScoreViewport.visible=false;insightScoreViewport.played=false;
+ if(reducedMotion()){showInsightScoreImmediately();return}
+ setScoreRingValue(ring,0,"--insight-score",$("insightScore"));
+ if(typeof IntersectionObserver==="undefined"){insightScoreViewport.visible=true;playInsightScore();return}
+ if(!insightScoreViewport.observer)insightScoreViewport.observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
+  if(entry.target!==ring)return;
+  insightScoreViewport.visible=entry.isIntersecting&&entry.intersectionRatio>=.25&&Boolean(ring.closest(".page.active"));
+  if(insightScoreViewport.visible&&(!insightScoreViewport.played||insightScoreViewport.pending))playInsightScore();
+ }),{threshold:.25});
+ insightScoreViewport.observer.observe(ring);
 }
 function openOverlay(modal){if(!modal)return;modal.hidden=false;modal.classList.remove("is-closing");requestAnimationFrame(()=>modal.classList.add("is-open"))}
 function closeOverlay(modal){if(!modal||modal.hidden)return;if(reducedMotion()){modal.hidden=true;modal.classList.remove("is-open","is-closing");return}modal.classList.remove("is-open");modal.classList.add("is-closing");setTimeout(()=>{modal.hidden=true;modal.classList.remove("is-closing")},200)}
@@ -217,7 +248,7 @@ function renderManagementInsight(){
   const score=s.sales?Math.round(Math.max(0,Math.min(100,Math.min(100,progress)*.45+profitScore*.35+Math.min(100,paceRate)*.2))):null;
   const rows=operatingEntries(s.entries.filter(e=>e.date<=today&&Number(e.sales)>0)).sort((a,b)=>b.date.localeCompare(a.date)),current=rows.find(e=>e.date===today)||rows[0],previous=rows.find(e=>current&&e.date<current.date);
   $("insightPeriod").textContent=`${Number(m.slice(5))}月`;
-  animateScoreRing($("insightScoreRing"),score,"--insight-score",$("insightScore"));
+  updateInsightScore(score);
   $("insightProgress").textContent=pct(progress);$("insightNeedDaily").textContent=left?yen(needDaily):progress>=100?"達成済み":"営業日終了";
   let rating="データ待ち";if(s.sales&&s.expense)rating=profitRate>=30?"良好":profitRate>=20?"標準":"要改善";
   $("insightProfitRating").textContent=rating;$("insightProfitRating").className=rating==="良好"?"positive":rating==="要改善"?"negative":"";$("insightProfitRate").textContent=s.sales&&s.expense?`利益率 ${pct(profitRate)}`:"支出データ入力後に評価";
@@ -825,13 +856,13 @@ function playChartEntrance(page){
 }
 function switchPage(id){
  const current=document.querySelector(".page.active");if(current?.id===id&&!current.classList.contains("page-leaving"))return;
- const reveal=()=>{disconnectChartObserver(true);document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});playChartEntrance($(id))};
+ const reveal=()=>{disconnectChartObserver(true);deactivateInsightScore();document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});if(id==="today")activateInsightScore();playChartEntrance($(id))};
  clearTimeout(pageTransitionTimer);if(!current||reducedMotion()){reveal();return}pageScrollPositions.set(current.id,window.scrollY);current.classList.add("page-leaving");pageTransitionTimer=setTimeout(reveal,120);
 }
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){recent();month();renderMonthlyReport();renderClinicalTrends();years();year();finance();renderClinicSettings();storage();renderTodaySummary();renderDailyAI();renderKagemusha();renderKagemushaDiary();renderPhase1Director();renderManagementInsight();$("memoText").value=data.memo||""}
 function setupAIBriefFold(){const card=$("aiBriefCard");if(!card)return;const saved=localStorage.getItem("v9AlphaBriefOpen");if(saved!==null)card.open=saved==="1";card.addEventListener("toggle",()=>localStorage.setItem("v9AlphaBriefOpen",card.open?"1":"0"))}
-function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();$("reportMonthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("reportMonthPicker").onchange=renderMonthlyReport;$("reportPrevMonth").onclick=()=>moveReportMonth(-1);$("reportNextMonth").onclick=()=>moveReportMonth(1);$("saveReportLearning").onclick=saveReportLearning;$("openClinicalTrends").onclick=openClinicalTrends;$("closeClinicalTrends").onclick=closeClinicalTrends;$("clinicalTrendModal").onclick=e=>{if(e.target===$("clinicalTrendModal"))closeClinicalTrends()};$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();setupAIBriefFold();setupKagemusha();setupKpiAnimations();$("saveKagemushaDiary").onclick=saveTodayKagemushaDiary;$("closeKagemushaDiary").onclick=closeKagemushaDiary;$("kagemushaDiaryModal").onclick=e=>{if(e.target===$("kagemushaDiaryModal"))closeKagemushaDiary()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeKagemushaDiary();closeClinicalTrends()}});$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
+function init(){$("todayLabel").textContent=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});$("entryDate").value=iso();$("monthPicker").value=monthNow();$("reportMonthPicker").value=monthNow();document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(id=>$(id).oninput=preview);$("entryDate").onchange=()=>{const e=data.entries.find(x=>x.date===$("entryDate").value);if(e)edit(e.date)};$("saveEntry").onclick=saveEntry;$("clearEntry").onclick=clearForm;$("saveSettings").onclick=saveSettings;$("monthPicker").onchange=()=>{month();finance()};$("prevMonth").onclick=()=>moveMonth(-1);$("nextMonth").onclick=()=>moveMonth(1);$("yearPicker").onchange=year;$("saveFinance").onclick=saveFinance;$("reportMonthPicker").onchange=renderMonthlyReport;$("reportPrevMonth").onclick=()=>moveReportMonth(-1);$("reportNextMonth").onclick=()=>moveReportMonth(1);$("saveReportLearning").onclick=saveReportLearning;$("openClinicalTrends").onclick=openClinicalTrends;$("closeClinicalTrends").onclick=closeClinicalTrends;$("clinicalTrendModal").onclick=e=>{if(e.target===$("clinicalTrendModal"))closeClinicalTrends()};$("saveClinicSettings").onclick=saveClinicSettings;$("memoText").oninput=()=>{clearTimeout(memoTimer);$("memoStatus").textContent="保存中…";memoTimer=setTimeout(()=>{data.memo=$("memoText").value;save();$("memoStatus").textContent="保存済み"},500)};$("exportJson").onclick=exportJson;$("exportCsv").onclick=exportCsv;$("importJson").onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$("deleteAll").onclick=deleteAll;setupSwipe();setupAIBriefFold();setupKagemusha();setupKpiAnimations();$("saveKagemushaDiary").onclick=saveTodayKagemushaDiary;$("closeKagemushaDiary").onclick=closeKagemushaDiary;$("kagemushaDiaryModal").onclick=e=>{if(e.target===$("kagemushaDiaryModal"))closeKagemushaDiary()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeKagemushaDiary();closeClinicalTrends()}});$("refreshWeather").onclick=()=>fetchWeather(true);switchPage("today");render();activateInsightScore();renderTodaySummary();fetchWeather();if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}
 init();
 })();
