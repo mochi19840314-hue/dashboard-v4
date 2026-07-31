@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1047">
+<link rel="stylesheet" href="style.css?v=1050">
 </head>
 <body>
 <header class="app-header">
@@ -209,6 +209,12 @@
 <section id="report" class="page">
   <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
   <div id="reportStatus" class="report-status">集計中です。</div>
+  <article class="card clinical-trend-card" aria-labelledby="clinicalTrendTitle">
+    <div class="clinical-trend-heading"><div><span class="eyebrow">OPERATIONS TREND</span><h3 id="clinicalTrendTitle">🧠 診療傾向</h3></div><span id="clinicalTrendConfidence">信頼度：低</span></div>
+    <p id="clinicalTrendPeriod" class="clinical-trend-period">直近90日を確認しています。</p>
+    <ul id="clinicalTrendInsights" class="clinical-trend-insights"><li>判断にはもう少しデータが必要です。</li></ul>
+    <button id="openClinicalTrends" class="clinical-trend-more" type="button">詳しく見る</button>
+  </article>
   <article class="card report-score-card">
     <span class="eyebrow">OVERALL REVIEW · BETA</span>
     <div class="report-month-phrase"><span>📌 今月を一言で</span><strong id="reportPhrase">データを分析中</strong></div>
@@ -384,7 +390,9 @@
 </main>
 <div id="toast"></div>
 <div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
-<script src="app.js?v=1049"></script>
+<div class="clinical-trend-modal" id="clinicalTrendModal" role="dialog" aria-modal="true" aria-labelledby="clinicalTrendModalTitle" hidden><div class="clinical-trend-dialog"><button id="closeClinicalTrends" class="modal-close" type="button" aria-label="診療傾向を閉じる">×</button><div id="clinicalTrendDetail"></div></div></div>
+<script src="clinical-trends.js?v=1050"></script>
+<script src="app.js?v=1050"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
