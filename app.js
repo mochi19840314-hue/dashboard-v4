@@ -806,17 +806,38 @@ function download(name,text,type){const a=document.createElement("a"),u=URL.crea
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify({...data,kagemushaDiary:loadKagemushaDiaries()},null,2),"application/json")}
 function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),months=[...new Set([...Object.keys(data.historical),...Object.keys(data.financeByMonth)])].sort(),monthly=[["month","clinicalSales","morikuboOnline","royalCanin","purina","ecSales","totalSales","expense","profit"],...months.map(m=>{const s=monthSummary(m);return [m,s.clinicalSales,s.morikuboOnline,s.royalCanin,s.purina,s.ecSales,s.sales,s.expense,s.sales-s.expense]})];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
 async function importJson(file){
+  const input=$("importJson"),previousData=data,previousDashboard=localStorage.getItem(KEY),previousDiary=localStorage.getItem(KAGEMUSHA_DIARY_KEY);
+  let saved=false,stage="file read";
+  const step=async(name,operation)=>{stage=name;try{return await operation()}catch(error){error.restoreStage=name;throw error}};
+  const restoreStorage=()=>{
+    if(previousDashboard===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,previousDashboard);
+    if(previousDiary===null)localStorage.removeItem(KAGEMUSHA_DIARY_KEY);else localStorage.setItem(KAGEMUSHA_DIARY_KEY,previousDiary);
+  };
   try{
-    const text=(await file.text()).replace(/^\uFEFF/,"").trim();
-    const parsed=JSON.parse(text);
-    const restored=BackupRestore.normalizeBackup(parsed,base,KEY);
-    data=restored.data;save();const existing=loadKagemushaDiaries(),merged=new Map(existing.map(entry=>[entry.date,entry]));restored.kagemushaDiary.forEach(entry=>{if(entry?.date)merged.set(entry.date,entry)});saveKagemushaDiaries([...merged.values()]);render();toast("✅ Daily records restored\n✅ Finance restored\n✅ Reports restored\n✅ Kagemusha restored\n✅ Settings restored");
-    $("importJson").value="";
-  }catch(err){
-    console.error("backup import failed",err);
-    alert("バックアップを読み込めませんでした。JSON形式の完全バックアップを選択してください。");
-    $("importJson").value="";
-  }
+    const text=await step("file read",async()=>(await file.text()).replace(/^\uFEFF/,"").trim());
+    const parsed=await step("JSON Parse Error",()=>JSON.parse(text));
+    const restored=await step("normalizeBackup failed",()=>BackupRestore.normalizeBackup(parsed,base,KEY));
+    const nextData=await step("financeByMonth merge failed",()=>({...restored.data,financeByMonth:{...(restored.data.financeByMonth||{})}}));
+    await step("monthlyReports merge failed",()=>{nextData.monthlyReports={...(restored.data.monthlyReports||{})}});
+    const nextDiaries=await step("merge failed",()=>{const merged=new Map(loadKagemushaDiaries().map(entry=>[entry.date,entry]));restored.kagemushaDiary.forEach(entry=>{if(entry?.date)merged.set(entry.date,entry)});return [...merged.values()]});
+    await step("save failed",()=>{
+      nextData.meta={...(nextData.meta||{}),lastUpdated:new Date().toISOString()};
+      try{localStorage.setItem(KEY,JSON.stringify(nextData));localStorage.setItem(KAGEMUSHA_DIARY_KEY,JSON.stringify(nextDiaries))}
+      catch(error){try{restoreStorage()}catch(rollbackError){console.error(rollbackError)}throw error}
+      data=nextData;saved=true;
+    });
+    await step("render failed",()=>render());
+    toast("✅ Restore completed successfully");
+  }catch(error){
+    console.error(error);
+    if(saved){
+      try{restoreStorage()}catch(rollbackError){console.error(rollbackError)}
+      data=previousData;
+      try{render()}catch(rollbackRenderError){console.error(rollbackRenderError)}
+    }
+    const details=error?.stack||String(error);
+    alert(`❌ ${error?.restoreStage||stage}\n\n${details}`);
+  }finally{input.value=""}
 }
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
