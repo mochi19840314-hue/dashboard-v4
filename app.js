@@ -34,10 +34,11 @@ const PAGE_IDS=["today","month","report","year","finance","memo","settings","dat
 const reducedMotion=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const scoreAnimations=new WeakMap();
 function animateScoreRing(ring,value,property,number){
- if(!ring)return;const target=Math.max(0,Math.min(100,Number(value)||0)),start=Number(ring.dataset.animatedValue)||0,existing=scoreAnimations.get(ring);if(existing)cancelAnimationFrame(existing);
- if(reducedMotion()){ring.style.setProperty(property,target);ring.dataset.animatedValue=target;if(number)number.textContent=value==null?"—":Math.round(target);return}
+ if(!ring)return;const target=Math.max(0,Math.min(100,Number(value)||0)),start=Number(ring.dataset.animatedValue)||0,existing=scoreAnimations.get(ring),finalText=value==null?"—":String(Math.round(target));
+ if(existing)cancelAnimationFrame(existing);
+ if(reducedMotion()||ring.dataset.animatedValue!==undefined&&start===target){ring.style.setProperty(property,target);ring.dataset.animatedValue=target;if(number)number.textContent=finalText;scoreAnimations.delete(ring);return}
  const began=performance.now(),duration=800,ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
- const frame=now=>{const progress=Math.min(1,(now-began)/duration),current=start+(target-start)*ease(progress);ring.style.setProperty(property,current);if(number)number.textContent=value==null?"—":Math.round(current);ring.dataset.animatedValue=current;if(progress<1)scoreAnimations.set(ring,requestAnimationFrame(frame));else scoreAnimations.delete(ring)};
+ const frame=now=>{const progress=Math.min(1,(now-began)/duration),current=start+(target-start)*ease(progress);ring.style.setProperty(property,current);if(number)number.textContent=value==null?"—":String(Math.round(current));ring.dataset.animatedValue=current;if(progress<1)scoreAnimations.set(ring,requestAnimationFrame(frame));else{ring.style.setProperty(property,target);ring.dataset.animatedValue=target;if(number)number.textContent=finalText;scoreAnimations.delete(ring)}};
  scoreAnimations.set(ring,requestAnimationFrame(frame));
 }
 function openOverlay(modal){if(!modal)return;modal.hidden=false;modal.classList.remove("is-closing");requestAnimationFrame(()=>modal.classList.add("is-open"))}
@@ -470,8 +471,7 @@ function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,prof
   const secondScore=Math.round(clamp((total.secondOpinions||0)/Math.max(1,active*4)*4,0,4));
   const clinicalScore=Math.min(20,newScore+checkupScore+secondScore);
   const score=clamp(salesScore+profitScore+growthScore+clinicalScore,0,100);
-  animateNumber($('businessScore'),score,v=>String(Math.round(v)),700);
-  $('scoreRing').style.setProperty('--score',score);
+  animateScoreRing($('scoreRing'),score,'--score',$('businessScore'));
   $('scoreSales').textContent=salesScore;$('scoreProfit').textContent=profitScore;$('scoreGrowth').textContent=growthScore;$('scoreClinical').textContent=clinicalScore;
   const grade=score>=85?'非常に好調':score>=70?'好調':score>=55?'安定':score>=40?'改善余地あり':'要確認';
   $('scoreSummary').textContent=`${grade}。売上・利益・成長性・診療KPI・専門相談を総合評価しています。`;
