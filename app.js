@@ -358,8 +358,19 @@ function availableChartYears(selectedYear){
   years.add(String(selectedYear));
   return [...years].filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>Number(a)-Number(b)).slice(-4);
 }
+function annualChartSummary(rows,states){
+  const available=states.map((state,index)=>state.hasData?index:-1).filter(index=>index>=0);
+  if(!available.length)return "年間データが揃うと、ここに推移の要約を表示します。";
+  const best=available.reduce((best,index)=>rows[index].sales>rows[best].sales?index:best,available[0]);
+  const recent=available.slice(-3).map(index=>rows[index].sales);
+  if(recent.length<3)return `${best+1}月が年間最高です。直近の推移は、3か月分のデータが揃うと表示します。`;
+  const average=recent.reduce((sum,value)=>sum+value,0)/recent.length;
+  const change=recent[2]-recent[0];
+  const direction=Math.abs(change)<=average*.1?"緩やかに推移しています":change>0?"上向きに推移しています":"落ち着く傾向です";
+  return `${best+1}月が年間最高、直近3か月は${direction}。`;
+}
 function renderYearChart(rows,yearValue){
-  const el=$("yearChart"),detail=$("chartDetail"),legend=$("yearChartLegend"),w=760,h=390,pad={l:58,r:18,t:20,b:42};
+  const el=$("yearChart"),detail=$("chartDetail"),legend=$("yearChartLegend"),summary=$("yearChartSummary"),w=760,h=320,pad={l:58,r:18,t:18,b:38};
   const colors=["#718096","#d67a43","#7357b5","#00a99d"],years=availableChartYears(yearValue);
   const series=years.map((year,index)=>{
     const yearRows=year===String(yearValue)?rows:Array.from({length:12},(_,i)=>monthSummary(`${year}-${String(i+1).padStart(2,"0")}`));
@@ -368,6 +379,8 @@ function renderYearChart(rows,yearValue){
   });
   const populated=series.filter(s=>s.states.some(state=>state.hasData));
   legend.innerHTML=series.map(s=>`<span><i class="annual-legend" style="background:${s.color}"></i>${japaneseEraYear(s.year)}</span>`).join("");
+  const selectedSeries=series.find(s=>s.year===String(yearValue));
+  summary.textContent=annualChartSummary(selectedSeries.rows,selectedSeries.states);
   if(!populated.length){
     el.innerHTML='<div class="chart-empty">年間データがまだありません。</div>';$('chartDetailMonth').textContent=`${yearValue}年`;
     ['chartDetailSales','chartDetailExpense','chartDetailProfit','chartDetailRate','chartDetailPatients','chartDetailUnit','chartDetailSurgeries','chartDetailNewPatients'].forEach(id=>$(id).textContent='—');
@@ -381,8 +394,13 @@ function renderYearChart(rows,yearValue){
     const last=s.states.reduce((value,state,i)=>state.hasData?i:value,-1),points=s.rows.slice(0,last+1).map((row,i)=>[x(i),y(row.sales)]);
     // Deliberately use only straight SVG line segments: no Bezier/spline interpolation.
     const lines=points.slice(1).map((point,i)=>`<line x1="${points[i][0]}" y1="${points[i][1]}" x2="${point[0]}" y2="${point[1]}" class="annual-line" stroke="${s.color}"/>`).join('');
-    const hits=points.map((point,i)=>`<g class="chart-hit" tabindex="0" role="button" aria-label="${s.year}年${i+1}月の数値を表示" data-year="${s.year}" data-index="${i}"><rect x="${Math.max(pad.l,x(i)-plotW/24)}" y="${pad.t}" width="${plotW/12}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${point[0]}" cy="${point[1]}" r="7" class="annual-dot" fill="${s.color}"/></g>`).join('');
-    return lines+hits;
+    const hits=points.map((point,i)=>`<g class="chart-hit${i===last?' latest-month':''}" tabindex="0" role="button" aria-label="${s.year}年${i+1}月の数値を表示" data-year="${s.year}" data-index="${i}"><rect x="${Math.max(pad.l,x(i)-plotW/24)}" y="${pad.t}" width="${plotW/12}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${point[0]}" cy="${point[1]}" r="${i===last?9:7}" class="annual-dot" fill="${s.color}"/></g>`).join('');
+    const valid=s.states.slice(0,last+1).map((state,i)=>state.hasData?i:-1).filter(i=>i>=0);
+    const best=valid.reduce((best,i)=>s.rows[i].sales>s.rows[best].sales?i:best,valid[0]);
+    const peak=s.year===String(yearValue)&&best!==undefined?points[best]:null;
+    const labelWidth=124,labelX=peak?Math.max(pad.l,Math.min(peak[0]-labelWidth/2,w-pad.r-labelWidth)):0,labelY=peak?(peak[1]<48?peak[1]+10:peak[1]-29):0;
+    const peakLabel=peak?`<g class="annual-peak-label" aria-hidden="true"><rect x="${labelX}" y="${labelY}" width="${labelWidth}" height="21" rx="10.5"/><text x="${labelX+labelWidth/2}" y="${labelY+14}" text-anchor="middle">最高 ${yen(s.rows[best].sales)}</text></g>`:'';
+    return lines+hits+peakLabel;
   }).join('');
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${grid}${months}${drawings}</svg>`;
   const select=g=>{
