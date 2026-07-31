@@ -426,7 +426,7 @@ function renderYearChart(rows,yearValue){
     const peak=s.year===String(yearValue)&&best!==undefined?points[best]:null;
     const labelWidth=124,labelX=peak?Math.max(pad.l,Math.min(peak[0]-labelWidth/2,w-pad.r-labelWidth)):0,labelY=peak?(peak[1]<48?peak[1]+10:peak[1]-29):0;
     const peakLabel=peak?`<g class="annual-peak-label" aria-hidden="true"><rect x="${labelX}" y="${labelY}" width="${labelWidth}" height="21" rx="10.5"/><text x="${labelX+labelWidth/2}" y="${labelY+14}" text-anchor="middle">最高 ${yen(s.rows[best].sales)}</text></g>`:'';
-    return lines+hits+peakLabel;
+    return `<g class="annual-series">${lines}${hits}${peakLabel}</g>`;
   }).join('');
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${grid}${months}${drawings}</svg>`;
   const select=g=>{
@@ -799,9 +799,15 @@ async function importJson(file){
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
 const pageScrollPositions=new Map();let pageTransitionTimer;
+let chartEntranceTimer;
+function playChartEntrance(page){
+ if(!page||reducedMotion())return;
+ clearTimeout(chartEntranceTimer);page.classList.remove("charts-entering");
+ requestAnimationFrame(()=>{page.classList.add("charts-entering");chartEntranceTimer=setTimeout(()=>page.classList.remove("charts-entering"),800)});
+}
 function switchPage(id){
  const current=document.querySelector(".page.active");if(current?.id===id&&!current.classList.contains("page-leaving"))return;
- const reveal=()=>{document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving","graphs-animate")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});const page=$(id);requestAnimationFrame(()=>page?.classList.add("graphs-animate"))};
+ const reveal=()=>{document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving","charts-entering")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});playChartEntrance($(id))};
  clearTimeout(pageTransitionTimer);if(!current||reducedMotion()){reveal();return}pageScrollPositions.set(current.id,window.scrollY);current.classList.add("page-leaving");pageTransitionTimer=setTimeout(reveal,120);
 }
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
