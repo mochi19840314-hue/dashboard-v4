@@ -805,27 +805,12 @@ function storage(){const size=new Blob([JSON.stringify(data)]).size;$("storage")
 function download(name,text,type){const a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function exportJson(){download(`dashboard-backup-${iso()}.json`,JSON.stringify({...data,kagemushaDiary:loadKagemushaDiaries()},null,2),"application/json")}
 function exportCsv(){const esc=v=>`"${String(v??"").replaceAll('"','""')}"`,head=["date","sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions","weatherCondition","temperature","rainProbability","note"],rows=data.entries.map(e=>head.map(k=>esc(k==="weatherCondition"?e.weather?.condition:k==="temperature"?e.weather?.temperature:k==="rainProbability"?e.weather?.rainProbability:e[k])).join(",")),months=[...new Set([...Object.keys(data.historical),...Object.keys(data.financeByMonth)])].sort(),monthly=[["month","clinicalSales","morikuboOnline","royalCanin","purina","ecSales","totalSales","expense","profit"],...months.map(m=>{const s=monthSummary(m);return [m,s.clinicalSales,s.morikuboOnline,s.royalCanin,s.purina,s.ecSales,s.sales,s.expense,s.sales-s.expense]})];download(`dashboard-${iso()}.csv`,"\uFEFF"+[head.join(","),...rows,"",...monthly.map(r=>r.map(esc).join(","))].join("\n"),"text/csv;charset=utf-8")}
-function normalizeBackup(raw){
-  let x=raw;
-  if(x&&typeof x==="object"&&!Array.isArray(x)){
-    if(x.data&&typeof x.data==="object")x=x.data;
-    else if(x.payload&&typeof x.payload==="object")x=x.payload;
-    else if(x.state&&typeof x.state==="object")x=x.state;
-    else if(x[KEY]){try{x=typeof x[KEY]==="string"?JSON.parse(x[KEY]):x[KEY]}catch{}}
-  }
-  if(Array.isArray(x))x={entries:x};
-  if(!x||typeof x!=="object")throw new Error("invalid backup");
-  const entries=Array.isArray(x.entries)?x.entries:Array.isArray(x.records)?x.records:Array.isArray(x.dailyEntries)?x.dailyEntries:Array.isArray(x.dailyRecords)?x.dailyRecords:[];
-  const hasRecognizedData=entries.length||Array.isArray(x.entries)||x.settings||x.finance||x.financeByMonth||x.historical||x.memo!==undefined;
-  if(!hasRecognizedData)throw new Error("unsupported backup");
-  return {...base,...x,entries,settings:{...(x.settings||{})},finance:{...base.finance,...(x.finance||{})},financeByMonth:{...(x.financeByMonth||{})},monthlyReports:{...(x.monthlyReports||{})},historical:{...HISTORICAL,...(x.historical||{})},clinic:{...DEFAULT_CLINIC,...(x.clinic||{}),closedDates:Array.isArray(x.clinic?.closedDates)?x.clinic.closedDates:[]}};
-}
 async function importJson(file){
   try{
     const text=(await file.text()).replace(/^\uFEFF/,"").trim();
     const parsed=JSON.parse(text);
-    const restored=normalizeBackup(parsed);
-    data=restored;save();if(Array.isArray(parsed?.kagemushaDiary)){const existing=loadKagemushaDiaries(),merged=new Map(existing.map(entry=>[entry.date,entry]));parsed.kagemushaDiary.forEach(entry=>{if(entry?.date)merged.set(entry.date,entry)});saveKagemushaDiaries([...merged.values()])}render();toast(`復元しました（${data.entries.length}件）`);
+    const restored=BackupRestore.normalizeBackup(parsed,base,KEY);
+    data=restored.data;save();const existing=loadKagemushaDiaries(),merged=new Map(existing.map(entry=>[entry.date,entry]));restored.kagemushaDiary.forEach(entry=>{if(entry?.date)merged.set(entry.date,entry)});saveKagemushaDiaries([...merged.values()]);render();toast("✅ Daily records restored\n✅ Finance restored\n✅ Reports restored\n✅ Kagemusha restored\n✅ Settings restored");
     $("importJson").value="";
   }catch(err){
     console.error("backup import failed",err);
