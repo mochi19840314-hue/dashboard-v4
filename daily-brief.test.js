@@ -1,0 +1,12 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs");
+const {EMPTY,generateDailyBrief,periodLead}=require("./daily-brief.js");
+assert.equal(periodLead(8),"今日は","morning");assert.equal(periodLead(14),"午前の実績を見ると","afternoon");assert.equal(periodLead(20),"本日の振り返りです。","evening");
+assert.equal(generateDailyBrief({today:"2026-07-31",entries:[]}).insights[0].text,EMPTY,"no history");
+const entries=[];for(let i=1;i<=35;i++){const d=new Date(2026,6,31-i,12);entries.push({date:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,sales:d.getDay()===5?240000:120000,patients:10})}entries.push({date:"2026-07-31",sales:90000,patients:5});
+const brief=generateDailyBrief({today:"2026-07-31",hour:9,entries,dailyTarget:180000,monthlyTarget:5000000});
+assert.ok(brief.insights.length>=3&&brief.insights.length<=5,"enough history");assert.ok(brief.insights.some(x=>x.source==="weekday"),"weekday insight");assert.ok(brief.insights.some(x=>x.source==="goal"),"goal insight");assert.ok(brief.insights.some(x=>x.source==="monthly"),"monthly insight");
+assert.equal(new Set(brief.insights.map(x=>x.text)).size,brief.insights.length,"no duplicate messages");assert.ok(brief.insights.every(x=>Array.from(x.text).length<=60),"60 characters");
+assert.match(fs.readFileSync("style.css","utf8"),/@media\(prefers-reduced-motion:reduce\)\{\.daily-shadow-insights li\{animation:none!important\}\}/,"reduced motion");
+const started=performance.now();for(let i=0;i<100;i++)generateDailyBrief({today:"2026-07-31",hour:9,entries,dailyTarget:180000,monthlyTarget:5000000});assert.ok((performance.now()-started)/100<20,"under 20ms");
+console.log("daily brief tests: 10 scenarios passed");
