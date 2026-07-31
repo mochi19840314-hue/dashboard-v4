@@ -8,5 +8,6 @@ const brief=generateDailyBrief({today:"2026-07-31",hour:9,entries,dailyTarget:18
 assert.ok(brief.insights.length>=3&&brief.insights.length<=5,"enough history");assert.ok(brief.insights.some(x=>x.source==="weekday"),"weekday insight");assert.ok(brief.insights.some(x=>x.source==="goal"),"goal insight");assert.ok(brief.insights.some(x=>x.source==="monthly"),"monthly insight");
 assert.equal(new Set(brief.insights.map(x=>x.text)).size,brief.insights.length,"no duplicate messages");assert.ok(brief.insights.every(x=>Array.from(x.text).length<=60),"60 characters");
 assert.match(fs.readFileSync("style.css","utf8"),/@media\(prefers-reduced-motion:reduce\)\{\.daily-shadow-insights li\{animation:none!important\}\}/,"reduced motion");
+const app=fs.readFileSync("app.js","utf8");assert.match(app,/day=clinicDayInfo\(todayDate\)/,"daily target uses the current clinic-day profile");assert.doesNotMatch(app,/\bdayProfile\b/,"removed undefined legacy dayProfile reference");
 const started=performance.now();for(let i=0;i<100;i++)generateDailyBrief({today:"2026-07-31",hour:9,entries,dailyTarget:180000,monthlyTarget:5000000});assert.ok((performance.now()-started)/100<20,"under 20ms");
-console.log("daily brief tests: 10 scenarios passed");
+console.log("daily brief tests: 12 scenarios passed");
