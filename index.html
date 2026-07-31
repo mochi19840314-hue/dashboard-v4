@@ -94,13 +94,13 @@
         <div class="kagemusha-message-heading"><span id="kagemushaMessageTitle">影武者のひとこと</span><button id="kagemushaClose" type="button" aria-label="影武者のひとことを閉じる">×</button></div>
         <p id="kagemushaQuote">私なら今日は件数より診療内容を評価します。</p>
         <small>数字は私が冷静に見ます。最後に決めるのは先生です。</small>
-        <button class="kagemusha-diary-save" id="saveKagemushaDiary" type="button" aria-label="今日の影武者日誌を保存する">今日の日誌を保存</button>
+        <button class="kagemusha-diary-save" id="saveKagemushaDiary" type="button" aria-label="今日の影武者日誌を更新する">今日の日誌を今すぐ更新</button>
       </div>
       <button class="kagemusha-button kagemusha-character" id="kagemushaButton" type="button" aria-label="影武者のひとことを開く" aria-expanded="false" aria-controls="kagemushaMessage">
         <span id="kagemushaEmoji" class="kagemusha-emoji" aria-hidden="true">🥷</span><span>影武者に相談</span>
       </button>
     </div>
-    <section class="kagemusha-diary" aria-labelledby="kagemushaDiaryTitle"><div><h3 id="kagemushaDiaryTitle">影武者日誌</h3><small>直近7件</small></div><div id="kagemushaDiaryList" class="kagemusha-diary-list"><p class="empty">保存した日誌はまだありません。</p></div></section>
+    <section class="kagemusha-diary" aria-labelledby="kagemushaDiaryTitle"><div><h3 id="kagemushaDiaryTitle">影武者日誌</h3><small>日次実績の保存時に自動更新・直近7件</small></div><div id="kagemushaDiaryList" class="kagemusha-diary-list"><p class="empty">保存した日誌はまだありません。</p></div></section>
   </details>
   <article class="card management-insight-card" id="managementInsightCard" aria-labelledby="managementInsightTitle">
     <div class="management-insight-heading">
@@ -392,7 +392,7 @@
 <div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
 <div class="clinical-trend-modal" id="clinicalTrendModal" role="dialog" aria-modal="true" aria-labelledby="clinicalTrendModalTitle" hidden><div class="clinical-trend-dialog"><button id="closeClinicalTrends" class="modal-close" type="button" aria-label="診療傾向を閉じる">×</button><div id="clinicalTrendDetail"></div></div></div>
 <script src="clinical-trends.js?v=1050"></script>
-<script src="app.js?v=1050"></script>
+<script src="app.js?v=1051"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
