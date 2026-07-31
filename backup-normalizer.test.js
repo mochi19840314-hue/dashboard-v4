@@ -1,0 +1,30 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {normalizeBackup}=require("./backup-normalizer");
+const KEY="keitaDashboardSimpleV1";
+const defaults={entries:[],finance:{balance:0,monthlyExpense:0},financeByMonth:{},monthlyReports:{},clinic:{fullDayTarget:180000,closedDates:[]},weatherCache:null,historical:{"2026-01":{sales:10}},settings:{},memo:""};
+
+const old=normalizeBackup({records:[{date:"2025-01-01"}],finance:{balance:12}},defaults,KEY);
+assert.equal(old.data.entries.length,1);
+assert.deepEqual(old.data.finance,{balance:12,monthlyExpense:0});
+assert.deepEqual(old.data.monthlyReports,{});
+assert.equal(old.data.clinic.fullDayTarget,180000);
+assert.equal(old.data.weatherCache,null);
+
+const complete={entries:[{date:"2026-07-31"}],financeByMonth:{"2026-07":{balance:99}},monthlyReports:{"2026-07":{memo:"report"}},clinic:{fullDayTarget:200000,closedDates:["2026-08-01"]},weatherCache:{condition:"sunny"},historical:{"2025-12":{sales:20}},settings:{"2026-07":{target:5}},kagemushaDiary:[{date:"2026-07-31"}],memo:"note",finance:{monthlyExpense:7}};
+const current=normalizeBackup({data:complete},defaults,KEY);
+assert.equal(current.data.financeByMonth["2026-07"].monthlyExpense,0);
+assert.equal(current.data.monthlyReports["2026-07"].memo,"report");
+assert.equal(current.data.clinic.fullDayTarget,200000);
+assert.equal(current.data.weatherCache.condition,"sunny");
+assert.equal(current.data.historical["2025-12"].sales,20);
+assert.equal(current.data.settings["2026-07"].target,5);
+assert.equal(current.data.memo,"note");
+assert.equal(current.data.finance.balance,0);
+assert.equal(current.kagemushaDiary.length,1);
+
+const stored=normalizeBackup({[KEY]:JSON.stringify({dailyRecords:[]}),kagemushaDiary:[{date:"legacy"}]},defaults,KEY);
+assert.equal(stored.kagemushaDiary[0].date,"legacy");
+assert.deepEqual(normalizeBackup({},defaults,KEY).data.finance,defaults.finance);
+assert.throws(()=>normalizeBackup("bad",defaults,KEY));
+console.log("backup normalizer tests: 18 checks passed");
