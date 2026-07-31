@@ -13,4 +13,10 @@ const zero=analyzeClinicalTrends([{date:"2026-07-28",sales:0,patients:5},{date:"
 const absent=analyzeClinicalTrends(entries(7).map(({newPatients,weather,...e})=>e),{today});assert.equal(absent.newPatients.available,false,"新患なし");assert.equal(absent.weather.available,false,"天気なし");
 const tie=analyzeClinicalTrends([{date:"2026-07-28",sales:100,patients:2},{date:"2026-07-29",sales:100,patients:2}],{today});assert.deepEqual(tie.weekday.busiestWeekdays,["火曜日","水曜日"],"同率");
 const bad=analyzeClinicalTrends([{date:"2026-07-28",sales:"x",patients:"NaN",newPatients:-1}],{today});assert.equal(bad.weekday.rows[2].averageSales,null,"不正値");
-console.log("clinical trend tests: 12 scenarios passed");
+const acrossMonths=analyzeClinicalTrends([{date:"2026-05-15",sales:1,patients:1},{date:"2026-06-30",sales:2,patients:2},{date:"2026-07-31",sales:3,patients:3}],{today});
+assert.equal(acrossMonths.dataDays,3,"月境界を越えて長期データを含める");
+const closure=analyzeClinicalTrends([{date:"2026-07-29",sales:100,patients:1},{date:"2026-07-30",sales:200,patients:2}],{today,closedDates:["2026-07-29"]});
+assert.equal(closure.dataDays,1,"臨時休診日を除外");assert.equal(closure.period.from,"2026-07-30","実データの分析開始日を表示");
+assert.equal(analyzeClinicalTrends(entries(13),{today}).confidence,"暫定","14営業日未満の信頼度");
+assert.notEqual(analyzeClinicalTrends(entries(30),{today}).confidence,"暫定","30営業日以上は暫定を脱する");
+console.log("clinical trend tests: 17 scenarios passed");

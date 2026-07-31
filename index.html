@@ -207,7 +207,7 @@
 
 
 <section id="report" class="page">
-  <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
+  <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p><p id="reportPeriod" class="clinical-trend-period"></p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
   <div id="reportStatus" class="report-status">集計中です。</div>
   <article class="card clinical-trend-card" aria-labelledby="clinicalTrendTitle">
     <div class="clinical-trend-heading"><div><span class="eyebrow">OPERATIONS TREND</span><h3 id="clinicalTrendTitle">🧠 診療傾向</h3></div><span id="clinicalTrendConfidence">信頼度：低</span></div>
@@ -393,9 +393,10 @@
 <div class="month-rollover-modal" id="monthRolloverModal" role="dialog" aria-modal="true" aria-labelledby="monthRolloverTitle" hidden><div class="month-rollover-dialog"><span class="eyebrow">MONTHLY UPDATE</span><h2 id="monthRolloverTitle">新しい月のデータ</h2><p id="monthRolloverMessage"></p><div class="month-rollover-actions"><button id="confirmMonthRollover" class="primary" type="button">はい</button><button id="deferMonthRollover" type="button">あとで</button></div></div></div>
 <div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
 <div class="clinical-trend-modal" id="clinicalTrendModal" role="dialog" aria-modal="true" aria-labelledby="clinicalTrendModalTitle" hidden><div class="clinical-trend-dialog"><button id="closeClinicalTrends" class="modal-close" type="button" aria-label="診療傾向を閉じる">×</button><div id="clinicalTrendDetail"></div></div></div>
-<script src="clinical-trends.js?v=1050"></script>
+<script src="date-ranges.js?v=1060"></script>
+<script src="clinical-trends.js?v=1060"></script>
 <script src="month-rollover.js?v=1059"></script>
-<script src="app.js?v=1059"></script>
+<script src="app.js?v=1060"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>

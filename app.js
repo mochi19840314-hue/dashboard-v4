@@ -267,7 +267,7 @@ function edit(date){const e=data.entries.find(x=>x.date===date);if(!e)return;["s
 function del(date){if(!String(date).startsWith(monthNow()))return toast("過去月は閲覧のみです");if(!confirm(`${date}の記録を削除しますか？`))return;data.entries=data.entries.filter(x=>x.date!==date);save();render();toast("削除しました")}
 function sum(entries){return entries.reduce((a,e)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=(Number(e[k])||0));return a},{sales:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0})}
 function monthSummary(m){
-  const entries=data.entries.filter(e=>e.date.startsWith(m)),daily=sum(entries),hist=data.historical[m]||{},mf=data.financeByMonth[m]||{};
+  const entries=DateRanges.entriesForCalendarMonth(data.entries,m),daily=sum(entries),hist=data.historical[m]||{},mf=data.financeByMonth[m]||{};
   const fallbackCurrent=(m===monthNow()?data.finance.monthlyExpense:0);
   const clinicalSales=daily.sales||Number(hist.sales)||0;
   const morikuboOnline=Number(mf.morikuboOnline ?? (m===monthNow()?data.finance.morikuboOnline:0))||0;
@@ -749,7 +749,7 @@ function renderMonthlyReport(){
   if(!$("reportMonthPicker"))return;
   const m=reportMonth(),s=monthSummary(m),prev=monthSummary(monthShift(m,-1)),cfg=data.settings[m]||{},target=Number(cfg.target)||MONTHLY_TARGET,profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0,progress=target?s.sales/target*100:0;
   $("reportSales").textContent=yen(s.sales);$("reportProgress").textContent=pct(progress);$("reportProfit").textContent=yen(profit);$("reportProfitRate").textContent=pct(rate);$("reportPatients").textContent=`${s.patients}件`;$("reportUnit").textContent=yen(unit);$("reportNew").textContent=`${s.newPatients}件`;$("reportClinical").textContent=`${s.surgeries}件 / ${s.checkups}件`;
-  const current=m===monthNow(),days=s.entries.length;$("reportStatus").textContent=current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
+  const current=m===monthNow(),days=s.entries.length,period=DateRanges.calendarMonthRange(m,iso());$("reportPeriod").textContent=`集計期間：${period.from}〜${period.to}`;$("reportStatus").textContent=current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
   const model=reportScoreModel(s,prev,target,current);
   const memoAnalysis=renderReportMemoAnalysis(s.entries);
   const advisor=advisorModel(s,prev,target,memoAnalysis);$("advisorDiscovery").textContent=advisor.discovery;$("advisorGood").textContent=advisor.good;$("advisorCaution").textContent=advisor.caution;$("advisorAction").textContent=advisor.action;
@@ -767,7 +767,7 @@ function renderMonthlyReport(){
   const goals=[];goals.push(`月間売上${yen(target)}以上`);goals.push("利益率30%以上を維持");if(s.checkups<10)goals.push("健診10件以上");else if(unit)goals.push(`客単価${yen(Math.round(unit/1000)*1000)}以上を維持`);$("reportNextGoals").innerHTML=goals.slice(0,3).map(x=>`<li>${x}</li>`).join("");
   const condition=progress>=100&&rate>=30?"売上と利益の両面で好調":"改善余地を確認しながら前進",memoContext=memoAnalysis.top.length?` 日々のメモでは${memoAnalysis.top.map(x=>x.label).join("・")}の記録が目立ち、数値変化の背景として注目されます。`:"";$("reportSummary").textContent=`${monthLabel(m)}は「${condition}」な月です。${driver}が売上を支え、利益率は${pct(rate)}でした。${memoContext}支出では人件費・薬品医療材料費・カード決済手数料の3項目に絞って変化を確認し、来月は売上目標と利益率を両立させることが重点です。`;
 }
-function clinicalTrendAnalysis(){return ClinicalTrends.analyzeClinicalTrends(data.entries,{periodDays:90,today:iso()})}
+function clinicalTrendAnalysis(){return ClinicalTrends.analyzeClinicalTrends(data.entries,{periodDays:90,today:iso(),closedDates:data.clinic?.closedDates})}
 function trendValue(value,suffix=""){return value==null?"—":`${Math.round(value).toLocaleString("ja-JP")}${suffix}`}
 function renderClinicalTrends(){
   if(!$("clinicalTrendInsights"))return;const analysis=clinicalTrendAnalysis();

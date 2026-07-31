@@ -10,6 +10,12 @@
   const unit=entry=>{const patients=number(entry.patients),sales=number(entry.sales);return patients>0&&sales!==null?sales/patients:null};
   const validDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value))&&!Number.isNaN(Date.parse(`${value}T00:00:00Z`));
   const weekdayIndex=date=>new Date(`${date}T00:00:00Z`).getUTCDay();
+  const hasClinicalData=entry=>["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].some(key=>number(entry[key])!==null);
+  function rollingBusinessRange(today,days,closedDates){
+    const closed=new Set(Array.isArray(closedDates)?closedDates.filter(validDate):[]),cursor=new Date(`${today}T00:00:00Z`);let counted=0,from=today;
+    while(counted<days){const date=cursor.toISOString().slice(0,10);if(cursor.getUTCDay()!==1&&!closed.has(date)){counted++;from=date}cursor.setUTCDate(cursor.getUTCDate()-1)}
+    return {from,to:today,days};
+  }
   const summarize=rows=>({
     days:rows.length,
     averagePatients:mean(rows.map(e=>number(e.patients))),
@@ -60,10 +66,11 @@
   }
   function analyzeClinicalTrends(entries,options={}){
     const periodDays=Math.min(90,Math.max(30,Number(options.periodDays)||90)),today=validDate(options.today)?options.today:new Date().toISOString().slice(0,10);
-    const source=Array.isArray(entries)?entries:[],clean=source.filter(e=>e&&validDate(e.date)&&e.date<=today&&weekdayIndex(e.date)!==1).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,periodDays).sort((a,b)=>a.date.localeCompare(b.date)),from=clean[0]?.date||today;
+    const closedDates=Array.isArray(options.closedDates)?options.closedDates:[],closed=new Set(closedDates),window=rollingBusinessRange(today,periodDays,closedDates);
+    const source=Array.isArray(entries)?entries:[],clean=source.filter(e=>e&&validDate(e.date)&&hasClinicalData(e)&&e.date>=window.from&&e.date<=today&&weekdayIndex(e.date)!==1&&!closed.has(e.date)).sort((a,b)=>a.date.localeCompare(b.date)),from=clean[0]?.date||window.from;
     const weekday=analyzeWeekdayTrends(clean),firstHalfVsSecondHalf=analyzeMonthHalfTrends(clean),volumeVsUnitPrice=analyzeVolumeUnitRelationship(clean),newPatients=analyzeNewPatientTrends(clean),weather=analyzeWeatherTrends(clean);
     const comparisons=[...weekday.rows.filter(r=>r.days).map(r=>r.days),firstHalfVsSecondHalf.first.days,firstHalfVsSecondHalf.second.days].filter(Boolean),confidence=confidenceFor(clean.length,comparisons.length?Math.min(...comparisons):0);
-    const result={dataDays:clean.length,period:{from,to:today,days:periodDays},confidence,status:clean.length<7?"データ不足":clean.length<30?"暫定傾向":clean.length<90?"通常傾向":"中期傾向",weekday,firstHalfVsSecondHalf,volumeVsUnitPrice,newPatients,weather,insights:[]};result.insights=generateKagemushaTrendInsights(result);return result;
+    const result={dataDays:clean.length,period:{from,to:today,days:periodDays,windowFrom:window.from},confidence,status:clean.length<7?"データ不足":clean.length<30?"暫定傾向":clean.length<90?"通常傾向":"中期傾向",weekday,firstHalfVsSecondHalf,volumeVsUnitPrice,newPatients,weather,insights:[]};result.insights=generateKagemushaTrendInsights(result);return result;
   }
   return {analyzeClinicalTrends,analyzeWeekdayTrends,analyzeMonthHalfTrends,analyzeVolumeUnitRelationship,analyzeNewPatientTrends,analyzeWeatherTrends,generateKagemushaTrendInsights};
 });
