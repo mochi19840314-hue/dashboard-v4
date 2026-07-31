@@ -272,7 +272,8 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 .page.active.page-leaving{display:block;animation:pageExit 120ms ease-in both;pointer-events:none}
 @keyframes pageEnter{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
 @keyframes pageExit{from{opacity:1;transform:none}to{opacity:0;transform:translateX(-8px)}}
-.charts-entering .annual-series{animation:annualSeriesReveal 700ms ease-out both;will-change:clip-path}
+.chart-awaiting .annual-series{clip-path:inset(0 100% 0 0)}
+.chart-animating .annual-series{animation:annualSeriesReveal 700ms ease-out both;will-change:clip-path}
 @keyframes annualSeriesReveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
 :is(.kagemusha-diary-modal,.clinical-trend-modal){opacity:0;transition:opacity 200ms ease}
 :is(.kagemusha-diary-dialog,.clinical-trend-dialog){opacity:0;transform:scale(.96);transition:opacity 200ms ease,transform 200ms cubic-bezier(.2,.8,.2,1)}
@@ -284,7 +285,7 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 #kagemushaButton{animation:kagemushaBreathe 5.6s ease-in-out infinite;will-change:transform,box-shadow}
 #kagemushaButton:active{animation:none;transform:scale(.97);box-shadow:0 5px 14px rgba(14,67,63,.1)}
 @keyframes kagemushaBreathe{0%,18%,100%{transform:scale(1);box-shadow:0 9px 22px rgba(14,67,63,.12)}9%{transform:scale(1.015);box-shadow:0 11px 25px rgba(14,67,63,.15)}}
-@media(prefers-reduced-motion:reduce){.page.active,.page.active.page-leaving,.charts-entering .annual-series,#kagemushaButton{animation:none!important;will-change:auto}:is(.kagemusha-diary-modal,.clinical-trend-modal),:is(.kagemusha-diary-dialog,.clinical-trend-dialog){transition:none!important}}
+@media(prefers-reduced-motion:reduce){.page.active,.page.active.page-leaving,.chart-animating .annual-series,#kagemushaButton{animation:none!important;will-change:auto}.chart-awaiting .annual-series{clip-path:none}:is(.kagemusha-diary-modal,.clinical-trend-modal),:is(.kagemusha-diary-dialog,.clinical-trend-dialog){transition:none!important}}
 
 /* Animation Pack v1.0 — tactile feedback and focused data updates */
 :where(.card,.metrics article,article[class$="-card"],article[class*="-card "]),button{
