@@ -201,16 +201,18 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 @media(prefers-reduced-motion:reduce){.chart-detail.detail-updating{animation:none!important}.chart-dot,.focus-line{transition:none!important}}
 
 /* v10.4.2 — mobile-first, straight annual comparison chart */
-.apple-chart-card{min-height:460px;padding-top:17px}
+.apple-chart-card{min-height:460px;padding-top:17px;background:#fbfefd}
 .chart-heading{padding-bottom:3px}
 .chart-legend{align-self:flex-end;margin-bottom:1px}
-.chart-summary{margin:4px 6px 0;padding:8px 11px;border-radius:11px;background:#f2f8f7;color:#3f6663;font-size:12px;font-weight:750;line-height:1.45}
+.chart-summary{display:flex;align-items:flex-start;gap:7px;margin:4px 6px 0;padding:8px 11px;border-radius:11px;background:#eef9f7;color:#3f6663;font-size:12px;font-weight:750;line-height:1.45}
+.chart-summary:before{content:"📈";flex:0 0 auto;font-size:13px;line-height:1.35}
 .year-chart{padding-top:0}
 .year-chart svg{min-height:320px!important}
-.annual-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.annual-dot{stroke:#fff;stroke-width:2;opacity:1}
-.chart-hit.latest-month .annual-dot{filter:drop-shadow(0 2px 4px rgba(28,52,60,.25))}
-.annual-peak-label{pointer-events:none}.annual-peak-label rect{fill:rgba(37,52,58,.9)}.annual-peak-label text{fill:#fff;font-size:10px;font-weight:850;font-variant-numeric:tabular-nums}
+.annual-line{fill:none;stroke-width:2.35;stroke-linecap:round;stroke-linejoin:round}
+.annual-line.current-year-line{stroke-width:3.5}.annual-line.past-year-line{opacity:.72}
+.annual-dot{stroke:transparent;stroke-width:0;opacity:1}.past-year-dot{opacity:.76}
+.chart-hit.latest-month .annual-dot{stroke:#fff;stroke-width:3;filter:drop-shadow(0 2px 5px rgba(0,159,145,.3))}
+.annual-peak-label{pointer-events:none}.annual-peak-label rect{fill:#009f91}.annual-peak-label text{fill:#fff;font-size:10px;font-weight:850;font-variant-numeric:tabular-nums}
 .chart-legend i.annual-legend{width:20px;height:3px}
 .chart-axis-label{fill:var(--muted);font-size:11px;font-weight:750}
 .chart-detail{margin-top:7px;padding:14px}.chart-detail h4{margin-bottom:10px;font-size:22px}.chart-detail-grid div{padding:9px}.chart-detail-grid dd{font-size:16px}.chart-detail-ai{margin-top:8px;padding:10px 12px}

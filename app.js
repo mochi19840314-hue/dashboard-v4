@@ -371,11 +371,13 @@ function annualChartSummary(rows,states){
 }
 function renderYearChart(rows,yearValue){
   const el=$("yearChart"),detail=$("chartDetail"),legend=$("yearChartLegend"),summary=$("yearChartSummary"),w=760,h=320,pad={l:58,r:18,t:18,b:38};
-  const colors=["#718096","#d67a43","#7357b5","#00a99d"],years=availableChartYears(yearValue);
-  const series=years.map((year,index)=>{
+  const currentYear=String(new Date().getFullYear()),pastColors=["#aeb7bc","#89959b","#66757c"],years=availableChartYears(yearValue);
+  const series=years.map(year=>{
     const yearRows=year===String(yearValue)?rows:Array.from({length:12},(_,i)=>monthSummary(`${year}-${String(i+1).padStart(2,"0")}`));
     const states=yearRows.map((row,i)=>monthDetailState(`${year}-${String(i+1).padStart(2,"0")}`,row));
-    return {year,rows:yearRows,states,color:colors[index]};
+    const isCurrent=year===currentYear;
+    const pastIndex=years.filter(candidate=>candidate!==currentYear).indexOf(year);
+    return {year,rows:yearRows,states,isCurrent,color:isCurrent?"#009f91":pastColors[pastIndex%pastColors.length]};
   });
   const populated=series.filter(s=>s.states.some(state=>state.hasData));
   legend.innerHTML=series.map(s=>`<span><i class="annual-legend" style="background:${s.color}"></i>${japaneseEraYear(s.year)}</span>`).join("");
@@ -386,15 +388,15 @@ function renderYearChart(rows,yearValue){
     ['chartDetailSales','chartDetailExpense','chartDetailProfit','chartDetailRate','chartDetailPatients','chartDetailUnit','chartDetailSurgeries','chartDetailNewPatients'].forEach(id=>$(id).textContent='—');
     $('chartDetailAi').textContent='入力データがないため、コメントはまだ生成できません。';return
   }
-  const maxValue=Math.max(...populated.flatMap(s=>s.rows.map((r,i)=>s.states[i].hasData?r.sales:0)),1),step=Math.max(1000000,Math.ceil(maxValue/4/1000000)*1000000),max=step*4;
+  const maxValue=Math.max(...populated.flatMap(s=>s.rows.map((r,i)=>s.states[i].hasData?r.sales:0)),1),step=1000000,max=Math.max(step,Math.ceil(maxValue/step)*step);
   const plotW=w-pad.l-pad.r,plotH=h-pad.t-pad.b,x=i=>pad.l+i*plotW/11,y=v=>pad.t+plotH*(1-Math.max(0,v)/max);
-  const grid=Array.from({length:5},(_,i)=>{const value=step*i,py=y(value),label=value===0?'0':`${value/1000000}万`;return `<line x1="${pad.l}" y1="${py}" x2="${w-pad.r}" y2="${py}" class="chart-grid"/><text x="${pad.l-9}" y="${py+4}" text-anchor="end" class="chart-axis-label">${label}</text>`}).join('');
+  const grid=`<line x1="${pad.l}" y1="${y(0)}" x2="${w-pad.r}" y2="${y(0)}" class="chart-grid chart-baseline"/>`+Array.from({length:max/step},(_,i)=>{const value=step*(i+1),py=y(value),label=`${(i+1)*100}万`;return `<line x1="${pad.l}" y1="${py}" x2="${w-pad.r}" y2="${py}" class="chart-grid"/><text x="${pad.l-9}" y="${py+4}" text-anchor="end" class="chart-axis-label">${label}</text>`}).join('');
   const months=Array.from({length:12},(_,i)=>`<text x="${x(i)}" y="${h-13}" text-anchor="middle" class="chart-month">${i+1}月</text>`).join('');
   const drawings=populated.map(s=>{
     const last=s.states.reduce((value,state,i)=>state.hasData?i:value,-1),points=s.rows.slice(0,last+1).map((row,i)=>[x(i),y(row.sales)]);
     // Deliberately use only straight SVG line segments: no Bezier/spline interpolation.
-    const lines=points.slice(1).map((point,i)=>`<line x1="${points[i][0]}" y1="${points[i][1]}" x2="${point[0]}" y2="${point[1]}" class="annual-line" stroke="${s.color}"/>`).join('');
-    const hits=points.map((point,i)=>`<g class="chart-hit${i===last?' latest-month':''}" tabindex="0" role="button" aria-label="${s.year}年${i+1}月の数値を表示" data-year="${s.year}" data-index="${i}"><rect x="${Math.max(pad.l,x(i)-plotW/24)}" y="${pad.t}" width="${plotW/12}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${point[0]}" cy="${point[1]}" r="${i===last?9:7}" class="annual-dot" fill="${s.color}"/></g>`).join('');
+    const lines=points.slice(1).map((point,i)=>`<line x1="${points[i][0]}" y1="${points[i][1]}" x2="${point[0]}" y2="${point[1]}" class="annual-line${s.isCurrent?' current-year-line':' past-year-line'}" stroke="${s.color}"/>`).join('');
+    const hits=points.map((point,i)=>{const isLatest=s.isCurrent&&i===last;return `<g class="chart-hit${isLatest?' latest-month':''}" tabindex="0" role="button" aria-label="${s.year}年${i+1}月の数値を表示" data-year="${s.year}" data-index="${i}"><rect x="${Math.max(pad.l,x(i)-plotW/24)}" y="${pad.t}" width="${plotW/12}" height="${plotH}" fill="transparent"/><line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${h-pad.b}" class="focus-line"/><circle cx="${point[0]}" cy="${point[1]}" r="${isLatest?8:5}" class="annual-dot${s.isCurrent?' current-year-dot':' past-year-dot'}" fill="${s.color}"/></g>`}).join('');
     const valid=s.states.slice(0,last+1).map((state,i)=>state.hasData?i:-1).filter(i=>i>=0);
     const best=valid.reduce((best,i)=>s.rows[i].sales>s.rows[best].sales?i:best,valid[0]);
     const peak=s.year===String(yearValue)&&best!==undefined?points[best]:null;
