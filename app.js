@@ -799,15 +799,33 @@ async function importJson(file){
 function deleteAll(){if(confirm("全データを削除しますか？")&&confirm("元に戻せません。よろしいですか？")){data=structuredClone(base);save();clearForm();render()}}
 function updateIndicator(id){const active=PAGE_IDS.indexOf(id);$("pageIndicator").innerHTML=PAGE_IDS.map((_,i)=>`<i class="${i===active?'active':''}"></i>`).join('')}
 const pageScrollPositions=new Map();let pageTransitionTimer;
-let chartEntranceTimer;
+const playedCharts=new WeakSet(),chartEntranceTimers=new WeakMap();
+let chartObserver,observedChartPage;
+function finishChartEntrance(chart){
+ chart.classList.remove("chart-awaiting","chart-animating");
+ const timer=chartEntranceTimers.get(chart);if(timer)clearTimeout(timer);chartEntranceTimers.delete(chart);
+}
+function disconnectChartObserver(resetPlayed=false){
+ if(chartObserver)chartObserver.disconnect();
+ if(observedChartPage)observedChartPage.querySelectorAll(".chart-card").forEach(chart=>{finishChartEntrance(chart);if(resetPlayed)playedCharts.delete(chart)});
+ observedChartPage=null;
+}
 function playChartEntrance(page){
- if(!page||reducedMotion())return;
- clearTimeout(chartEntranceTimer);page.classList.remove("charts-entering");
- requestAnimationFrame(()=>{page.classList.add("charts-entering");chartEntranceTimer=setTimeout(()=>page.classList.remove("charts-entering"),800)});
+ disconnectChartObserver(true);if(!page)return;
+ const charts=[...page.querySelectorAll(".chart-card")];
+ if(reducedMotion()||typeof IntersectionObserver==="undefined"){charts.forEach(finishChartEntrance);return}
+ observedChartPage=page;
+ if(!chartObserver)chartObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+  const chart=entry.target;
+  if(!entry.isIntersecting||entry.intersectionRatio<.25||playedCharts.has(chart)||!chart.closest(".page.active"))return;
+  playedCharts.add(chart);chartObserver.unobserve(chart);chart.classList.remove("chart-awaiting");chart.classList.add("chart-animating");
+  chartEntranceTimers.set(chart,setTimeout(()=>finishChartEntrance(chart),800));
+ }),{threshold:.25});
+ charts.forEach(chart=>{chart.classList.add("chart-awaiting");chartObserver.observe(chart)});
 }
 function switchPage(id){
  const current=document.querySelector(".page.active");if(current?.id===id&&!current.classList.contains("page-leaving"))return;
- const reveal=()=>{document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving","charts-entering")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});playChartEntrance($(id))};
+ const reveal=()=>{disconnectChartObserver(true);document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});playChartEntrance($(id))};
  clearTimeout(pageTransitionTimer);if(!current||reducedMotion()){reveal();return}pageScrollPositions.set(current.id,window.scrollY);current.classList.add("page-leaving");pageTransitionTimer=setTimeout(reveal,120);
 }
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
