@@ -134,7 +134,7 @@ function renderDailyShadowBrief(){
  try{
   const list=$("dailyShadowInsights");if(!list)return;
   const dailyShadow=data?.dailyShadow??{},weatherCache=data?.weatherCache??{},goal=dailyShadow?.goal??{},today=dailyShadow?.today??{},history=dailyShadow?.history??{},progress=dailyShadow?.progress??{};
-  const todayDate=typeof today?.date==="string"?today?.date:iso(),month=todayDate?.slice?.(0,7)??"",setting=data?.settings?.[month]??{},day=dayProfile?.(todayDate)??{};
+  const todayDate=typeof today?.date==="string"?today?.date:iso(),month=todayDate?.slice?.(0,7)??"",setting=data?.settings?.[month]??{},day=clinicDayInfo(todayDate);
   const entries=Array.isArray(history)?history:Array.isArray(history?.entries)?history?.entries:Array.isArray(data?.entries)?data?.entries:[];
   const generator=globalThis?.DailyShadowBrief?.generateDailyBrief;if(typeof generator!=="function"){showEmpty();return}
   const result=generator({today:todayDate,hour:new Date()?.getHours?.()??0,entries,dailyTarget:Number(goal?.dailyTarget??day?.target??0)||0,monthlyTarget:Number(goal?.monthlyTarget??setting?.target??0)||MONTHLY_TARGET,weatherCache,progress});
