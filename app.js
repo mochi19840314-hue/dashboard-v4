@@ -23,7 +23,7 @@ function getKagemushaMood({patients=0,sales=0,profitRate=0,progress=0,hasProfitD
 (()=>{"use strict";
 const KEY="keitaDashboardSimpleV1";
 const KAGEMUSHA_DIARY_KEY="kagemushaDiaryV1";
-const USE_KAGEMUSHA_IMAGES=false;
+const USE_KAGEMUSHA_IMAGES=true;
 const KAGEMUSHA_MESSAGES={
  normal:["先生、数字は安定しています。私なら今の流れを維持します。","先生、私なら今日は大きく方針を変えません。数字を静かに見ておきます。","先生、今は落ち着いた推移です。最終判断は先生にお任せします。"],
  smile:["先生、目標に届きました。積み重ねの結果です。","先生、数字は良好です。今日は素直に評価してよいと思います。","先生、目標達成です。私なら守りながら次の一手を考えます。"],
