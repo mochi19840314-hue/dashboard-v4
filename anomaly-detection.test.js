@@ -1,0 +1,16 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {detectBusinessAnomalies}=require("./anomaly-detection");
+const fridays=["2026-06-05","2026-06-12","2026-06-19","2026-06-26"].map(date=>({date,sales:200000,patients:20,expense:100000}));
+let result=detectBusinessAnomalies({entries:[...fridays,{date:"2026-07-03",sales:140000,patients:10,expense:160000}],clinic:{}},{today:"2026-07-03",hour:18});
+assert.equal(result.find(x=>x.metric==="客単価").level,"normal");
+assert.equal(result.find(x=>x.metric==="来院件数").level,"danger");
+assert.equal(result.find(x=>x.metric==="日商").level,"danger");
+assert.equal(result.find(x=>x.metric==="利益率").level,"danger");
+assert.ok(result.find(x=>x.metric==="利益率").current<0,"negative margins are still detected");
+assert.equal(result.find(x=>x.metric==="総支出").level,"danger");
+assert.deepEqual(detectBusinessAnomalies({entries:fridays},{today:"2026-07-03",hour:18}),[],"missing current input");
+assert.deepEqual(detectBusinessAnomalies({entries:[...fridays,{date:"2026-07-03",sales:1,patients:1}]},{today:"2026-07-03",hour:8}),[],"before opening");
+assert.deepEqual(detectBusinessAnomalies({entries:[...fridays.slice(0,2),{date:"2026-07-03",sales:1,patients:1}]},{today:"2026-07-03",hour:18}),[],"fewer than three comparisons");
+assert.deepEqual(detectBusinessAnomalies({entries:[{date:"2026-06-08",sales:10,patients:1},{date:"2026-06-15",sales:10,patients:1},{date:"2026-06-22",sales:10,patients:1},{date:"2026-06-29",sales:10,patients:1}]},{today:"2026-06-29",hour:18}),[],"Monday closure");
+console.log("business anomaly tests: 10 checks passed");

@@ -40,6 +40,10 @@
     <div class="daily-shadow-heading"><span class="daily-shadow-icon" aria-hidden="true">🧠</span><div><h3 id="dailyShadowTitle">今日の影武者</h3><p>Today's operational briefing</p></div></div>
     <ul id="dailyShadowInsights" class="daily-shadow-insights" aria-live="polite"><li>今日のデータを確認しています。</li></ul>
   </article>
+  <article class="card business-anomaly-card" id="businessAnomalyCard" aria-live="polite" hidden>
+    <h3 id="businessAnomalyTitle"></h3>
+    <div id="businessAnomalyItems" class="business-anomaly-items"></div>
+  </article>
   <div class="card weather-card" id="weatherCard" aria-live="polite">
     <div class="weather-icon" id="weatherIcon">⌁</div>
     <div class="weather-main">
@@ -402,6 +406,7 @@
 <script src="report-month.js?v=1061"></script>
 <script src="month-rollover.js?v=1059"></script>
 <script src="daily-brief.js?v=1062"></script>
+<script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script><script src="app.js?v=1063"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
