@@ -1,15 +1,25 @@
+"use strict";
 const assert=require("node:assert/strict");
 const {FIELDS,normalizeClinical,getClinicalRates}=require("./clinical-data");
-const all=normalizeClinical({bloodTests:5,xrays:2,ultrasounds:3,surgeries:1,newPatients:2,revisits:16,preventive:4});
-assert.deepEqual(Object.keys(all),FIELDS);
-assert.equal(all.bloodTests,5);
+
+assert.deepEqual(FIELDS,["bloodTests","xrays","ultrasounds","revisits","preventive"]);
+const clinical=normalizeClinical({bloodTests:5,xrays:2,ultrasounds:3,revisits:16,preventive:4,newPatients:98,surgeries:97});
+assert.deepEqual(clinical,{bloodTests:5,xrays:2,ultrasounds:3,revisits:16,preventive:4},"legacy duplicate fields are safely ignored");
 assert.equal(normalizeClinical({bloodTests:0}).bloodTests,0,"zero remains distinct from blank");
 assert.equal(normalizeClinical({bloodTests:""}).bloodTests,null,"blank remains unentered");
 assert.equal(normalizeClinical().xrays,null,"missing clinical data is safe");
-assert.equal(normalizeClinical({surgeries:120}).surgeries,99,"values are capped at 99");
-assert.equal(normalizeClinical({preventive:-4}).preventive,0,"values are capped at 0");
-const rates=getClinicalRates({patients:20,clinical:all});
-assert.equal(rates.bloodTests,25);assert.equal(rates.xrays,10);assert.equal(rates.ultrasounds,15);assert.equal(rates.surgeries,5);assert.equal(rates.preventive,20);
-assert.equal(getClinicalRates({patients:0,clinical:all}).bloodTests,null);
+assert.equal(normalizeClinical({bloodTests:120}).bloodTests,99,"clinical values are capped at 99");
+assert.equal(normalizeClinical({preventive:-4}).preventive,0,"clinical values are capped at 0");
+
+const rates=getClinicalRates({patients:20,newPatients:3,surgeries:2,clinical});
+assert.deepEqual(rates,{bloodTests:25,xrays:10,ultrasounds:15,revisits:80,preventive:20,newPatients:15,surgeries:10});
+const legacyRates=getClinicalRates({patients:20,newPatients:3,surgeries:2,clinical:{newPatients:19,surgeries:18,revisits:17}});
+assert.equal(legacyRates.newPatients,15,"entry.newPatients is canonical");
+assert.equal(legacyRates.surgeries,10,"entry.surgeries is canonical");
+for(const patients of [0,"",null,-1,"invalid"]){
+  const invalid=getClinicalRates({patients,newPatients:3,surgeries:2,clinical});
+  assert.equal(invalid.newPatients,null);assert.equal(invalid.surgeries,null);assert.equal(invalid.bloodTests,null);
+}
 assert.equal(getClinicalRates({patients:20}).bloodTests,null);
-console.log("clinical data tests: 13 checks passed");
+assert.equal(getClinicalRates({patients:20}).newPatients,null);
+console.log("clinical data tests: canonical fields, rates, invalid patients, and legacy compatibility passed");

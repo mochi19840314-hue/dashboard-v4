@@ -1,0 +1,11 @@
+"use strict";
+const assert=require("node:assert/strict");const fs=require("node:fs");
+const html=fs.readFileSync("index.html","utf8"),app=fs.readFileSync("app.js","utf8"),sw=fs.readFileSync("sw.js","utf8");
+assert.equal((html.match(/id="newPatients"/g)||[]).length,1);
+assert.equal((html.match(/id="surgeries"/g)||[]).length,1);
+assert.doesNotMatch(html,/clinical(?:NewPatients|Surgeries)/);
+for(const id of ["clinicalBloodTests","clinicalXrays","clinicalUltrasounds","clinicalRevisits","clinicalPreventive"])assert.match(html,new RegExp(`id="${id}"`));
+assert.match(app,/newPatients:num\("newPatients"\),surgeries:num\("surgeries"\)/);
+assert.match(app,/\["patients","newPatients",\.\.\.Object\.values\(CLINICAL_INPUTS\)\]/);
+assert.match(sw,/v1072-clinical-canonical/);assert.match(sw,/app\.js\?v=1072/);assert.match(html,/app\.js\?v=1072/);
+console.log("clinical UI, canonical save wiring, consistency listener, and PWA cache tests passed");
