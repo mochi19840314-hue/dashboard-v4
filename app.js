@@ -129,18 +129,17 @@ async function fetchWeather(force=false){
 }
 function renderTodaySummary(){const e=data.entries.find(x=>x.date===iso())||{sales:0,patients:0,newPatients:0};$("todaySales").textContent=yen(e.sales);$("todayPatients").textContent=`${Number(e.patients)||0}件`;$("todayUnit").textContent=yen(e.patients?e.sales/e.patients:0);$("todayNew").textContent=`${Number(e.newPatients)||0}件`}
 function renderDailyShadowBrief(){
- const emptyMessage="今日はまだ分析できるデータがありません。";
+ const emptyMessage=globalThis?.DailyShadowBrief?.EMPTY||"今日はまだ分析できるデータがありません。";
  const showEmpty=()=>{try{const list=$("dailyShadowInsights");if(list)list.innerHTML=`<li data-confidence="high">${emptyMessage}</li>`}catch(error){console.error(error)}};
  try{
   const list=$("dailyShadowInsights");if(!list)return;
-  const dailyShadow=data?.dailyShadow??{},weatherCache=data?.weatherCache??{},goal=dailyShadow?.goal??{},today=dailyShadow?.today??{},history=dailyShadow?.history??{},progress=dailyShadow?.progress??{};
-  const todayDate=typeof today?.date==="string"?today?.date:iso(),month=todayDate?.slice?.(0,7)??"",setting=data?.settings?.[month]??{},day=clinicDayInfo(todayDate);
-  const entries=Array.isArray(history)?history:Array.isArray(history?.entries)?history?.entries:Array.isArray(data?.entries)?data?.entries:[];
-  const generator=globalThis?.DailyShadowBrief?.generateDailyBrief;if(typeof generator!=="function"){showEmpty();return}
-  const result=generator({today:todayDate,hour:new Date()?.getHours?.()??0,entries,dailyTarget:Number(goal?.dailyTarget??day?.target??0)||0,monthlyTarget:Number(goal?.monthlyTarget??setting?.target??0)||MONTHLY_TARGET,weatherCache,progress});
-  const insights=Array.isArray(result?.insights)?result?.insights:[];
-  if(result?.empty||!insights?.length){showEmpty();return}
-  list.innerHTML=insights?.map?.((insight,index)=>`<li style="--brief-delay:${index*120}ms" data-confidence="${insight?.confidence??"high"}">${escapeHtml?.(insight?.text??emptyMessage)??emptyMessage}</li>`)?.join?.("")??`<li data-confidence="high">${emptyMessage}</li>`;
+  const todayDate=iso(),month=todayDate.slice(0,7),setting=data?.settings?.[month]??{},summary=monthSummary(month),elapsed=operatingEntries(summary.entries.filter(entry=>entry.date<todayDate)).length,total=Number(setting.businessDays)||expectedBusinessDays(month),remainingBusinessDays=Math.max(0,total-elapsed);
+  const builder=globalThis?.DailyShadowBrief?.buildDailyShadowIntelligence;if(typeof builder!=="function"){showEmpty();return}
+  let anomalies=[];try{if(typeof BusinessAnomalies!=="undefined")anomalies=BusinessAnomalies.detectBusinessAnomalies(data,{today:todayDate,hour:new Date().getHours()})}catch(error){console.error(error)}
+  const insights=builder({today:todayDate,entries:Array.isArray(data?.entries)?data.entries:[],monthlyTarget:Number(setting.target)||MONTHLY_TARGET,remainingBusinessDays,clinic:data?.clinic??{},anomalies});
+  if(!Array.isArray(insights)||!insights.length){showEmpty();return}
+  const emphasize=text=>escapeHtml(text).replace(/([↑↓+-]?\s*\d[\d,.]*(?:\.\d+)?(?:円|万円|件|%|営業日)?)/g,"<strong>$1</strong>");
+  list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}"><span aria-hidden="true">${item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":""}</span><p>${emphasize(item.message||emptyMessage)}</p></li>`).join("");
  }catch(error){console.error(error);showEmpty()}
 }
 function renderBusinessAnomalies(){
