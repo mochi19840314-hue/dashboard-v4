@@ -141,7 +141,8 @@ function renderDailyShadowBrief(){
   const todayDate=iso(),month=todayDate.slice(0,7),setting=data?.settings?.[month]??{},summary=monthSummary(month),elapsed=operatingEntries(summary.entries.filter(entry=>entry.date<todayDate)).length,total=Number(setting.businessDays)||expectedBusinessDays(month),remainingBusinessDays=Math.max(0,total-elapsed);
   const builder=globalThis?.DailyShadowBrief?.buildDailyShadowActions;if(typeof builder!=="function"){showEmpty();return}
   let anomalies=[];try{if(typeof BusinessAnomalies!=="undefined")anomalies=BusinessAnomalies.detectBusinessAnomalies(data,{today:todayDate,hour:new Date().getHours()})}catch(error){console.error(error)}
-  const insights=builder({today:todayDate,entries:Array.isArray(data?.entries)?data.entries:[],monthlyTarget:Number(setting.target)||MONTHLY_TARGET,remainingBusinessDays,clinic:data?.clinic??{},anomalies});
+  let clinicalAnalysis=null;try{if(typeof ClinicalIntelligence!=="undefined")clinicalAnalysis=ClinicalIntelligence.analyze(data?.entries??[],{closedDates:data?.clinic?.closedDates??[]})}catch(error){console.error(error)}
+  const insights=builder({today:todayDate,entries:Array.isArray(data?.entries)?data.entries:[],clinicalAnalysis,monthlyTarget:Number(setting.target)||MONTHLY_TARGET,remainingBusinessDays,clinic:data?.clinic??{},anomalies});
   if(!Array.isArray(insights)||!insights.length){showEmpty();return}
   const emphasize=text=>escapeHtml(text).replace(/([↑↓+-]?\s*\d[\d,.]*(?:\.\d+)?(?:円|万円|件|%|営業日)?)/g,"<strong>$1</strong>");
   list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}" data-category="${item.category||""}"><span class="daily-shadow-marker" aria-hidden="true">${item.category==="goal"?"🎯":item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":`${index+1}`}</span><div><h4>${index+1}. ${escapeHtml(item.title||"")}</h4><p>${emphasize(item.message||emptyMessage)}</p></div></li>`).join("");
@@ -795,6 +796,19 @@ function renderMonthlyReport(){
   const goals=[];goals.push(`月間売上${yen(target)}以上`);goals.push("利益率30%以上を維持");if(s.checkups<10)goals.push("健診10件以上");else if(unit)goals.push(`客単価${yen(Math.round(unit/1000)*1000)}以上を維持`);$("reportNextGoals").innerHTML=goals.slice(0,3).map(x=>`<li>${x}</li>`).join("");
   const condition=progress>=100&&rate>=30?"売上と利益の両面で好調":"改善余地を確認しながら前進",memoContext=memoAnalysis.top.length?` 日々のメモでは${memoAnalysis.top.map(x=>x.label).join("・")}の記録が目立ち、数値変化の背景として注目されます。`:"";$("reportSummary").textContent=availability.empty?`${monthLabel(m)}は集計途中です。入力データがそろうまで月間総括を保留します。`:`${monthLabel(m)}は「${condition}」な月です。${driver}が売上を支え、利益率は${pct(rate)}でした。${memoContext}支出では人件費・薬品医療材料費・カード決済手数料の3項目に絞って変化を確認し、来月は売上目標と利益率を両立させることが重点です。`;
 }
+
+function renderClinicalIntelligence(){
+ try{
+  const list=$("clinicalIntelligenceInsights");if(!list||typeof ClinicalIntelligence==="undefined")return;
+  const analysis=ClinicalIntelligence.analyze(data?.entries??[],{closedDates:data?.clinic?.closedDates??[]}),r=analysis.readiness;
+  const titles={collecting:"診療データ蓄積中",preliminary:"参考傾向",ready:"診療構成インサイト",mature:"最近60営業日の診療構成"};
+  $("clinicalIntelligenceStatus").textContent=titles[r.status];
+  const guidance={collecting:"10営業日から参考分析を開始します。",preliminary:"30営業日から本格分析を開始します。",ready:"分析中",mature:"直近60営業日を中心に継続分析中"};
+  $("clinicalIntelligenceProgress").textContent=`診療データ：${r.sampleDays}営業日 · ${guidance[r.status]}`;
+  const messages=analysis.insights.length?analysis.insights.map(x=>x.message):[guidance[r.status]];
+  list.innerHTML=messages.slice(0,3).map(x=>`<li>${escapeHtml(x)}</li>`).join("");
+ }catch(error){console.error(error)}
+}
 function clinicalTrendAnalysis(){return ClinicalTrends.analyzeClinicalTrends(data.entries,{periodDays:90,today:iso(),closedDates:data.clinic?.closedDates})}
 function trendValue(value,suffix=""){return value==null?"—":`${Math.round(value).toLocaleString("ja-JP")}${suffix}`}
 function renderClinicalTrends(){
@@ -896,7 +910,7 @@ function switchPage(id){
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){
- const sections=[recent,month,renderMonthlyReport,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderBusinessAnomalies,renderDailyAI,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
+ const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderBusinessAnomalies,renderDailyAI,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
  sections.forEach(section=>{try{section()}catch(error){console.error(error)}});
  try{const memo=$("memoText");if(memo)memo.value=data?.memo??""}catch(error){console.error(error)}
 }

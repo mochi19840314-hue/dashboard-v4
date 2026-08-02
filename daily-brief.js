@@ -48,6 +48,8 @@ function suggestionAction(context,review,intelligence){
  if(!isBusinessDay(date(context.today),context.clinic))return action("action","normal","今日の提案","今日は休診日です。直近営業日の実績を振り返っておきましょう。",90);
  if(review.level==="danger")return action("action","warning","今日の提案","一日の変動か継続的な変化かを確認するため、今後数日の推移にも注目しましょう。",85);
  if(review.level==="good")return action("action","normal","今日の提案","好調だった日の診療構成をメモしておくと、今後の傾向分析に役立ちます。",75);
+ const clinical=Array.isArray(context.clinicalAnalysis?.insights)?context.clinicalAnalysis.insights[0]:null;
+ if(clinical&&clinical.message)return action("action","normal","今日の提案",clinical.message,72,clinical.evidence);
  const weekday=intelligence.find(item=>item.type==="weekday");
  if(weekday){const load=weekday.metric==="patients"&&Number(weekday.changePercent)>0?"診療負荷にも注意しましょう。":"来院件数と客単価のバランスを確認しましょう。";return action("action",weekday.level,"今日の提案",`${weekday.message}${load}`,70,{metric:weekday.metric,changePercent:weekday.changePercent,sampleSize:weekday.sampleSize})}
  if(review.level==="warning")return action("action","warning","今日の提案","同じ変化が続くか、来院件数と客単価のバランスを確認しましょう。",70);
