@@ -139,12 +139,12 @@ function renderDailyShadowBrief(){
  try{
   const list=$("dailyShadowInsights");if(!list)return;
   const todayDate=iso(),month=todayDate.slice(0,7),setting=data?.settings?.[month]??{},summary=monthSummary(month),elapsed=operatingEntries(summary.entries.filter(entry=>entry.date<todayDate)).length,total=Number(setting.businessDays)||expectedBusinessDays(month),remainingBusinessDays=Math.max(0,total-elapsed);
-  const builder=globalThis?.DailyShadowBrief?.buildDailyShadowIntelligence;if(typeof builder!=="function"){showEmpty();return}
+  const builder=globalThis?.DailyShadowBrief?.buildDailyShadowActions;if(typeof builder!=="function"){showEmpty();return}
   let anomalies=[];try{if(typeof BusinessAnomalies!=="undefined")anomalies=BusinessAnomalies.detectBusinessAnomalies(data,{today:todayDate,hour:new Date().getHours()})}catch(error){console.error(error)}
   const insights=builder({today:todayDate,entries:Array.isArray(data?.entries)?data.entries:[],monthlyTarget:Number(setting.target)||MONTHLY_TARGET,remainingBusinessDays,clinic:data?.clinic??{},anomalies});
   if(!Array.isArray(insights)||!insights.length){showEmpty();return}
   const emphasize=text=>escapeHtml(text).replace(/([↑↓+-]?\s*\d[\d,.]*(?:\.\d+)?(?:円|万円|件|%|営業日)?)/g,"<strong>$1</strong>");
-  list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}"><span aria-hidden="true">${item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":""}</span><p>${emphasize(item.message||emptyMessage)}</p></li>`).join("");
+  list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}" data-category="${item.category||""}"><span class="daily-shadow-marker" aria-hidden="true">${item.category==="goal"?"🎯":item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":`${index+1}`}</span><div><h4>${index+1}. ${escapeHtml(item.title||"")}</h4><p>${emphasize(item.message||emptyMessage)}</p></div></li>`).join("");
  }catch(error){console.error(error);showEmpty()}
 }
 function renderBusinessAnomalies(){

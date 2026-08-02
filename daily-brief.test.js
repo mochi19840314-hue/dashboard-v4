@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs");
-const {EMPTY,buildDailyShadowIntelligence,generateDailyBrief,periodLead}=require("./daily-brief.js");
+const {EMPTY,buildDailyShadowIntelligence,buildDailyShadowActions,getClinicalAnalysisReadiness,generateDailyBrief,periodLead}=require("./daily-brief.js");
 const build=(entries,extra={})=>buildDailyShadowIntelligence({today:"2026-08-02",entries,monthlyTarget:5000000,remainingBusinessDays:25,...extra});
 assert.equal(periodLead(8),"今日は");assert.equal(periodLead(14),"午前の実績を見ると");assert.equal(periodLead(20),"本日の振り返りです。");
 let result=build([], {monthlyTarget:0});assert.equal(result[0].message,EMPTY,"past data absent falls back");
@@ -18,6 +18,14 @@ result=build([], {anomalies:[{level:"danger",metric:"客単価",changePercent:-2
 result=build([{date:"2026-07-30",sales:100000,patients:10},{date:"2026-08-01",sales:140000,patients:10}],{monthlyTarget:0});assert.ok(result.some(x=>x.level==="good"),"20% positive movement is Good anomaly");
 assert.doesNotThrow(()=>generateDailyBrief({entries:null}),"old backup shape cannot crash");assert.equal(buildDailyShadowIntelligence({get entries(){throw Error("bad backup")}})[0].type,"fallback","builder contains failures");
 assert.ok(result.length<=3,"maximum three comments");
+const actions=(entries,extra={})=>buildDailyShadowActions({today:"2026-08-02",entries,monthlyTarget:5000000,remainingBusinessDays:25,...extra});
+let briefing=actions([]);assert.deepEqual(briefing.map(x=>x.category),["review","action","goal"],"always returns the three action briefing blocks");assert.match(briefing[0].message,/蓄積中/,"no-data review has a useful fallback");
+briefing=actions([{date:"2026-07-31",sales:100000,patients:10},{date:"2026-08-01",sales:140000,patients:10}]);assert.equal(briefing[0].level,"good","good movement is selected for review");assert.ok(briefing[0].evidence,"review exposes evidence");
+briefing=actions([], {anomalies:[{level:"danger",metric:"客単価",current:9800,baseline:13000,changePercent:-24}]});assert.equal(briefing[0].level,"danger","danger overrides ordinary review");assert.match(briefing[1].message,/今後数日/,"danger creates a monitoring action without asserting a cause");
+briefing=actions([], {today:"2026-08-03"});assert.match(briefing[1].message,/休診日/,"closed day receives a closed-day suggestion");
+briefing=actions([{date:"2026-08-01",sales:5100000,patients:20}]);assert.match(briefing[2].message,/達成しています/,"achieved goal does not encourage more sales");assert.match(briefing[2].message,/診療負荷/,"achieved goal emphasizes sustainable operations");
+const clinical=n=>{const rows=[];for(let i=0;rows.length<n;i++){const d=new Date(2026,0,1+i,12);if(d.getDay()===1)continue;rows.push({date:d.toLocaleDateString("sv-SE"),sales:100000,patients:10,clinical:{bloodTests:0,xrays:0,ultrasounds:0,revisits:0,preventive:0}})}return rows};assert.deepEqual(getClinicalAnalysisReadiness(clinical(7)),{sampleDays:7,ready:false,referenceOnly:false});assert.equal(getClinicalAnalysisReadiness(clinical(10)).referenceOnly,true,"10-29 clinical days are reference-only");assert.equal(getClinicalAnalysisReadiness(clinical(30)).ready,true,"30 clinical days are ready for future analysis");assert.equal(getClinicalAnalysisReadiness([{date:"2026-07-01",sales:1,patients:1}]).sampleDays,0,"old backup without clinical remains compatible");assert.equal(getClinicalAnalysisReadiness([{date:"2026-07-01",sales:1,patients:1,clinical:{bloodTests:1,xrays:2,ultrasounds:0,revisits:3,preventive:4,checkups:9,trimmings:8}}]).sampleDays,1,"old seven-key clinical object remains compatible");
+assert.equal(buildDailyShadowActions({get entries(){throw Error("old malformed backup")}}).length,3,"action builder independently contains malformed backup failures");
 assert.match(fs.readFileSync("style.css","utf8"),/@media\(prefers-reduced-motion:reduce\)\{\.daily-shadow-insights li\{animation:none!important\}\}/,"reduced motion retained");
 const app=fs.readFileSync("app.js","utf8");assert.match(app,/function renderDailyShadowBrief\(\)[\s\S]*?catch\(error\)\{console\.error\(error\);showEmpty\(\)\}/,"render is independently guarded");
 const started=performance.now();for(let i=0;i<100;i++)build([...sundays,...weekdays]);assert.ok((performance.now()-started)/100<20,"under 20ms");
