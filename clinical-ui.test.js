@@ -7,5 +7,5 @@ assert.doesNotMatch(html,/clinical(?:NewPatients|Surgeries)/);
 for(const id of ["clinicalBloodTests","clinicalXrays","clinicalUltrasounds","clinicalRevisits","clinicalPreventive"])assert.match(html,new RegExp(`id="${id}"`));
 assert.match(app,/newPatients:num\("newPatients"\),surgeries:num\("surgeries"\)/);
 assert.match(app,/\["patients","newPatients",\.\.\.Object\.values\(CLINICAL_INPUTS\)\]/);
-assert.match(sw,/v1073-shadow-actions/);assert.match(sw,/app\.js\?v=1073/);assert.match(html,/app\.js\?v=1073/);
+assert.match(sw,/v1074-clinical-intelligence/);assert.match(sw,/app\.js\?v=1074/);assert.match(html,/app\.js\?v=1074/);
 console.log("clinical UI, canonical save wiring, consistency listener, and PWA cache tests passed");

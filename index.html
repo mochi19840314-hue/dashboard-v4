@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1073">
+<link rel="stylesheet" href="style.css?v=1074">
 </head>
 <body>
 <header class="app-header">
@@ -234,6 +234,11 @@
     <ul id="clinicalTrendInsights" class="clinical-trend-insights"><li>判断にはもう少しデータが必要です。</li></ul>
     <button id="openClinicalTrends" class="clinical-trend-more" type="button">詳しく見る</button>
   </article>
+  <article class="card clinical-intelligence-card" aria-labelledby="clinicalIntelligenceTitle">
+    <div class="clinical-trend-heading"><div><span class="eyebrow">CLINICAL INTELLIGENCE</span><h3 id="clinicalIntelligenceTitle">診療構成インサイト</h3></div><span id="clinicalIntelligenceStatus">診療データ蓄積中</span></div>
+    <p id="clinicalIntelligenceProgress" class="clinical-trend-period">診療データ：0営業日</p>
+    <ul id="clinicalIntelligenceInsights" class="clinical-trend-insights"><li>10営業日から参考分析を開始します。</li></ul>
+  </article>
   <article class="card report-score-card">
     <span class="eyebrow">OVERALL REVIEW · BETA</span>
     <div class="report-month-phrase"><span>📌 今月を一言で</span><strong id="reportPhrase">データを分析中</strong></div>
@@ -416,11 +421,12 @@
 <script src="clinical-trends.js?v=1060"></script>
 <script src="report-month.js?v=1061"></script>
 <script src="month-rollover.js?v=1059"></script>
-<script src="daily-brief.js?v=1073"></script>
+<script src="clinical-intelligence.js?v=1074"></script>
+<script src="daily-brief.js?v=1074"></script>
 <script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script>
 <script src="clinical-data.js?v=1072"></script>
-<script src="app.js?v=1073"></script>
+<script src="app.js?v=1074"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
