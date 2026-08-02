@@ -32,6 +32,35 @@ function anomalyCandidates(anomalies=[]){return anomalies.filter(item=>item?.lev
 function dedupe(candidates){const seen=new Set();return candidates.sort((a,b)=>b.priority-a.priority).filter(item=>{const key=item.metric||item.type;if(seen.has(key))return false;seen.add(key);return true})}
 function buildDailyShadowIntelligence(input={}){try{const today=input.today||iso(new Date()),entries=Array.isArray(input.entries)?input.entries.filter(entry=>entry&&entry.date):[],context={...input,today,entries,clinic:input.clinic||{}};const candidates=[...anomalyCandidates(input.anomalies),...previousDayCandidates(context),...weekdayCandidates(context)];const monthly=monthlyCandidate(context);if(monthly)candidates.push(monthly);const insights=dedupe(candidates).slice(0,3);return insights.length?insights:[insight("fallback",0,EMPTY,"normal")]}catch(error){return[insight("fallback",0,EMPTY,"normal",{error:true})]}}
 function generateDailyBrief(input={}){const insights=buildDailyShadowIntelligence(input);return{insights:insights.map(item=>({...item,text:item.message,source:item.type,confidence:item.level==="danger"?"high":"medium"})),empty:insights[0]?.type==="fallback"}}
+const action=(category,level,title,message,priority,evidence)=>({category,level,title,message,priority,...(evidence?{evidence}: {})});
+function getClinicalAnalysisReadiness(entries=[]){
+ try{const fields=["bloodTests","xrays","ultrasounds","revisits","preventive"],sampleDays=(Array.isArray(entries)?entries:[]).filter(entry=>isRecorded(entry)&&entry.clinical&&typeof entry.clinical==="object"&&fields.some(key=>Number.isFinite(Number(entry.clinical[key])))).length;return{sampleDays,ready:sampleDays>=30,referenceOnly:sampleDays>=10&&sampleDays<30}}catch(error){return{sampleDays:0,ready:false,referenceOnly:false}}
+}
+function reviewAction(context,intelligence){
+ const danger=(Array.isArray(context.anomalies)?context.anomalies:[]).find(item=>item?.level==="danger");
+ if(danger){const amount=Math.abs(Number(danger.changePercent)||0),current=Number(danger.current);return action("review","danger","昨日の振り返り",`${danger.metric||"経営指標"}が通常より${amount.toFixed(0)}%${Number(danger.changePercent)<0?"低下":"変化"}しています。`,100,{metric:danger.metric,current:Number.isFinite(current)?current:null,baseline:danger.baseline,changePercent:danger.changePercent})}
+ const candidates=intelligence.filter(item=>item.type==="previousDay"&&Math.abs(Number(item.changePercent)||0)>=5).sort((a,b)=>Math.abs(Number(b.changePercent))-Math.abs(Number(a.changePercent))||b.priority-a.priority),picked=candidates[0];
+ if(!picked)return action("review","normal","昨日の振り返り","比較できる実績を蓄積中です。",10);
+ const metricName={sales:"日商",patients:"来院件数",unitPrice:"客単価"}[picked.metric]||picked.metric,current=picked.current,display=picked.metric==="patients"?`${Math.round(current)}件`:compactYen(current),delta=Number(picked.changePercent),level=delta>=10?"good":delta<=-10?"warning":"normal";
+ return action("review",level,"昨日の振り返り",`昨日の${metricName}は${display}。前営業日より${Math.abs(Math.round(delta))}%${delta>=0?"高い結果でした":"低下しています"}。`,picked.priority,{metric:picked.metric,current,changePercent:delta,dates:picked.dates});
+}
+function suggestionAction(context,review,intelligence){
+ if(!isBusinessDay(date(context.today),context.clinic))return action("action","normal","今日の提案","今日は休診日です。直近営業日の実績を振り返っておきましょう。",90);
+ if(review.level==="danger")return action("action","warning","今日の提案","一日の変動か継続的な変化かを確認するため、今後数日の推移にも注目しましょう。",85);
+ if(review.level==="good")return action("action","normal","今日の提案","好調だった日の診療構成をメモしておくと、今後の傾向分析に役立ちます。",75);
+ const weekday=intelligence.find(item=>item.type==="weekday");
+ if(weekday){const load=weekday.metric==="patients"&&Number(weekday.changePercent)>0?"診療負荷にも注意しましょう。":"来院件数と客単価のバランスを確認しましょう。";return action("action",weekday.level,"今日の提案",`${weekday.message}${load}`,70,{metric:weekday.metric,changePercent:weekday.changePercent,sampleSize:weekday.sampleSize})}
+ if(review.level==="warning")return action("action","warning","今日の提案","同じ変化が続くか、来院件数と客単価のバランスを確認しましょう。",70);
+ return action("action","normal","今日の提案","今日の診療実績を記録して、傾向を蓄積していきましょう。",20);
+}
+function goalAction(context,intelligence){
+ const monthly=intelligence.find(item=>item.type==="monthly"),target=number(context.monthlyTarget),month=context.today.slice(0,7),current=context.entries.filter(entry=>entry.date?.startsWith(month)&&entry.date<=context.today).reduce((sum,entry)=>sum+number(entry.sales),0);
+ if(!target)return action("goal","normal","今月のゴール","月間目標を設定すると、残り営業日の目安を表示できます。",40,{monthlyTarget:0,currentMonthlySales:current});
+ if(current>=target)return action("goal","good","今月のゴール",`今月の売上目標${compactYen(target)}を達成しています。残り期間は利益率と診療負荷も確認しましょう。`,60,{monthlyTarget:target,currentMonthlySales:current,remainingTarget:0,remainingBusinessDays:monthly?.remainingBusinessDays??0,requiredDailySales:0});
+ const remaining=target-current,days=monthly?.remainingBusinessDays??(Number.isFinite(Number(context.remainingBusinessDays))?Number(context.remainingBusinessDays):remainingBusinessDays(context.today,context.clinic)),required=days>0?remaining/days:null;
+ return action("goal",days>0?"normal":"warning","今月のゴール",days>0?`月間目標${compactYen(target)}まであと${compactYen(remaining)}。残り${days}営業日では1日平均${compactYen(required)}が目安です。`:`月間目標${compactYen(target)}まであと${compactYen(remaining)}です。`,60,{monthlyTarget:target,currentMonthlySales:current,remainingTarget:remaining,remainingBusinessDays:days,requiredDailySales:required});
+}
+function buildDailyShadowActions(input={}){try{const today=input.today||iso(new Date()),entries=Array.isArray(input.entries)?input.entries.filter(entry=>entry&&entry.date):[],context={...input,today,entries,clinic:input.clinic||{}};const intelligence=buildDailyShadowIntelligence(context),review=reviewAction(context,intelligence);return[review,suggestionAction(context,review,intelligence),goalAction(context,intelligence)].slice(0,3)}catch(error){return[action("review","normal","昨日の振り返り","比較できる実績を蓄積中です。",10),action("action","normal","今日の提案","今日の診療実績を記録して、傾向を蓄積していきましょう。",20),action("goal","normal","今月のゴール","月間目標と実績を確認しましょう。",30)]}}
 const periodLead=hour=>hour<12?"今日は":hour<18?"午前の実績を見ると":"本日の振り返りです。";
-return{EMPTY,buildDailyShadowIntelligence,generateDailyBrief,periodLead,isBusinessDay};
+return{EMPTY,buildDailyShadowIntelligence,buildDailyShadowActions,getClinicalAnalysisReadiness,generateDailyBrief,periodLead,isBusinessDay};
 });
