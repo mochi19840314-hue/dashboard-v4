@@ -18,9 +18,9 @@ textarea{min-height:430px;resize:vertical;line-height:1.8}.dataButtons{display:g
 
 .clinical-section{margin:2px 0 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#fff,#f3fbf9)}
 .clinical-section legend{padding:0 7px;color:var(--pd);font-size:16px;font-weight:900}.clinical-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
-.clinical-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:7px 9px;border-radius:11px;background:rgba(255,255,255,.82)}.clinical-grid label span{overflow:hidden;font-size:13px;white-space:nowrap;text-overflow:ellipsis}
+.clinical-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:7px 9px;border-radius:11px;background:rgba(255,255,255,.82)}.clinical-grid label span{min-width:0;overflow:hidden;font-size:13px;white-space:nowrap;text-overflow:ellipsis}
 .clinical-grid input{flex:0 0 64px;width:64px;margin:0;padding:9px 6px;text-align:center;font-size:16px;font-variant-numeric:tabular-nums}.clinical-warning{margin:11px 2px 0;padding:9px 11px;border-radius:10px;background:#fff7df;color:#875f00;font-size:12px;font-weight:800;line-height:1.5}
-@media(max-width:380px){.clinical-grid{gap:7px}.clinical-grid label{padding:6px}.clinical-grid input{flex-basis:54px;width:54px}}
+@media(max-width:430px){.clinical-section{padding:10px}.clinical-grid{gap:7px}.clinical-grid label{gap:4px;padding:6px}.clinical-grid label span{overflow:visible;font-size:12.5px;text-overflow:clip}.clinical-grid input{flex-basis:48px;width:48px;padding:9px 4px}}
 
 .ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .ai-card{border-left:5px solid var(--p)}
