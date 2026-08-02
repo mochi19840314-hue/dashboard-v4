@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1070">
+<link rel="stylesheet" href="style.css?v=1071">
 </head>
 <body>
 <header class="app-header">
@@ -66,6 +66,19 @@
     <label>健診件数<input id="checkups" type="number" inputmode="numeric" min="0"></label>
     <label>トリミング件数<input id="trimmings" type="number" inputmode="numeric" min="0"></label>
     <label>セカンドオピニオン件数<input id="secondOpinions" type="number" inputmode="numeric" min="0"></label>
+    <fieldset class="clinical-section wide">
+      <legend>今日の診療内容</legend>
+      <div class="clinical-grid">
+        <label><span>🩸 血液検査</span><input id="clinicalBloodTests" type="number" inputmode="numeric" min="0" max="99" aria-label="血液検査 件数"></label>
+        <label><span>🩻 レントゲン</span><input id="clinicalXrays" type="number" inputmode="numeric" min="0" max="99" aria-label="レントゲン 件数"></label>
+        <label><span>🩺 エコー</span><input id="clinicalUltrasounds" type="number" inputmode="numeric" min="0" max="99" aria-label="エコー 件数"></label>
+        <label><span>🔪 手術</span><input id="clinicalSurgeries" type="number" inputmode="numeric" min="0" max="99" aria-label="手術 件数"></label>
+        <label><span>🆕 新患</span><input id="clinicalNewPatients" type="number" inputmode="numeric" min="0" max="99" aria-label="新患 件数"></label>
+        <label><span>🔁 再診</span><input id="clinicalRevisits" type="number" inputmode="numeric" min="0" max="99" aria-label="再診 件数"></label>
+        <label><span>💉 予防</span><input id="clinicalPreventive" type="number" inputmode="numeric" min="0" max="99" aria-label="予防 件数"></label>
+      </div>
+      <p id="clinicalConsistencyWarning" class="clinical-warning" role="status" aria-live="polite" hidden>来院件数と新患・再診の合計が一致していません</p>
+    </fieldset>
     <label class="wide">今日のメモ
       <textarea id="note" class="daily-note" maxlength="500" rows="4" placeholder="例：手術2件／熱中症1件／Google広告から初診／高額診療あり／看護師実習初日"></textarea>
       <small class="note-guide">数字だけでは分からない出来事を一言。AI月間レポートの分析に使います。</small>
@@ -407,7 +420,9 @@
 <script src="month-rollover.js?v=1059"></script>
 <script src="daily-brief.js?v=1070"></script>
 <script src="anomaly-detection.js?v=1064"></script>
-<script src="backup-normalizer.js?v=1063"></script><script src="app.js?v=1070"></script>
+<script src="backup-normalizer.js?v=1063"></script>
+<script src="clinical-data.js?v=1071"></script>
+<script src="app.js?v=1071"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>

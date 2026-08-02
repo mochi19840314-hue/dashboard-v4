@@ -25,6 +25,10 @@ assert.equal(current.kagemushaDiary.length,1);
 
 const stored=normalizeBackup({[KEY]:JSON.stringify({dailyRecords:[]}),kagemushaDiary:[{date:"legacy"}]},defaults,KEY);
 assert.equal(stored.kagemushaDiary[0].date,"legacy");
+const oldWithoutClinical=normalizeBackup({entries:[{date:"2026-08-01",sales:100}]},defaults,KEY);
+assert.equal(oldWithoutClinical.data.entries[0].clinical,undefined);
+const newWithClinical=normalizeBackup({entries:[{date:"2026-08-02",clinical:{bloodTests:5,revisits:12}}]},defaults,KEY);
+assert.deepEqual(newWithClinical.data.entries[0].clinical,{bloodTests:5,revisits:12});
 assert.deepEqual(normalizeBackup({},defaults,KEY).data.finance,defaults.finance);
 assert.throws(()=>normalizeBackup("bad",defaults,KEY));
-console.log("backup normalizer tests: 18 checks passed");
+console.log("backup normalizer tests: 20 checks passed");

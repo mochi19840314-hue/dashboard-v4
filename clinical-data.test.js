@@ -1,0 +1,15 @@
+const assert=require("node:assert/strict");
+const {FIELDS,normalizeClinical,getClinicalRates}=require("./clinical-data");
+const all=normalizeClinical({bloodTests:5,xrays:2,ultrasounds:3,surgeries:1,newPatients:2,revisits:16,preventive:4});
+assert.deepEqual(Object.keys(all),FIELDS);
+assert.equal(all.bloodTests,5);
+assert.equal(normalizeClinical({bloodTests:0}).bloodTests,0,"zero remains distinct from blank");
+assert.equal(normalizeClinical({bloodTests:""}).bloodTests,null,"blank remains unentered");
+assert.equal(normalizeClinical().xrays,null,"missing clinical data is safe");
+assert.equal(normalizeClinical({surgeries:120}).surgeries,99,"values are capped at 99");
+assert.equal(normalizeClinical({preventive:-4}).preventive,0,"values are capped at 0");
+const rates=getClinicalRates({patients:20,clinical:all});
+assert.equal(rates.bloodTests,25);assert.equal(rates.xrays,10);assert.equal(rates.ultrasounds,15);assert.equal(rates.surgeries,5);assert.equal(rates.preventive,20);
+assert.equal(getClinicalRates({patients:0,clinical:all}).bloodTests,null);
+assert.equal(getClinicalRates({patients:20}).bloodTests,null);
+console.log("clinical data tests: 13 checks passed");
