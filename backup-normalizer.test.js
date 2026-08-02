@@ -27,8 +27,11 @@ const stored=normalizeBackup({[KEY]:JSON.stringify({dailyRecords:[]}),kagemushaD
 assert.equal(stored.kagemushaDiary[0].date,"legacy");
 const oldWithoutClinical=normalizeBackup({entries:[{date:"2026-08-01",sales:100}]},defaults,KEY);
 assert.equal(oldWithoutClinical.data.entries[0].clinical,undefined);
-const newWithClinical=normalizeBackup({entries:[{date:"2026-08-02",clinical:{bloodTests:5,revisits:12}}]},defaults,KEY);
-assert.deepEqual(newWithClinical.data.entries[0].clinical,{bloodTests:5,revisits:12});
+const newWithClinical=normalizeBackup({entries:[{date:"2026-08-02",clinical:{bloodTests:5,xrays:2,ultrasounds:1,revisits:12,preventive:3}}]},defaults,KEY);
+assert.deepEqual(newWithClinical.data.entries[0].clinical,{bloodTests:5,xrays:2,ultrasounds:1,revisits:12,preventive:3});
+const legacySevenClinical=normalizeBackup({entries:[{date:"2026-08-01",newPatients:3,surgeries:2,clinical:{bloodTests:5,xrays:2,ultrasounds:1,newPatients:3,surgeries:2,revisits:14,preventive:3}}]},defaults,KEY);
+assert.equal(legacySevenClinical.data.entries[0].clinical.newPatients,3,"legacy seven-field clinical backup remains restorable");
+assert.equal(legacySevenClinical.data.entries[0].newPatients,3,"canonical entry field remains intact");
 assert.deepEqual(normalizeBackup({},defaults,KEY).data.finance,defaults.finance);
 assert.throws(()=>normalizeBackup("bad",defaults,KEY));
 console.log("backup normalizer tests: 20 checks passed");

@@ -4,7 +4,8 @@
   root.ClinicalData=api;
 })(typeof globalThis!=="undefined"?globalThis:this,function(){
   "use strict";
-  const FIELDS=["bloodTests","xrays","ultrasounds","surgeries","newPatients","revisits","preventive"];
+  // Clinical owns only procedure/category counts; top-level entry fields are canonical for new patients and surgeries.
+  const FIELDS=["bloodTests","xrays","ultrasounds","revisits","preventive"];
   function normalizeClinical(value={}){
     const source=value&&typeof value==="object"&&!Array.isArray(value)?value:{};
     return Object.fromEntries(FIELDS.map(key=>{
@@ -15,7 +16,12 @@
   }
   function getClinicalRates(entry={}){
     const patients=Number(entry.patients),clinical=normalizeClinical(entry.clinical);
-    return Object.fromEntries(FIELDS.map(key=>[key,patients>0&&clinical[key]!==null?clinical[key]/patients*100:null]));
+    const validPatients=Number.isFinite(patients)&&patients>0;
+    const rate=value=>{
+      const number=Number(value);
+      return validPatients&&value!==null&&value!==undefined&&value!==""&&Number.isFinite(number)&&number>=0?number/patients*100:null;
+    };
+    return {...Object.fromEntries(FIELDS.map(key=>[key,rate(clinical[key])])),newPatients:rate(entry.newPatients),surgeries:rate(entry.surgeries)};
   }
   return {FIELDS,normalizeClinical,getClinicalRates};
 });
