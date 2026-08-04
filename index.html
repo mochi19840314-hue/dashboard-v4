@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1074">
+<link rel="stylesheet" href="style.css?v=1075">
 </head>
 <body>
 <header class="app-header">
@@ -69,13 +69,12 @@
     <fieldset class="clinical-section wide">
       <legend>今日の診療内容</legend>
       <div class="clinical-grid">
-        <label><span>🩸 血液</span><input id="clinicalBloodTests" type="number" inputmode="numeric" min="0" max="99" aria-label="血液検査 件数"></label>
-        <label><span>🩻 レントゲン</span><input id="clinicalXrays" type="number" inputmode="numeric" min="0" max="99" aria-label="レントゲン 件数"></label>
-        <label><span>🩺 エコー</span><input id="clinicalUltrasounds" type="number" inputmode="numeric" min="0" max="99" aria-label="エコー 件数"></label>
-        <label><span>🔁 再診</span><input id="clinicalRevisits" type="number" inputmode="numeric" min="0" max="99" aria-label="再診 件数"></label>
-        <label><span>💉 予防</span><input id="clinicalPreventive" type="number" inputmode="numeric" min="0" max="99" aria-label="予防 件数"></label>
+        <div class="clinical-stepper"><span>🩸 血液</span><div><button type="button" data-clinical-step="-1" data-target="clinicalBloodTests" aria-label="血液検査を1減らす">−</button><input id="clinicalBloodTests" type="number" inputmode="numeric" min="0" max="99" aria-label="血液検査 件数"><button type="button" data-clinical-step="1" data-target="clinicalBloodTests" aria-label="血液検査を1増やす">＋</button></div></div>
+        <div class="clinical-stepper"><span>🩻 レントゲン</span><div><button type="button" data-clinical-step="-1" data-target="clinicalXrays" aria-label="レントゲンを1減らす">−</button><input id="clinicalXrays" type="number" inputmode="numeric" min="0" max="99" aria-label="レントゲン 件数"><button type="button" data-clinical-step="1" data-target="clinicalXrays" aria-label="レントゲンを1増やす">＋</button></div></div>
+        <div class="clinical-stepper"><span>🩺 エコー</span><div><button type="button" data-clinical-step="-1" data-target="clinicalUltrasounds" aria-label="エコーを1減らす">−</button><input id="clinicalUltrasounds" type="number" inputmode="numeric" min="0" max="99" aria-label="エコー 件数"><button type="button" data-clinical-step="1" data-target="clinicalUltrasounds" aria-label="エコーを1増やす">＋</button></div></div>
+        <div class="clinical-stepper"><span>💉 予防</span><div><button type="button" data-clinical-step="-1" data-target="clinicalPreventive" aria-label="予防を1減らす">−</button><input id="clinicalPreventive" type="number" inputmode="numeric" min="0" max="99" aria-label="予防 件数"><button type="button" data-clinical-step="1" data-target="clinicalPreventive" aria-label="予防を1増やす">＋</button></div></div>
       </div>
-      <p id="clinicalConsistencyWarning" class="clinical-warning" role="status" aria-live="polite" hidden>来院件数と新患・再診の合計が一致していません</p>
+      <p id="clinicalConsistencyWarning" class="clinical-warning" role="status" aria-live="polite" hidden>新患数が来院件数を超えています。再診数は集計されません。</p>
     </fieldset>
     <label class="wide">今日のメモ
       <textarea id="note" class="daily-note" maxlength="500" rows="4" placeholder="例：手術2件／熱中症1件／Google広告から初診／高額診療あり／看護師実習初日"></textarea>
@@ -421,12 +420,12 @@
 <script src="clinical-trends.js?v=1060"></script>
 <script src="report-month.js?v=1061"></script>
 <script src="month-rollover.js?v=1059"></script>
-<script src="clinical-intelligence.js?v=1074"></script>
+<script src="clinical-intelligence.js?v=1075"></script>
 <script src="daily-brief.js?v=1074"></script>
 <script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script>
-<script src="clinical-data.js?v=1072"></script>
-<script src="app.js?v=1074"></script>
+<script src="clinical-data.js?v=1075"></script>
+<script src="app.js?v=1075"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
