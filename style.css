@@ -18,9 +18,9 @@ textarea{min-height:430px;resize:vertical;line-height:1.8}.dataButtons{display:g
 
 .clinical-section{margin:2px 0 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#fff,#f3fbf9)}
 .clinical-section legend{padding:0 7px;color:var(--pd);font-size:16px;font-weight:900}.clinical-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
-.clinical-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:7px 9px;border-radius:11px;background:rgba(255,255,255,.82)}.clinical-grid label span{min-width:0;overflow:hidden;font-size:13px;white-space:nowrap;text-overflow:ellipsis}
-.clinical-grid input{flex:0 0 64px;width:64px;margin:0;padding:9px 6px;text-align:center;font-size:16px;font-variant-numeric:tabular-nums}.clinical-warning{margin:11px 2px 0;padding:9px 11px;border-radius:10px;background:#fff7df;color:#875f00;font-size:12px;font-weight:800;line-height:1.5}
-@media(max-width:430px){.clinical-section{padding:10px}.clinical-grid{gap:7px}.clinical-grid label{gap:4px;padding:6px}.clinical-grid label span{overflow:visible;font-size:12.5px;text-overflow:clip}.clinical-grid input{flex-basis:48px;width:48px;padding:9px 4px}}
+.clinical-stepper{min-width:0;padding:9px;border-radius:12px;background:rgba(255,255,255,.9)}.clinical-stepper>span{display:block;margin-bottom:7px;font-size:13px;white-space:nowrap}.clinical-stepper>div{display:grid;grid-template-columns:44px minmax(42px,1fr) 44px;gap:6px;align-items:center}
+.clinical-stepper button{min-width:44px;min-height:44px;padding:0;border:1px solid #b9e2dc;background:var(--soft);font-size:22px;touch-action:manipulation}.clinical-stepper input{width:100%;height:44px;margin:0;padding:7px 2px;text-align:center;font-size:18px;font-weight:850;font-variant-numeric:tabular-nums;-moz-appearance:textfield}.clinical-stepper input::-webkit-inner-spin-button{display:none}.clinical-warning{margin:11px 2px 0;padding:9px 11px;border-radius:10px;background:#fff7df;color:#875f00;font-size:12px;font-weight:800;line-height:1.5}
+@media(max-width:430px){.clinical-section{padding:10px}.clinical-grid{gap:7px}.clinical-stepper{padding:7px}.clinical-stepper>span{font-size:12.5px}.clinical-stepper>div{grid-template-columns:42px minmax(36px,1fr) 42px;gap:4px}.clinical-stepper button{min-width:42px;min-height:44px}}
 
 .ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .ai-card{border-left:5px solid var(--p)}

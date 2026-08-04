@@ -1,25 +1,18 @@
 "use strict";
 const assert=require("node:assert/strict");
-const {FIELDS,normalizeClinical,getClinicalRates}=require("./clinical-data");
-
-assert.deepEqual(FIELDS,["bloodTests","xrays","ultrasounds","revisits","preventive"]);
-const clinical=normalizeClinical({bloodTests:5,xrays:2,ultrasounds:3,revisits:16,preventive:4,newPatients:98,surgeries:97});
-assert.deepEqual(clinical,{bloodTests:5,xrays:2,ultrasounds:3,revisits:16,preventive:4},"legacy duplicate fields are safely ignored");
-assert.equal(normalizeClinical({bloodTests:0}).bloodTests,0,"zero remains distinct from blank");
-assert.equal(normalizeClinical({bloodTests:""}).bloodTests,null,"blank remains unentered");
-assert.equal(normalizeClinical().xrays,null,"missing clinical data is safe");
-assert.equal(normalizeClinical({bloodTests:120}).bloodTests,99,"clinical values are capped at 99");
-assert.equal(normalizeClinical({preventive:-4}).preventive,0,"clinical values are capped at 0");
-
-const rates=getClinicalRates({patients:20,newPatients:3,surgeries:2,clinical});
-assert.deepEqual(rates,{bloodTests:25,xrays:10,ultrasounds:15,revisits:80,preventive:20,newPatients:15,surgeries:10});
-const legacyRates=getClinicalRates({patients:20,newPatients:3,surgeries:2,clinical:{newPatients:19,surgeries:18,revisits:17}});
-assert.equal(legacyRates.newPatients,15,"entry.newPatients is canonical");
-assert.equal(legacyRates.surgeries,10,"entry.surgeries is canonical");
-for(const patients of [0,"",null,-1,"invalid"]){
-  const invalid=getClinicalRates({patients,newPatients:3,surgeries:2,clinical});
-  assert.equal(invalid.newPatients,null);assert.equal(invalid.surgeries,null);assert.equal(invalid.bloodTests,null);
-}
-assert.equal(getClinicalRates({patients:20}).bloodTests,null);
-assert.equal(getClinicalRates({patients:20}).newPatients,null);
-console.log("clinical data tests: canonical fields, rates, invalid patients, and legacy compatibility passed");
+const {FIELDS,LEGACY_FIELDS,normalizeClinical,calculateRevisits,getClinicalRates}=require("./clinical-data");
+assert.deepEqual(FIELDS,["bloodTests","xrays","ultrasounds","preventive"]);
+assert.deepEqual(LEGACY_FIELDS,["bloodTests","xrays","ultrasounds","preventive","revisits"]);
+const clinical=normalizeClinical({bloodTests:5,xrays:2,ultrasounds:3,revisits:16,preventive:4});
+assert.equal(clinical.revisits,16,"legacy revisit remains readable");
+assert.equal(normalizeClinical({bloodTests:0}).bloodTests,0);assert.equal(normalizeClinical({bloodTests:""}).bloodTests,null);
+assert.equal(normalizeClinical({bloodTests:120}).bloodTests,99);assert.equal(normalizeClinical({preventive:-4}).preventive,0);
+assert.equal(calculateRevisits({patients:20,newPatients:3}),17);assert.equal(calculateRevisits({patients:10,newPatients:0}),10);
+for(const entry of [{patients:0,newPatients:0},{patients:"",newPatients:3},{patients:10,newPatients:""},{patients:2,newPatients:3}])assert.equal(calculateRevisits(entry),null);
+let rates=getClinicalRates({patients:20,newPatients:3,surgeries:2,clinical});
+assert.deepEqual(rates,{bloodTests:25,xrays:10,ultrasounds:15,preventive:20,revisits:85,newPatients:15,surgeries:10});
+rates=getClinicalRates({patients:20,newPatients:null,clinical:{revisits:16}});assert.equal(rates.revisits,80,"legacy fallback");
+assert.equal(getClinicalRates({patients:20,newPatients:3,clinical:{revisits:2}}).revisits,85,"calculation is canonical");
+assert.equal(getClinicalRates({patients:2,newPatients:3,clinical:{revisits:1}}).revisits,null,"invalid canonical values never fall back to a misleading legacy count");
+for(const patients of [0,"",null,-1,"invalid"])assert.ok(Object.values(getClinicalRates({patients,newPatients:3,clinical})).every(value=>value===null));
+console.log("clinical data tests: four fields, safe automatic revisits, rates, and legacy compatibility passed");
