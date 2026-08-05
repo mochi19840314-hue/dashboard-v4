@@ -227,7 +227,7 @@ button{transition:transform .15s ease,filter .15s ease}button:active{transform:s
 
 
 /* v10.2.1 — memo accumulation & monthly AI analysis */
-.daily-note{min-height:104px!important;resize:vertical}
+.daily-note{min-height:104px!important;resize:vertical}.note-status{display:block;margin-top:6px;color:#17645e;font-size:11px;font-weight:850}
 .note-guide{display:block;margin-top:7px;color:var(--muted);font-size:10px;font-weight:750;line-height:1.55}
 .report-memo-section{background:linear-gradient(145deg,#fff,#f3fbf9)}
 .report-memo-tags{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
