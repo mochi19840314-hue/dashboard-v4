@@ -7,6 +7,6 @@ assert.doesNotMatch(html,/id="clinicalRevisits"/);
 for(const id of ["clinicalBloodTests","clinicalXrays","clinicalUltrasounds","clinicalPreventive"])assert.match(html,new RegExp(`id="${id}"`));
 assert.equal((html.match(/data-clinical-step="1"/g)||[]).length,4);assert.equal((html.match(/data-clinical-step="-1"/g)||[]).length,4);
 assert.match(app,/function stepClinicalInput[\s\S]*?Math\.min\(99,Math\.max\(0/);assert.match(app,/raw===""\?0/);
-assert.match(app,/newPatients:num\("newPatients"\),surgeries:num\("surgeries"\)/);
-assert.match(sw,/v1075/);assert.match(sw,/app\.js\?v=1075/);assert.match(html,/app\.js\?v=1075/);
+assert.match(app,/"newPatients","surgeries"/);
+assert.match(sw,/v1076/);assert.match(sw,/app\.js\?v=1076/);assert.match(html,/app\.js\?v=1076/);
 console.log("clinical four-item stepper UI, save wiring, limits, and PWA cache tests passed");
