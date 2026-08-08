@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=1076">
+<link rel="stylesheet" href="style.css?v=1077">
 </head>
 <body>
 <header class="app-header">
@@ -145,6 +145,7 @@
     <article><span>来院件数</span><strong id="todayPatients">0件</strong></article>
     <article><span>客単価</span><strong id="todayUnit">0円</strong></article>
     <article><span>新患数</span><strong id="todayNew">0件</strong></article>
+    <article class="accent"><span>診療効率</span><strong id="todayEfficiency">—</strong><small id="todayEfficiencyScore">4指標で総合評価</small></article>
   </div>
   <article class="card daily-ai-card" id="dailyAiCard">
     <div class="ai-orb" aria-hidden="true">✦</div>
@@ -426,7 +427,8 @@
 <script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script>
 <script src="clinical-data.js?v=1076"></script>
-<script src="app.js?v=1076"></script>
+<script src="clinical-efficiency.js?v=1077"></script>
+<script src="app.js?v=1077"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
