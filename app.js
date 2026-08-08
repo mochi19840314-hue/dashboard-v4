@@ -104,7 +104,8 @@ const monthNow=()=>iso().slice(0,7);
 function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,meta:{...base.meta,...(raw.meta||{})},finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},monthlyReports:{...(raw.monthlyReports||{})},historical:{...HISTORICAL,...(raw.historical||{})},clinic:{...DEFAULT_CLINIC,...(raw.clinic||{}),closedDates:Array.isArray(raw.clinic?.closedDates)?raw.clinic.closedDates:[]},entries:Array.isArray(raw.entries)?raw.entries:[]}}catch{return structuredClone(base)}}
 function save(){data.meta={...(data.meta||{}),lastUpdated:new Date().toISOString()};localStorage.setItem(KEY,JSON.stringify(data));storage()}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout($("toast").t);$("toast").t=setTimeout(()=>$("toast").classList.remove("show"),1600)}
-function preview(){const s=num("sales"),p=num("patients");$("todaySales").textContent=yen(s);$("todayPatients").textContent=`${p}件`;$("todayUnit").textContent=yen(p?s/p:0);$("todayNew").textContent=`${num("newPatients")}件`;renderDailyAI()}
+function currentProfitRate(){const s=monthSummary(monthNow());return s.sales&&s.expense?(s.sales-s.expense)/s.sales*100:null}
+function preview(){const s=num("sales"),p=num("patients"),efficiency=ClinicalEfficiency.evaluate({patients:p,sales:s,profitRate:currentProfitRate()});$("todaySales").textContent=yen(s);$("todayPatients").textContent=`${p}件`;$("todayUnit").textContent=yen(p?s/p:0);$("todayNew").textContent=`${num("newPatients")}件`;$("todayEfficiency").textContent=p||s?efficiency.grade:"—";$("todayEfficiencyScore").textContent=p||s?`${efficiency.score}点・4指標で総合評価`:"4指標で総合評価";renderDailyAI()}
 const WEATHER_CODES={0:["快晴","☀️"],1:["晴れ","🌤️"],2:["一部曇り","⛅"],3:["曇り","☁️"],45:["霧","🌫️"],48:["霧","🌫️"],51:["弱い霧雨","🌦️"],53:["霧雨","🌦️"],55:["強い霧雨","🌧️"],61:["小雨","🌦️"],63:["雨","🌧️"],65:["強い雨","🌧️"],71:["小雪","🌨️"],73:["雪","🌨️"],75:["大雪","❄️"],80:["にわか雨","🌦️"],81:["にわか雨","🌧️"],82:["激しいにわか雨","⛈️"],95:["雷雨","⛈️"],96:["雷雨・ひょう","⛈️"],99:["強い雷雨・ひょう","⛈️"]};
 function showWeather(w,offline=false){
   if(!w)return;
@@ -352,9 +353,9 @@ function renderDailyAI(){
     title=`${day.label}です`;text="休診日は売上・来院件数・経営スコアの評価対象から除外します。今月全体の状況確認や院長メモにご利用ください。";
   }else if(w||sales||patients){
     const weatherText=w?`${w.condition}・${Math.round(Number(w.temperature)||0)}℃`:"天気未記録",notes=[],rate=day.target?sales/day.target:0;
+    const efficiency=ClinicalEfficiency.evaluate({patients,sales,profitRate:currentProfitRate()});
     if(sales)notes.push(`${day.label}の目標${yen(day.target)}に対し、達成率${Math.round(rate*100)}%です。`);
-    if(patients&&basePatients){const d=(patients/basePatients-1)*100;notes.push(`来院数は同じ診療区分の平均より${Math.abs(d).toFixed(0)}%${d>=0?"多め":"少なめ"}です。`)}
-    else if(patients)notes.push(`基準来院数${day.patientsTarget}件に対し${patients}件です。`);
+    if(patients)notes.push(`診療効率は${efficiency.grade}（${efficiency.score}点）です。${efficiency.comment}`);
     if(sales&&baseSales){const d=(sales/baseSales-1)*100;notes.push(`売上は同じ診療区分の実績より${Math.abs(d).toFixed(0)}%${d>=0?"上振れ":"下振れ"}しています。`)}
     if(w&&Number(w.temperature)>=30)notes.push("高温日です。熱中症注意喚起と、涼しい時間帯の来院案内が適しています。");
     else if(w&&isRainy({weather:w}))notes.push("雨天です。空き枠があればLINEやストーリーズで当日受診を案内する余地があります。");
@@ -586,7 +587,8 @@ function calcManagementScore(s,month){
   const salesScore=Math.round(clamp(sales/Math.max(1,target)*25,0,25));
   const profitScore=Math.round(clamp(rate/25*15,0,15));
   const opEntries=operatingEntries(s.entries||[]);const patientTarget=Math.max(1,opEntries.reduce((a,e)=>a+clinicDayInfo(e.date).patientsTarget,0)||activeDays*(Number(data.clinic.fullDayPatients)||17.5));
-  const patientScore=Math.round(clamp(patients/patientTarget*15,0,15));
+  const averagePatients=activeDays?patients/activeDays:0;
+  const patientScore=Math.round(ClinicalEfficiency.patientScore(averagePatients)/100*15);
   const newTarget=Math.max(1,activeDays*0.8);
   const newScore=Math.round(clamp(newPatients/newTarget*10,0,10));
   const secondTarget=Math.max(1,activeDays*0.3);
@@ -663,7 +665,8 @@ function reportScoreModel(s,prev,target,current){
   const progress=target?s.sales/target:0;
   const salesScore=Math.round(clamp(progress,0,1)*30);
   const profitScore=Math.round(clamp(rate/30,0,1)*25);
-  const patientsScore=prev.patients?scoreByRatio(s.patients/prev.patients,15):Math.round(15*.67);
+  const activeDays=Math.max(1,new Set((s.entries||[]).map(e=>e.date)).size),averagePatients=s.patients/activeDays;
+  const patientsScore=Math.round(ClinicalEfficiency.patientScore(averagePatients)/100*15);
   const unitScore=prevUnit?scoreByRatio(unit/prevUnit,15):Math.round(15*.67);
   const categorized=s.personnelExpense+s.medicalExpense+s.cardFee,prevCategorized=prev.personnelExpense+prev.medicalExpense+prev.cardFee;
   let expenseScore=7;
