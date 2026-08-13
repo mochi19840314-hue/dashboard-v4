@@ -1,0 +1,9 @@
+const assert=require("node:assert/strict"),Forecast=require("./annual-profit-forecast.js"),month=(sales,expense)=>({sales,expense});
+assert.equal(Forecast.stableRate(Array(6).fill(month(100,70))).months,6,"6か月を使用");
+assert.equal(Forecast.stableRate(Array(3).fill(month(100,80))).months,3,"3か月へフォールバック");
+assert.equal(Forecast.stableRate([month(100,90),month(0,50)]).months,1,"売上0月を除き1か月へフォールバック");
+assert.equal(Forecast.stableRate([month(100,130)]).rate,-.3,"マイナス利益率を維持");
+assert.equal(Forecast.stableRate([month(0,20)]).rate,0,"売上0で除算しない");
+assert.equal(Forecast.confidence(3).stars,"★☆☆☆☆","月初の信頼度");assert.equal(Forecast.confidence(21).stars,"★★★★★","月末の信頼度");
+const result=Forecast.calculate({yearSales:300,yearExpense:240,activeMonths:3,recentMonths:Array(3).fill(month(100,50)),businessDays:8});
+assert.equal(result.shortForecast,240,"短期予測");assert.equal(result.stableForecast,600,"安定予測");console.log("annual profit forecast tests passed");
