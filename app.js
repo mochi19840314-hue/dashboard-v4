@@ -522,7 +522,7 @@ function animateNumber(el,to,formatter,duration=650){
   const tick=now=>{const t=clamp((now-start)/duration,0,1),v=from+(target-from)*ease(t);el.textContent=formatter(v);if(t<1)requestAnimationFrame(tick)};
   requestAnimationFrame(tick)
 }
-function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast){
+function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast,forecastContext=null){
   const activeRows=rows.filter(r=>r.sales>0||r.expense>0);
   const avgSales=active?total.sales/active:0;
   const salesScore=Math.round(clamp(avgSales/MONTHLY_TARGET*35,0,35));
@@ -549,6 +549,7 @@ function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,prof
   else if(growthRate<-5){title='直近3か月の減速を確認';comment=`直近3か月の平均売上は、その前の3か月より約${Math.abs(growthRate).toFixed(1)}%低下しています。季節要因か予約枠の問題かを切り分け、来院件数と客単価のどちらが動いたか確認しましょう。`;tags=['トレンド','来院件数','客単価']}
   else if(rate>=20&&avgSales>=MONTHLY_TARGET){title='質の高い成長を維持';comment=`平均月商は${yen(avgSales)}、年間利益率は${rate.toFixed(1)}%です。売上と利益の両方が良好なので、新しい設備投資よりも診療負荷とスタッフ体制の安定を優先する局面です。`;tags=['好調','利益確保','負荷管理']}
   else{title='売上は順調、利益をもう一段';comment=`年末利益予測は${yen(profitForecast)}、年間利益率は${rate.toFixed(1)}%です。高単価施策を増やすより、既存の健診・画像検査・再診提案を漏れなく行うほうが安定した改善につながります。`;tags=['安定成長','利益率','既存施策']}
+  if(forecastContext&&forecastContext.confidence.level<=2&&forecastContext.stableForecast>profitForecast){comment+=`${comment?' ':''}短期利益予測だけでなく、安定利益予測との差を確認してください。`;tags.push('予測差')}
   $('yearAiTitle').textContent=title;$('yearAiComment').textContent=comment;$('yearAiTags').innerHTML=tags.map(t=>`<span>${t}</span>`).join('');
 }
 
@@ -557,14 +558,20 @@ function year(){
   const total=rows.reduce((a,r)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=Number(r[k])||0);a.expense+=Number(r.expense)||0;return a},{sales:0,expense:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0});
   const activeRows=rows.filter(r=>r.sales>0||r.expense>0),active=activeRows.length,profit=total.sales-total.expense,rate=total.sales?profit/total.sales*100:0;
   const annualFactor=active?12/active:0,salesForecast=total.sales*annualFactor,profitForecast=profit*annualFactor;
+  const latestIndex=rows.reduce((last,row,index)=>row.sales>0||row.expense>0?index:last,-1),latestMonth=latestIndex>=0?`${y}-${String(latestIndex+1).padStart(2,"0")}`:null;
+  const availableMonths=[...new Set([...Object.keys(data.historical||{}),...data.entries.map(entry=>entry.date.slice(0,7))])].filter(month=>!latestMonth||month<=latestMonth).sort().map(month=>monthSummary(month)).filter(row=>row.sales>0);
+  const recordedDays=latestMonth?new Set(data.entries.filter(entry=>entry.date.startsWith(latestMonth)).map(entry=>entry.date)).size:0,confidenceDays=latestMonth&&latestMonth<monthNow()?21:recordedDays;
+  const forecastContext=AnnualProfitForecast.calculate({yearSales:total.sales,yearExpense:total.expense,activeMonths:active,recentMonths:availableMonths,businessDays:confidenceDays});
   const best=activeRows.reduce((a,r)=>r.sales>a.sales?r:a,{sales:0});
   const incomeTarget=Number(data.finance.incomeTarget)||0;
   animateNumber($("yearSales"),total.sales,yen);animateNumber($("yearProfit"),profit,yen);animateNumber($("yearProfitRate"),rate,pct);animateNumber($("yearAvg"),active?total.sales/active:0,yen);
   $("yearSalesSub").textContent=`${active}か月分の集計`;$("yearProfitSub").textContent=`年間支出 ${yen(total.expense)}`;$("yearProfitRateSub").textContent=rate>=20?'良好な水準':rate>=10?'安定圏':'要確認';$("yearAvgSub").textContent=`月平均利益 ${yen(active?profit/active:0)}`;
   animateNumber($("estimatedIncome"),profitForecast,yen);$("estimatedIncomeSub").textContent=active?`${active}か月の実績から年換算`:'データ入力後に表示';
-  animateNumber($("yearSalesForecast"),salesForecast,yen);animateNumber($("yearProfitForecast"),profitForecast,yen);animateNumber($("bestMonthSales"),best.sales,yen);
+  animateNumber($("yearSalesForecast"),salesForecast,yen);animateNumber($("yearProfitForecast"),profitForecast,yen);animateNumber($("yearStableProfitForecast"),forecastContext.stableForecast,yen);animateNumber($("bestMonthSales"),best.sales,yen);
+  $("yearStableProfitSub").textContent=forecastContext.stableMonths?`直近${forecastContext.stableMonths}か月平均利益率から予測`:'利益率データ入力後に表示';
+  $("yearForecastConfidence").textContent=forecastContext.confidence.stars;$("yearForecastConfidence").setAttribute("aria-label",`5段階中${forecastContext.confidence.level}`);$("yearForecastConfidenceSub").textContent=`営業日 ${forecastContext.confidence.days}日`;
   if(incomeTarget>0){const progress=Math.max(0,Math.min(100,profitForecast/incomeTarget*100));$("incomeProgressText").textContent=`目標 ${yen(incomeTarget)}に対して ${progress.toFixed(0)}%`;$("incomeProgressBar").style.width=`${progress}%`}else{$("incomeProgressText").textContent='目標年収は財務タブで設定できます';$("incomeProgressBar").style.width='0%'}
-  renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast);
+  renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast,forecastContext);
   renderYearChart(rows,y)
 }
 
