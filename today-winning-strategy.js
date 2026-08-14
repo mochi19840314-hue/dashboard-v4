@@ -22,7 +22,7 @@ function profitRate(context,entries){
  const sales=entries.reduce((sum,row)=>sum+number(row.sales),0);return{value:sales>0?30:0,source:"参考利益率"};
 }
 function build(context={}){
- const entries=(Array.isArray(context.entries)?context.entries:[]).filter(row=>number(row.patients)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));if(entries.length<5)return{ready:false,sampleDays:entries.length};
+ const today=String(context.today||""),entries=(Array.isArray(context.entries)?context.entries:[]).filter(row=>(!today||String(row.date)<today)&&number(row.patients)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));if(context.closed)return{ready:true,closed:true,sampleDays:entries.length};if(context.readinessStatus==="collecting"||entries.length<5)return{ready:false,sampleDays:entries.length};
  const recent=entries.slice(-5),baseline=entries.slice(-30,-5),patients=recent.reduce((sum,row)=>sum+number(row.patients),0),metrics={blood:rate(recent.reduce((sum,row)=>sum+number(row.clinical?.bloodTests),0),patients),ultrasound:rate(recent.reduce((sum,row)=>sum+number(row.clinical?.ultrasounds),0),patients),checkup:rate(recent.reduce((sum,row)=>sum+number(row.checkups),0),patients),newPatient:rate(recent.reduce((sum,row)=>sum+number(row.newPatients),0),patients)},candidates=[];
  const add=(key,score,reason)=>candidates.push({key,score,reason});
  const compare=(key,current,getter,fallback)=>{const base=baseline.length?average(baseline,getter):fallback;if(current<base)add(key,70+(base-current)*2,`最近5営業日の${ACTIONS[key].metric}が平均より低下しています。`)};
