@@ -555,13 +555,18 @@ function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,prof
 
 function renderMonthlyProfitForecast(){
   const m=monthNow(),s=monthSummary(m),today=iso(),entries=operatingEntries(s.entries.filter(entry=>entry.date<=today)).sort((a,b)=>a.date.localeCompare(b.date));
-  const businessDays=entries.length,scheduledBusinessDays=Number(data.settings[m]?.businessDays)||expectedBusinessDays(m),currentProfit=s.sales-s.expense,profitRate=s.sales?currentProfit/s.sales:0;
-  const dailyProfits=entries.map(entry=>(Number(entry.sales)||0)*profitRate);
-  if(dailyProfits.length)dailyProfits[dailyProfits.length-1]+=currentProfit-dailyProfits.reduce((sum,value)=>sum+value,0);
+  const businessDays=entries.length,scheduledBusinessDays=Number(data.settings[m]?.businessDays)||expectedBusinessDays(m),currentProfit=s.sales-s.expense;
+  const historicalMonths=Array.from({length:6},(_,index)=>monthSummary(monthShift(m,index-6))).map(past=>{
+    const sameDayEntries=operatingEntries(past.entries).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,businessDays),sameDaySales=sum(sameDayEntries).sales;
+    return{sales:past.sales,expense:past.expense,profit:past.sales-past.expense,sameDayProfitRate:sameDaySales?(sameDaySales-past.expense)/sameDaySales:undefined};
+  });
   const configuredAnnualTarget=Number(data.finance.incomeTarget)||0,targetProfit=configuredAnnualTarget?configuredAnnualTarget/12:0;
-  const result=MonthlyProfitForecast.calculate({currentProfit,businessDays,scheduledBusinessDays,dailyProfits,targetProfit,profitRate,medicalExpenseRate:s.expense?s.medicalExpense/s.expense:0});
-  $("monthEndCurrentProfit").textContent=yen(result.currentProfit);$("monthEndForecastProfit").textContent=yen(result.forecastProfit);$("monthEndTargetProfit").textContent=yen(result.targetProfit);$("monthEndAchievement").textContent=`${Math.round(result.achievementRate)}%`;
+  const calculate=(visibleEntries,previousForecast=null)=>{const entrySales=sum(visibleEntries).sales,currentSales=entrySales+s.ecSales;return MonthlyProfitForecast.calculate({currentProfit:currentSales-s.expense,currentSales,currentExpense:s.expense,fixedExpense:Math.max(0,s.expense-s.cardFee),variableExpense:s.cardFee,businessDays:visibleEntries.length,scheduledBusinessDays,historicalMonths,targetProfit,previousForecast})};
+  const previousEntries=entries.slice(0,-1),previous=previousEntries.length?calculate(previousEntries):null,result=calculate(entries,previous?.forecastProfit),formatApprox=value=>`約${Math.round((Number(value)||0)/10000).toLocaleString("ja-JP")}万円`;
+  $("monthEndCurrentProfit").textContent=yen(result.currentProfit);$("monthEndForecastProfit").textContent=formatApprox(result.forecastProfit);$("monthEndTargetProfit").textContent=yen(result.targetProfit);$("monthEndAchievement").textContent=`${Math.round(result.achievementRate)}%`;
   $("monthEndForecastType").textContent=result.confidence.label;$("monthEndConfidence").textContent=result.confidence.stars;$("monthEndConfidence").setAttribute("aria-label",`5段階中${result.confidence.level}`);$("monthEndConfidenceSub").textContent=`営業日 ${result.confidence.days}日`;
+  $("monthEndModel").textContent=result.method;
+  if(result.difference===null){$("monthEndDifference").textContent="比較データなし";$("monthEndPreviousForecast").textContent=""}else{const improved=result.difference>=0;$("monthEndDifference").textContent=`${improved?"＋":"−"}${Math.round(Math.abs(result.difference)/10000).toLocaleString("ja-JP")}万円${improved?"改善":"悪化"}`;$("monthEndPreviousForecast").textContent=`昨日予測 ${formatApprox(previous.forecastProfit)}`}
   $("monthEndKagemushaComment").textContent=`🥷 ${result.comment}`;
 }
 
