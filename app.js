@@ -851,12 +851,12 @@ function renderClinicalIntelligence(){
  try{
   const list=$("clinicalIntelligenceInsights");if(!list||typeof ClinicalIntelligence==="undefined")return;
   const analysis=ClinicalIntelligence.analyze(data?.entries??[],{closedDates:data?.clinic?.closedDates??[]}),r=analysis.readiness;
-  const titles={collecting:"診療データ蓄積中",preliminary:"参考傾向",ready:"診療構成インサイト",mature:"最近60営業日の診療構成"};
+  const titles={collecting:"診療データ蓄積中",preliminary:"参考提案",ready:"改善提案",mature:"直近60営業日から提案"};
   $("clinicalIntelligenceStatus").textContent=titles[r.status];
   const guidance={collecting:"10営業日から参考分析を開始します。",preliminary:"30営業日から本格分析を開始します。",ready:"分析中",mature:"直近60営業日を中心に継続分析中"};
   $("clinicalIntelligenceProgress").textContent=`診療データ：${r.sampleDays}営業日 · ${guidance[r.status]}`;
-  const messages=analysis.insights.length?analysis.insights.map(x=>x.message):[guidance[r.status]];
-  list.innerHTML=messages.slice(0,3).map(x=>`<li>${escapeHtml(x)}</li>`).join("");
+  if(!analysis.insights.length){list.innerHTML='<p class="management-insights-empty">診療データが蓄積されると、<br>改善ポイントを自動提案します。</p>';return}
+  list.innerHTML=analysis.insights.slice(0,3).map(insight=>`<section class="management-insight"><div class="management-insight-heading"><h4>📈 ${escapeHtml(insight.title)}</h4><span class="management-importance" aria-label="重要度 ${insight.importance} / 5">${"★".repeat(insight.importance)}${"☆".repeat(5-insight.importance)}</span></div><p class="management-evidence">${escapeHtml(insight.message)}</p><div class="management-actions"><strong>おすすめ</strong><ul>${insight.actions.map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></div><div class="management-effect"><span>期待効果</span><strong>${escapeHtml(insight.effect)}</strong></div></section>`).join("");
  }catch(error){console.error(error)}
 }
 function clinicalTrendAnalysis(){return ClinicalTrends.analyzeClinicalTrends(data.entries,{periodDays:90,today:iso(),closedDates:data.clinic?.closedDates})}
