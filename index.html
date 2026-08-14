@@ -40,6 +40,11 @@
     <div class="daily-shadow-heading"><span class="daily-shadow-icon" aria-hidden="true">🧠</span><div><h3 id="dailyShadowTitle">今日の影武者</h3><p>Today's operational briefing</p></div></div>
     <ul id="dailyShadowInsights" class="daily-shadow-insights" aria-live="polite"><li>今日のデータを確認しています。</li></ul>
   </article>
+  <section class="today-mission" id="todayMission" aria-labelledby="todayMissionTitle">
+    <header><div><h2 id="todayMissionTitle">🎯 今日のミッション</h2><p>TODAY'S MISSION</p></div><span id="todayMissionStatus">分析中</span></header>
+    <div id="todayMissionList" class="today-mission-list" aria-live="polite"><p class="today-mission-empty">診療データを確認しています。</p></div>
+    <aside id="todayMissionComment" class="today-mission-comment" aria-live="polite" hidden></aside>
+  </section>
   <article class="card business-anomaly-card" id="businessAnomalyCard" aria-live="polite" hidden>
     <h3 id="businessAnomalyTitle"></h3>
     <div id="businessAnomalyItems" class="business-anomaly-items"></div>
@@ -440,6 +445,7 @@
 <script src="report-month.js?v=1061"></script>
 <script src="month-rollover.js?v=1059"></script>
 <script src="clinical-intelligence.js?v=1084"></script>
+<script src="today-mission.js?v=1085"></script>
 <script src="daily-brief.js?v=1074"></script>
 <script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script>
