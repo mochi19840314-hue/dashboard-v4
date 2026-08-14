@@ -1,8 +1,11 @@
 "use strict";
 const assert=require("node:assert/strict"),Mission=require("./today-mission");
-const entry=(day,overrides={})=>({date:`2026-08-${String(day).padStart(2,"0")}`,patients:20,sales:200000,newPatients:3,surgeries:2,clinical:{bloodTests:6,xrays:3,ultrasounds:2,preventive:4},...overrides});
-for(const count of [0,1,2]){const result=Mission.build({entries:Array.from({length:count},(_,i)=>entry(i+1))});assert.equal(result.ready,false);assert.equal(result.missions.length,0)}
-const lowClinical=Mission.build({entries:[entry(1,{newPatients:0,clinical:{}}),entry(2,{newPatients:0,clinical:{}}),entry(3,{newPatients:0,clinical:{}})]});assert.equal(lowClinical.ready,true);assert.equal(lowClinical.missions.length,3);assert.equal(new Set(lowClinical.missions.map(x=>x.key)).size,lowClinical.missions.length,"duplicate improvements are removed");assert.equal(lowClinical.missions[0].title,"画像検査提案");
-const anomaly=Mission.build({entries:[entry(1),entry(2),entry(3)],anomalies:[{metric:"客単価"},{metric:"客単価"}]});assert.equal(anomaly.missions[0].key,"unit","anomalies receive priority");assert.equal(anomaly.missions.filter(x=>x.key==="unit").length,1,"similar anomaly actions are merged");assert.ok(anomaly.missions.every(x=>x.actions.length<=2));assert.ok(anomaly.comment.quote&&anomaly.comment.reason&&anomaly.comment.effect);
-const cash=Mission.build({entries:[entry(1),entry(2),entry(3)],cashFlowLevel:1});assert.ok(cash.missions.some(x=>x.key==="inventory"),"cash-flow risk produces an inventory action");
-console.log("Today's Mission: readiness, ranking, deduplication and action limits passed");
+const entry=(day,blood=0)=>({date:`2026-08-${String(day).padStart(2,"0")}`,patients:10,newPatients:1,sales:100000,checkups:1,clinical:{bloodTests:blood,ultrasounds:2}});
+const entries=[entry(1,4),entry(2,4),entry(3,4),entry(4,4),entry(5,4),entry(6),entry(7),entry(8),entry(9),entry(10)];
+const result=Mission.build({entries,recentMonths:Array.from({length:6},()=>({sales:100,expense:60}))});
+assert.equal(result.ready,true);
+assert.equal(result.missions.length,3);
+assert.equal(result.missions[0].title,result.title,"Mission #1は勝ち筋と同じテーマ・行動にする");
+assert.equal(new Set(result.missions.map(item=>item.key)).size,3,"補助ミッションを重複させない");
+assert.ok(result.comment.quote&&result.comment.reason&&result.comment.effect);
+console.log("Today's Mission compatibility API uses the unified strategy result");

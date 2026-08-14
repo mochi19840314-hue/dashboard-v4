@@ -1,5 +1,10 @@
-const test=require("node:test"),assert=require("node:assert/strict"),Winning=require("./today-winning-strategy");
+const test=require("node:test"),assert=require("node:assert/strict"),Strategy=require("./today-winning-strategy");
 const entry=(day,blood=0)=>({date:`2026-08-${String(day).padStart(2,"0")}`,patients:10,newPatients:1,sales:100000,checkups:1,clinical:{bloodTests:blood,ultrasounds:2}});
-test("5営業日未満では蓄積中を返す",()=>assert.equal(Winning.build({entries:[entry(1),entry(2)]}).ready,false));
-test("低下した血液検査を一つだけ勝ち筋として提案し推定利益を計算する",()=>{const result=Winning.build({entries:[entry(1,4),entry(2,4),entry(3,4),entry(4,4),entry(5,4),entry(6),entry(7),entry(8),entry(9),entry(10)],currentMonthSales:1000000,currentMonthExpense:550000});assert.equal(result.title,"血液検査を積極提案");assert.equal(result.expectedRevenue,11000);assert.equal(result.estimatedProfit,5000);assert.equal(result.profitRateSource,"現在月");assert.ok(result.reason.length<=100)});
-test("病院設定の利益率を最優先する",()=>{const result=Winning.build({entries:Array.from({length:5},(_,i)=>entry(i+1)),configuredProfitRate:40});assert.equal(result.profitRate,40);assert.equal(result.profitRateSource,"病院設定")});
+const entries=[entry(1,4),entry(2,4),entry(3,4),entry(4,4),entry(5,4),entry(6),entry(7),entry(8),entry(9),entry(10)];
+const month=rate=>({sales:100000,expense:100000*(1-rate/100)});
+test("5営業日未満では蓄積中を返す",()=>assert.equal(Strategy.build({entries:[entry(1),entry(2)]}).ready,false));
+test("勝ち筋とMission #1を一つの結果から生成する",()=>{const result=Strategy.generateTodayStrategy({entries,recentMonths:Array(6).fill(month(40))});assert.equal(result.theme,"血液検査");assert.equal(result.missions[0].key,"blood");assert.equal(result.missions[0].title,result.title);assert.ok(result.missions[0].actions.every(Boolean))});
+test("月初の異常な当月利益率でなく直近6か月の中央値を使う",()=>{const result=Strategy.build({entries,recentMonths:[month(20),month(30),month(35),month(40),month(45),month(50)],currentMonthSales:10000,currentMonthExpense:19000});assert.equal(result.profitRate,37.5);assert.equal(result.profitRateSource,"直近6か月");assert.equal(result.estimatedProfit,4100)});
+test("6か月欠損時は3か月、次に1か月へフォールバックする",()=>{assert.equal(Strategy.stableProfitRate({recentMonths:[month(20),month(30),month(40)]}).source,"直近3か月");assert.equal(Strategy.stableProfitRate({recentMonths:[month(25)]}).source,"直近1か月")});
+test("利益率が-30%未満または60%超の月を除外する",()=>{const result=Strategy.stableProfitRate({recentMonths:[month(-31),month(61),month(32)]});assert.equal(result.value,32);assert.equal(result.source,"直近1か月")});
+test("実績欠損時は年間、当月の順にフォールバックする",()=>{assert.equal(Strategy.stableProfitRate({annualProfitRate:28,currentMonthSales:100,currentMonthExpense:90}).source,"年間");assert.equal(Strategy.stableProfitRate({currentMonthSales:100,currentMonthExpense:70}).source,"当月")});
