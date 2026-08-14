@@ -162,6 +162,19 @@ function renderBusinessAnomalies(){
  const format=item=>item.format==="count"?`${Math.round(item.current).toLocaleString("ja-JP")}件`:item.format==="percent"?`${item.current.toFixed(1)}%`:yen(item.current);
  items.innerHTML=anomalies.map(item=>`<section><div><span>${escapeHtml(item.metric)}</span><strong>${format(item)}</strong></div><div><span>通常</span><strong>${item.format==="count"?`${Math.round(item.baseline).toLocaleString("ja-JP")}件`:item.format==="percent"?`${item.baseline.toFixed(1)}%`:yen(item.baseline)}</strong></div><b>${item.changePercent<0?"↓":"↑"} ${Math.abs(item.changePercent).toFixed(item.format==="percent"?1:0)}${item.format==="percent"?"ポイント":"%"}</b><p><em>影武者コメント：</em>${escapeHtml(item.message)}。${item.metric==="客単価"?"検査・処置内容や継続症例の比率を確認しましょう。":item.metric==="来院件数"?"予約状況と当日の来院動向を確認しましょう。":item.metric==="総支出"||item.metric==="利益率"?"支出の内訳と一時的な費用を確認しましょう。":"診療内容と来院件数の組み合わせを確認しましょう。"}</p></section>`).join("");card.hidden=false;
 }
+function renderTodayPriorities(){
+ try{
+  const list=$("todayPrioritiesList"),message=$("todayPrioritiesMessage");if(!list||typeof TodayPriorities==="undefined")return;
+  let anomalies=[];try{if(typeof BusinessAnomalies!=="undefined")anomalies=BusinessAnomalies.detectBusinessAnomalies(data,{today:iso(),hour:new Date().getHours()})}catch(error){console.error(error)}
+  let clinicalAnalysis=null;try{if(typeof ClinicalIntelligence!=="undefined")clinicalAnalysis=ClinicalIntelligence.analyze(data.entries,{closedDates:data.clinic?.closedDates??[]})}catch(error){console.error(error)}
+  const result=TodayPriorities.build(data,{today:iso(),anomalies,clinicalAnalysis});
+  $("todayPrioritiesBasis").textContent=result.ready?`${result.sampleDays}営業日から判定`:"データ蓄積中";
+  if(!result.ready){list.innerHTML='<p class="today-priorities-empty">診療データ蓄積中です。<br>十分なデータが集まると、<br>今日やるべきことを自動提案します。</p>';message.hidden=true;return}
+  const medals=["🥇","🥈","🥉"];
+  list.innerHTML=result.items.map((item,index)=>`<section class="today-priority-item"><div class="today-priority-medal" aria-hidden="true">${medals[index]}</div><div class="today-priority-content"><div class="today-priority-title"><h4>${escapeHtml(item.title)}</h4><span aria-label="重要度 ${item.importance} / 5">${"★".repeat(item.importance)}${"☆".repeat(5-item.importance)}</span></div><dl><div><dt>理由</dt><dd>${escapeHtml(item.reason)}</dd></div><div><dt>おすすめ行動</dt><dd><ul>${item.actions.map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></dd></div><div><dt>期待効果</dt><dd class="today-priority-effect">${escapeHtml(item.effect)}</dd></div></dl></div></section>`).join("");
+  message.textContent=`今日の一言　「${result.message}」`;message.hidden=false;
+ }catch(error){console.error(error)}
+}
 function stableKagemushaIndex(date,mood,length){return [...`${date}:${mood}`].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7)%length}
 function generateKagemushaMessage(values){const templates=KAGEMUSHA_MESSAGES[values.mood]||KAGEMUSHA_MESSAGES.normal,baseMessage=templates[stableKagemushaIndex(values.date,values.mood,templates.length)],fact=values.mood==="thinking"?"":` 今月売上${yen(values.monthSales)}、達成率${pct(values.progress)}です。`;return `${baseMessage}${fact}`.slice(0,120)}
 function isLastDayOfMonth(date=new Date()){const value=date instanceof Date?date:new Date(`${date}T12:00:00`);return !Number.isNaN(value.getTime())&&value.getDate()===new Date(value.getFullYear(),value.getMonth()+1,0).getDate()}
@@ -960,7 +973,7 @@ function switchPage(id){
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){
- const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderBusinessAnomalies,renderDailyAI,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
+ const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderBusinessAnomalies,renderTodayPriorities,renderDailyAI,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
  sections.forEach(section=>{try{section()}catch(error){console.error(error)}});
  try{const memo=$("memoText");if(memo)memo.value=data?.memo??""}catch(error){console.error(error)}
 }

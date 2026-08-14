@@ -40,6 +40,16 @@
     <div class="daily-shadow-heading"><span class="daily-shadow-icon" aria-hidden="true">🧠</span><div><h3 id="dailyShadowTitle">今日の影武者</h3><p>Today's operational briefing</p></div></div>
     <ul id="dailyShadowInsights" class="daily-shadow-insights" aria-live="polite"><li>今日のデータを確認しています。</li></ul>
   </article>
+  <article class="card today-priorities-card" id="todayPrioritiesCard" aria-labelledby="todayPrioritiesTitle">
+    <div class="today-priorities-heading">
+      <div><h3 id="todayPrioritiesTitle">🎯 今日やるべきこと</h3><span>TODAY'S PRIORITIES</span></div>
+      <small id="todayPrioritiesBasis">自動判定</small>
+    </div>
+    <div id="todayPrioritiesList" class="today-priorities-list" aria-live="polite">
+      <p class="today-priorities-empty">診療データ蓄積中です。<br>十分なデータが集まると、<br>今日やるべきことを自動提案します。</p>
+    </div>
+    <p id="todayPrioritiesMessage" class="today-priorities-message" hidden></p>
+  </article>
   <article class="card business-anomaly-card" id="businessAnomalyCard" aria-live="polite" hidden>
     <h3 id="businessAnomalyTitle"></h3>
     <div id="businessAnomalyItems" class="business-anomaly-items"></div>
@@ -442,6 +452,7 @@
 <script src="clinical-intelligence.js?v=1084"></script>
 <script src="daily-brief.js?v=1074"></script>
 <script src="anomaly-detection.js?v=1064"></script>
+<script src="today-priorities.js?v=1085"></script>
 <script src="backup-normalizer.js?v=1063"></script>
 <script src="clinical-data.js?v=1076"></script>
 <script src="clinical-efficiency.js?v=1077"></script>
