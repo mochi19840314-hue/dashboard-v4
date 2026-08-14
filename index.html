@@ -156,13 +156,14 @@
     <article><span>新患数</span><strong id="todayNew">0件</strong></article>
     <article class="accent"><span>診療効率</span><strong id="todayEfficiency">—</strong><small id="todayEfficiencyScore">4指標で総合評価</small></article>
   </div>
-  <article class="card daily-ai-card" id="dailyAiCard">
-    <div class="ai-orb" aria-hidden="true">✦</div>
-    <div>
-      <span class="eyebrow">TODAY'S MANAGEMENT AI</span>
-      <h3 id="dailyAiTitle">今日のデータを待っています</h3>
-      <p id="dailyAiText">天気と入力内容を組み合わせて、今日の評価と行動提案を表示します。</p>
-      <div id="dailyAiTags" class="ai-tags"></div>
+  <article class="card daily-review-card" id="dailyReviewCard" aria-labelledby="dailyReviewTitle">
+    <div id="dailyReviewEmpty" class="daily-review-empty">診療データ蓄積中</div>
+    <div id="dailyReviewContent" hidden>
+      <header class="daily-review-header"><div><span class="eyebrow">DAILY REVIEW</span><h2 id="dailyReviewTitle">📋 今日の採点</h2></div><div class="daily-review-score"><strong id="dailyReviewScore">—</strong><span>点</span><small id="dailyReviewStars" aria-label="5段階評価">☆☆☆☆☆</small></div></header>
+      <div class="daily-review-grid">
+        <section><h3>🏆 今日のベストプレー</h3><p id="dailyReviewBest"></p></section><section><h3>⚠ 今日の改善点</h3><p id="dailyReviewImprovement"></p></section>
+        <section class="daily-review-priority"><h3>🎯 明日の最優先</h3><strong id="dailyReviewPriority"></strong></section><section class="daily-review-effect"><h3>📈 期待効果 <small>AI推定</small></h3><span id="dailyReviewEffectLabel"></span><strong id="dailyReviewEffect"></strong></section>
+      </div><footer><h3>💬 AIコメント</h3><p id="dailyReviewComment"></p></footer>
     </div>
   </article>
   <div class="card">
@@ -452,6 +453,7 @@
 <script src="today-mission.js?v=1085"></script>
 <script src="today-winning-strategy.js?v=1086"></script>
 <script src="daily-brief.js?v=1074"></script>
+<script src="daily-review.js?v=1085"></script>
 <script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script>
 <script src="clinical-data.js?v=1076"></script>

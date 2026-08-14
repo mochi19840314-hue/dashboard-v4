@@ -105,7 +105,7 @@ function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const 
 function save(){data.meta={...(data.meta||{}),lastUpdated:new Date().toISOString()};localStorage.setItem(KEY,JSON.stringify(data));storage()}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout($("toast").t);$("toast").t=setTimeout(()=>$("toast").classList.remove("show"),1600)}
 function currentProfitRate(){const s=monthSummary(monthNow());return s.sales&&s.expense?(s.sales-s.expense)/s.sales*100:null}
-function preview(){const s=num("sales"),p=num("patients"),efficiency=ClinicalEfficiency.evaluate({patients:p,sales:s,profitRate:currentProfitRate()});$("todaySales").textContent=yen(s);$("todayPatients").textContent=`${p}件`;$("todayUnit").textContent=yen(p?s/p:0);$("todayNew").textContent=`${num("newPatients")}件`;$("todayEfficiency").textContent=p||s?efficiency.grade:"—";$("todayEfficiencyScore").textContent=p||s?`${efficiency.score}点・4指標で総合評価`:"4指標で総合評価";renderDailyAI()}
+function preview(){const s=num("sales"),p=num("patients"),efficiency=ClinicalEfficiency.evaluate({patients:p,sales:s,profitRate:currentProfitRate()});$("todaySales").textContent=yen(s);$("todayPatients").textContent=`${p}件`;$("todayUnit").textContent=yen(p?s/p:0);$("todayNew").textContent=`${num("newPatients")}件`;$("todayEfficiency").textContent=p||s?efficiency.grade:"—";$("todayEfficiencyScore").textContent=p||s?`${efficiency.score}点・4指標で総合評価`:"4指標で総合評価";renderDailyReview()}
 const WEATHER_CODES={0:["快晴","☀️"],1:["晴れ","🌤️"],2:["一部曇り","⛅"],3:["曇り","☁️"],45:["霧","🌫️"],48:["霧","🌫️"],51:["弱い霧雨","🌦️"],53:["霧雨","🌦️"],55:["強い霧雨","🌧️"],61:["小雨","🌦️"],63:["雨","🌧️"],65:["強い雨","🌧️"],71:["小雪","🌨️"],73:["雪","🌨️"],75:["大雪","❄️"],80:["にわか雨","🌦️"],81:["にわか雨","🌧️"],82:["激しいにわか雨","⛈️"],95:["雷雨","⛈️"],96:["雷雨・ひょう","⛈️"],99:["強い雷雨・ひょう","⛈️"]};
 function showWeather(w,offline=false){
   if(!w)return;
@@ -113,7 +113,7 @@ function showWeather(w,offline=false){
   $("weatherTemp").textContent=`${Math.round(Number(w.temperature)||0)}°`;
   $("weatherCondition").textContent=w.condition+(offline?"（保存値）":"");
   $("weatherRain").textContent=`${Math.round(Number(w.rainProbability)||0)}%`;
-  renderDailyAI();
+  renderDailyReview();
 }
 async function fetchWeather(force=false){
   const cached=data.weatherCache,age=cached?Date.now()-Number(cached.fetchedAt||0):Infinity;
@@ -375,6 +375,9 @@ function renderDailyAI(){
     tags=[day.label,w?.condition,patients?`来院${patients}件`:null,sales?`目標${Math.round(rate*100)}%`:null,second?`専門相談${second}件`:null].filter(Boolean);
   }
   $("dailyAiTitle").textContent=title;$("dailyAiText").textContent=text;$("dailyAiTags").innerHTML=tags.map(t=>`<span>${t}</span>`).join("");
+}
+function renderDailyReview(){
+ const empty=$("dailyReviewEmpty"),content=$("dailyReviewContent");if(!empty||!content||typeof DailyReview==="undefined")return;const date=$("entryDate")?.value||iso(),saved=data.entries.find(entry=>entry.date===date),formEntry=buildEntry(date,saved||null),entry=Number(formEntry.patients)>0&&Number(formEntry.sales)>0?formEntry:saved;let anomalies=[];try{anomalies=typeof BusinessAnomalies!=="undefined"?BusinessAnomalies.detectBusinessAnomalies(data,{today:date,hour:23}):[]}catch(error){console.error(error)}const result=DailyReview.build({entries:data.entries,date,entry,profitRate:currentProfitRate(),anomalies});empty.hidden=result.ready;content.hidden=!result.ready;if(!result.ready)return;$("dailyReviewScore").textContent=result.score;$("dailyReviewStars").textContent="★".repeat(result.stars)+"☆".repeat(5-result.stars);$("dailyReviewStars").setAttribute("aria-label",`5段階中${result.stars}`);$("dailyReviewBest").textContent=result.best;$("dailyReviewImprovement").textContent=result.improvement;$("dailyReviewPriority").textContent=result.priority;$("dailyReviewEffectLabel").textContent=result.effect.label;$("dailyReviewEffect").textContent=`＋約${yen(result.effect.value)}`;$("dailyReviewComment").textContent=result.comment;
 }
 function renderWeatherBusiness(entries,s,forecast,set,left){
   const a=analysisFor(entries),sample=a.usable.length;$("analysisSample").textContent=`${sample}日分`;
@@ -970,7 +973,7 @@ function switchPage(id){
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){
- const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderTodayWinningStrategy,renderTodayMission,renderBusinessAnomalies,renderDailyAI,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
+ const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderTodayWinningStrategy,renderTodayMission,renderBusinessAnomalies,renderDailyReview,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
  sections.forEach(section=>{try{section()}catch(error){console.error(error)}});
  try{const memo=$("memoText");if(memo)memo.value=data?.memo??""}catch(error){console.error(error)}
 }
