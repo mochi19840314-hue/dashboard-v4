@@ -292,6 +292,17 @@
       <div class="month-end-forecast-stats"><div><span>現在利益</span><strong id="monthEndCurrentProfit">0円</strong></div><div class="forecast-primary"><span>月末利益予測</span><strong id="monthEndForecastProfit">約0万円</strong></div><div><span>利益目標</span><strong id="monthEndTargetProfit">0円</strong></div><div><span>達成率</span><strong id="monthEndAchievement">0%</strong></div><div><span>信頼度</span><strong id="monthEndConfidence" class="forecast-stars" aria-label="5段階中0">☆☆☆☆☆</strong><small id="monthEndConfidenceSub">営業日 0日</small></div><div><span>予測モデル</span><strong id="monthEndModel">データ待ち</strong></div><div><span>昨日との差</span><strong id="monthEndDifference">比較データなし</strong><small id="monthEndPreviousForecast"></small></div></div>
       <p id="monthEndKagemushaComment" class="month-end-kagemusha">🥷 営業データを記録すると、月末利益を予測します。</p>
     </section>
+    <section class="cash-flow-forecast" aria-labelledby="cashFlowForecastTitle">
+      <div class="month-end-forecast-heading"><div><span class="eyebrow">CASH FLOW FORECAST</span><h4 id="cashFlowForecastTitle">月末キャッシュフロー予測</h4></div><span id="cashFlowSafetyBadge" class="cash-flow-badge">安全度</span></div>
+      <div class="cash-flow-steps">
+        <div><span>現在口座残高</span><strong id="cashFlowBalance">0円</strong></div><i aria-hidden="true">↓</i>
+        <div><span>今後入金予定</span><strong id="cashFlowIncoming">0円</strong><small id="cashFlowIncomingDetail">今月売上予測・未回収予定・その他収入</small></div><i aria-hidden="true">↓</i>
+        <div><span>今後支払予定</span><strong id="cashFlowOutgoing">0円</strong><small id="cashFlowOutgoingDetail">給与・家賃・薬品・カード・リース・税金・その他</small></div>
+        <div class="cash-flow-total"><span>月末予想残高</span><strong id="cashFlowForecastBalance">0円</strong><small id="cashFlowComparison">前月比 比較データなし</small></div>
+        <div class="cash-flow-safety"><span>安全度</span><strong id="cashFlowStars" aria-label="5段階中1">★☆☆☆☆</strong></div>
+      </div>
+      <p id="cashFlowComment" class="month-end-kagemusha">🥷 財務データを入力すると、月末の口座残高を予測します。</p>
+    </section>
     <div class="director-main"><div><span>推定年収（事業所得目安）</span><strong id="estimatedIncome">0円</strong><small id="estimatedIncomeSub">年間利益をもとに算出</small></div><div class="income-progress"><span id="incomeProgressText">目標年収は未設定</span><div class="progress"><i id="incomeProgressBar"></i></div></div></div>
     <div class="director-stats"><div><span>年末売上予測</span><strong id="yearSalesForecast">0円</strong></div><div><span>短期利益予測</span><strong id="yearProfitForecast">0円</strong><small>現在の利益率から予測</small></div><div><span>安定利益予測</span><strong id="yearStableProfitForecast">0円</strong><small id="yearStableProfitSub">直近6か月平均利益率から予測</small></div><div><span>予測信頼度</span><strong id="yearForecastConfidence" class="forecast-stars" aria-label="5段階中0">☆☆☆☆☆</strong><small id="yearForecastConfidenceSub">営業日 0日</small></div><div><span>過去最高月商</span><strong id="bestMonthSales">0円</strong></div></div>
     <p class="profit-forecast-note">月初は固定費や仕入れの影響で<br>短期利益予測は変動しやすくなります。<br><br>経営判断には<br>安定利益予測も参考にしてください。</p>
@@ -436,6 +447,7 @@
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=1080"></script>
 <script src="monthly-profit-forecast.js?v=1082"></script>
+<script src="cash-flow-forecast.js?v=1083"></script>
 <script src="app.js?v=1077"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>

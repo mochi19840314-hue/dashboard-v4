@@ -568,6 +568,20 @@ function renderMonthlyProfitForecast(){
   $("monthEndModel").textContent=result.method;
   if(result.difference===null){$("monthEndDifference").textContent="比較データなし";$("monthEndPreviousForecast").textContent=""}else{const improved=result.difference>=0;$("monthEndDifference").textContent=`${improved?"＋":"−"}${Math.round(Math.abs(result.difference)/10000).toLocaleString("ja-JP")}万円${improved?"改善":"悪化"}`;$("monthEndPreviousForecast").textContent=`昨日予測 ${formatApprox(previous.forecastProfit)}`}
   $("monthEndKagemushaComment").textContent=`🥷 ${result.comment}`;
+  return result;
+}
+
+function renderCashFlowForecast(profitForecast){
+  const m=monthNow(),mf=data.financeByMonth[m]||{},f=data.finance||{},s=monthSummary(m),prev=financeSnapshot(monthShift(m,-1));
+  const value=key=>Number(mf[key]??f[key])||0,salary=value("personnelExpense"),medical=value("medicalExpense"),card=value("cardFee"),lease=value("leaseExpense")||value("repayment"),rent=value("rentExpense"),tax=value("taxExpense");
+  const itemized=salary+medical+card+lease+rent+tax,other=value("otherExpense")||Math.max(0,value("monthlyExpense")-itemized);
+  const result=CashFlowForecast.calculate({balance:value("balance"),currentSales:s.sales,projectedSales:profitForecast.projectedSales,uncollected:value("uncollectedIncome"),otherIncome:value("otherIncome"),payments:{salary,rent,medical,card,lease,tax,other},previousBalance:(prev.balance||Object.prototype.hasOwnProperty.call(data.financeByMonth,monthShift(m,-1)))?prev.balance:null,currentProfit:profitForecast.currentProfit,previousMedicalExpense:Number(data.financeByMonth[monthShift(m,-1)]?.medicalExpense)||0,dayOfMonth:new Date().getDate()});
+  $("cashFlowBalance").textContent=yen(result.balance);$("cashFlowIncoming").textContent=yen(result.incoming);$("cashFlowOutgoing").textContent=yen(result.outgoing);$("cashFlowForecastBalance").textContent=yen(result.forecastBalance);
+  $("cashFlowIncomingDetail").textContent=`売上予測 ${yen(result.receipts.salesForecast)}・未回収 ${yen(result.receipts.uncollected)}・その他 ${yen(result.receipts.otherIncome)}`;
+  $("cashFlowOutgoingDetail").textContent=`給与 ${yen(salary)}・家賃 ${yen(rent)}・薬品 ${yen(medical)}・カード ${yen(card)}・リース ${yen(lease)}・税金 ${yen(tax)}・その他 ${yen(other)}`;
+  const comparison=result.monthOverMonth===null?"前月比 比較データなし":`前月比 ${result.monthOverMonth>=0?"＋":"−"}${Math.round(Math.abs(result.monthOverMonth)/10000).toLocaleString("ja-JP")}万円`;
+  $("cashFlowComparison").textContent=comparison;$("cashFlowStars").textContent=result.safety.stars;$("cashFlowStars").setAttribute("aria-label",`5段階中${result.safety.level}`);$("cashFlowSafetyBadge").textContent=`安全度 ${result.safety.level}/5`;
+  document.querySelector(".cash-flow-forecast").dataset.tone=result.safety.tone;$("cashFlowComment").textContent=`🥷 ${result.comment}`;
 }
 
 function year(){
@@ -588,7 +602,8 @@ function year(){
   $("yearStableProfitSub").textContent=forecastContext.stableMonths?`直近${forecastContext.stableMonths}か月平均利益率から予測`:'利益率データ入力後に表示';
   $("yearForecastConfidence").textContent=forecastContext.confidence.stars;$("yearForecastConfidence").setAttribute("aria-label",`5段階中${forecastContext.confidence.level}`);$("yearForecastConfidenceSub").textContent=`営業日 ${forecastContext.confidence.days}日`;
   if(incomeTarget>0){const progress=Math.max(0,Math.min(100,profitForecast/incomeTarget*100));$("incomeProgressText").textContent=`目標 ${yen(incomeTarget)}に対して ${progress.toFixed(0)}%`;$("incomeProgressBar").style.width=`${progress}%`}else{$("incomeProgressText").textContent='目標年収は財務タブで設定できます';$("incomeProgressBar").style.width='0%'}
-  renderMonthlyProfitForecast();
+  const monthlyProfitForecast=renderMonthlyProfitForecast();
+  renderCashFlowForecast(monthlyProfitForecast);
   renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast,forecastContext);
   renderYearChart(rows,y)
 }
