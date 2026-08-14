@@ -1,0 +1,8 @@
+"use strict";
+const assert=require("node:assert/strict"),Mission=require("./today-mission");
+const entry=(day,overrides={})=>({date:`2026-08-${String(day).padStart(2,"0")}`,patients:20,sales:200000,newPatients:3,surgeries:2,clinical:{bloodTests:6,xrays:3,ultrasounds:2,preventive:4},...overrides});
+for(const count of [0,1,2]){const result=Mission.build({entries:Array.from({length:count},(_,i)=>entry(i+1))});assert.equal(result.ready,false);assert.equal(result.missions.length,0)}
+const lowClinical=Mission.build({entries:[entry(1,{newPatients:0,clinical:{}}),entry(2,{newPatients:0,clinical:{}}),entry(3,{newPatients:0,clinical:{}})]});assert.equal(lowClinical.ready,true);assert.equal(lowClinical.missions.length,3);assert.equal(new Set(lowClinical.missions.map(x=>x.key)).size,lowClinical.missions.length,"duplicate improvements are removed");assert.equal(lowClinical.missions[0].title,"画像検査提案");
+const anomaly=Mission.build({entries:[entry(1),entry(2),entry(3)],anomalies:[{metric:"客単価"},{metric:"客単価"}]});assert.equal(anomaly.missions[0].key,"unit","anomalies receive priority");assert.equal(anomaly.missions.filter(x=>x.key==="unit").length,1,"similar anomaly actions are merged");assert.ok(anomaly.missions.every(x=>x.actions.length<=2));assert.ok(anomaly.comment.quote&&anomaly.comment.reason&&anomaly.comment.effect);
+const cash=Mission.build({entries:[entry(1),entry(2),entry(3)],cashFlowLevel:1});assert.ok(cash.missions.some(x=>x.key==="inventory"),"cash-flow risk produces an inventory action");
+console.log("Today's Mission: readiness, ranking, deduplication and action limits passed");
