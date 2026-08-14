@@ -21,5 +21,5 @@ assert.match(css,/@keyframes annualSeriesReveal\{from\{clip-path:inset\(0 100% 0
 assert.match(css,/@media\(prefers-reduced-motion:reduce\).*\.chart-animating \.annual-series.*animation:none!important/s,"reduced motion bypasses chart animation");
 assert.match(css,/@media\(prefers-reduced-motion:reduce\).*\.chart-awaiting \.annual-series\{clip-path:none\}/s,"reduced motion never hides chart data");
 assert.match(html,/style\.css\?v=1077/);assert.match(html,/report-month\.js\?v=1061/);assert.match(html,/app\.js\?v=1077/);
-assert.match(sw,/keita-dashboard-v1080-annual-profit-forecast/);assert.match(sw,/style\.css\?v=1077/);assert.match(sw,/report-month\.js\?v=1061/);assert.match(sw,/app\.js\?v=1077/);
+assert.match(sw,/keita-dashboard-v1081-monthly-profit-forecast/);assert.match(sw,/style\.css\?v=1077/);assert.match(sw,/report-month\.js\?v=1061/);assert.match(sw,/app\.js\?v=1077/);
 console.log("chart animation tests: 16 checks passed");

@@ -553,6 +553,18 @@ function renderBusinessInsights(rows,total,active,profit,rate,salesForecast,prof
   $('yearAiTitle').textContent=title;$('yearAiComment').textContent=comment;$('yearAiTags').innerHTML=tags.map(t=>`<span>${t}</span>`).join('');
 }
 
+function renderMonthlyProfitForecast(){
+  const m=monthNow(),s=monthSummary(m),today=iso(),entries=operatingEntries(s.entries.filter(entry=>entry.date<=today)).sort((a,b)=>a.date.localeCompare(b.date));
+  const businessDays=entries.length,scheduledBusinessDays=Number(data.settings[m]?.businessDays)||expectedBusinessDays(m),currentProfit=s.sales-s.expense,profitRate=s.sales?currentProfit/s.sales:0;
+  const dailyProfits=entries.map(entry=>(Number(entry.sales)||0)*profitRate);
+  if(dailyProfits.length)dailyProfits[dailyProfits.length-1]+=currentProfit-dailyProfits.reduce((sum,value)=>sum+value,0);
+  const configuredAnnualTarget=Number(data.finance.incomeTarget)||0,targetProfit=configuredAnnualTarget?configuredAnnualTarget/12:0;
+  const result=MonthlyProfitForecast.calculate({currentProfit,businessDays,scheduledBusinessDays,dailyProfits,targetProfit,profitRate,medicalExpenseRate:s.expense?s.medicalExpense/s.expense:0});
+  $("monthEndCurrentProfit").textContent=yen(result.currentProfit);$("monthEndForecastProfit").textContent=yen(result.forecastProfit);$("monthEndTargetProfit").textContent=yen(result.targetProfit);$("monthEndAchievement").textContent=`${Math.round(result.achievementRate)}%`;
+  $("monthEndForecastType").textContent=result.confidence.label;$("monthEndConfidence").textContent=result.confidence.stars;$("monthEndConfidence").setAttribute("aria-label",`5段階中${result.confidence.level}`);$("monthEndConfidenceSub").textContent=`営業日 ${result.confidence.days}日`;
+  $("monthEndKagemushaComment").textContent=`🥷 ${result.comment}`;
+}
+
 function year(){
   const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`));
   const total=rows.reduce((a,r)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=Number(r[k])||0);a.expense+=Number(r.expense)||0;return a},{sales:0,expense:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0});
@@ -571,6 +583,7 @@ function year(){
   $("yearStableProfitSub").textContent=forecastContext.stableMonths?`直近${forecastContext.stableMonths}か月平均利益率から予測`:'利益率データ入力後に表示';
   $("yearForecastConfidence").textContent=forecastContext.confidence.stars;$("yearForecastConfidence").setAttribute("aria-label",`5段階中${forecastContext.confidence.level}`);$("yearForecastConfidenceSub").textContent=`営業日 ${forecastContext.confidence.days}日`;
   if(incomeTarget>0){const progress=Math.max(0,Math.min(100,profitForecast/incomeTarget*100));$("incomeProgressText").textContent=`目標 ${yen(incomeTarget)}に対して ${progress.toFixed(0)}%`;$("incomeProgressBar").style.width=`${progress}%`}else{$("incomeProgressText").textContent='目標年収は財務タブで設定できます';$("incomeProgressBar").style.width='0%'}
+  renderMonthlyProfitForecast();
   renderBusinessInsights(rows,total,active,profit,rate,salesForecast,profitForecast,forecastContext);
   renderYearChart(rows,y)
 }
