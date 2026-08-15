@@ -5,3 +5,4 @@ test("18時前は詳細不足なら結果を表示しない",()=>assert.equal(Re
 test("18時前は入力済みでも朝の方針を維持する",()=>assert.equal(Result.build({hour:17,entry,history}).reason,"morning"));
 test("18時以降は当日データから最大3項目を自動評価する",()=>{const result=Result.build({hour:18,entry,history,target:130000});assert.equal(result.visible,true);assert.ok(result.items.length<=3);assert.deepEqual(result.items[0],{label:"客単価",value:"＋20%"})});
 test("当日データ不足時は夜も結果を出さない",()=>assert.equal(Result.build({hour:20,entry:{date:"2026-08-15",sales:0,patients:0},history}).visible,false));
+test("夜にAI精度を計算して学習更新を返す",()=>{const prediction={ready:true,expectedSales:20000,missions:[{key:"checkup"}],next:{theme:"画像検査"}},result=Result.build({hour:20,entry,history,prediction});assert.equal(result.accuracy,100);assert.equal(result.comment,"AI予測を上回りました。");assert.equal(result.learningUpdate.key,"checkup")});

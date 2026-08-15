@@ -1,44 +1,52 @@
 (function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;root.TodayWinningStrategy=api})(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
+const SCORE_WEIGHTS=Object.freeze({expectedProfit:.45,successRate:.30,revisitImprovement:.15,unitPriceImprovement:.10});
+const MIN_BUSINESS_DAYS=15;
 const number=value=>Number.isFinite(Number(value))?Number(value):0;
-const average=(rows,getter)=>rows.length?rows.reduce((total,row)=>total+number(getter(row)),0)/rows.length:0;
-const rate=(value,total)=>total>0?value/total*100:0;
-const ACTIONS={
- blood:{theme:"血液検査",title:"血液検査を積極提案",actions:["血液検査の対象症例を確認","健診・術前症例へ血液検査を提案"],effects:["利益率","客単価","検査率"],sales:11000,metric:"血液検査率"},
- ultrasound:{theme:"画像検査",title:"画像検査の適応を確認",actions:["超音波検査の対象症例を確認","画像検査枠を確保"],effects:["客単価","診断精度","検査率"],sales:9000,metric:"画像検査率"},
- checkup:{theme:"健康診断",title:"健康診断を案内",actions:["健康診断対象を確認","血液検査を提案","腹部エコーを提案"],effects:["再診率","客単価","診療効率"],sales:8000,metric:"健診率"},
- revisit:{theme:"再診率",title:"再診フォローを実施",actions:["再診予定の未予約症例を確認","次回来院日を案内"],effects:["再診率","来院件数"],sales:6000,metric:"再診率"},
- newPatient:{theme:"新患フォロー",title:"新患フォローを実施",actions:["新患の次回来院予定を確認","未予約症例へ連絡"],effects:["再診率","新患"],sales:7000,metric:"新患率"},
- booking:{theme:"来院機会",title:"予約枠を整理",actions:["当日の空き枠を確認","再診予定へ空き枠を案内"],effects:["診療効率","来院件数"],sales:6000,metric:"来院件数"},
- inventory:{theme:"キャッシュフロー",title:"薬品在庫を確認",actions:["薬品在庫数を確認","必要量だけを発注"],effects:["キャッシュフロー","薬品補充率"],sales:0,metric:"薬品補充率"},
- fixedCost:{theme:"利益率",title:"固定費を確認",actions:["支出の内訳を確認","一時費用と固定費を区分"],effects:["利益率","キャッシュフロー"],sales:0,metric:"利益率"}
-};
-function median(values){const sorted=[...values].sort((a,b)=>a-b),middle=Math.floor(sorted.length/2);return sorted.length%2?sorted[middle]:(sorted[middle-1]+sorted[middle])/2}
-function validMargins(months){return (Array.isArray(months)?months:[]).map(row=>{const sales=number(row?.sales),expense=number(row?.expense);return sales>0?(sales-expense)/sales*100:null}).filter(value=>value!==null&&value>=-30&&value<=60)}
-function stableProfitRate(context={}){
- const margins=validMargins(context.recentMonths);
- for(const count of [6,3,1])if(margins.length>=count)return{value:median(margins.slice(-count)),source:`直近${count}か月`,description:`直近${count}か月平均利益率で推定`};
- return{value:0,source:"利用可能な実績なし",description:"利益率を算出できる実績がありません"};
+const mean=values=>values.length?values.reduce((sum,value)=>sum+number(value),0)/values.length:0;
+const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+const DEFINITIONS=Object.freeze([
+ {key:"checkup",theme:"健康診断",count:r=>r.checkups,actions:["対象確認","血液検査提案","超音波提案"]},
+ {key:"blood",theme:"血液検査",count:r=>r.clinical?.bloodTests,actions:["対象症例を確認","血液検査を提案","結果説明と再診予定を確認"]},
+ {key:"ultrasound",theme:"超音波検査",count:r=>r.clinical?.ultrasounds,actions:["対象症例を確認","超音波検査を提案","検査枠を確認"]},
+ {key:"imaging",theme:"画像検査",count:r=>number(r.clinical?.xrays)+number(r.clinical?.ultrasounds),actions:["画像検査の適応を確認","画像検査を提案","検査枠を確保"]},
+ {key:"dental",theme:"歯科",count:r=>number(r.clinical?.dental)+number(r.dental),actions:["口腔状態を確認","歯科処置を提案","術前検査を案内"]},
+ {key:"surgery",theme:"手術",count:r=>r.surgeries,actions:["手術候補症例を確認","術前検査を提案","術後再診を予約"]},
+ {key:"revisit",theme:"再診フォロー",count:r=>r.clinical?.revisits??Math.max(0,number(r.patients)-number(r.newPatients)),actions:["再診予定の未予約症例を確認","次回来院日を案内","未予約症例をフォロー"]},
+ {key:"senior",theme:"シニア健診",count:r=>number(r.clinical?.seniorCheckups)+number(r.seniorCheckups),actions:["シニア対象を確認","血液検査を提案","超音波検査を提案"]},
+ {key:"vaccine",theme:"ワクチン",count:r=>number(r.clinical?.vaccines)+number(r.vaccines),actions:["接種対象を確認","ワクチンを案内","次回予定を登録"]},
+ {key:"preventive",theme:"予防",count:r=>r.clinical?.preventive,actions:["予防対象を確認","予防プランを案内","次回予定を登録"]}
+]);
+function validEntries(entries,today=""){return (Array.isArray(entries)?entries:[]).filter(row=>row&&(!today||String(row.date)<today)&&number(row.patients)>0&&number(row.sales)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)))}
+function metrics(row){const patients=Math.max(1,number(row.patients)),sales=number(row.sales),profit=sales-number(row.expense);return{salesPerPatient:sales/patients,profitPerPatient:profit/patients,revisitRate:clamp((patients-number(row.newPatients))/patients*100,0,100)}}
+function learnFromWindow(rows,definition){
+ const active=rows.filter(row=>number(definition.count(row))>0),inactive=rows.filter(row=>number(definition.count(row))===0);if(!active.length)return null;const control=inactive.length?inactive:rows;
+ const baseSales=mean(control.map(row=>metrics(row).salesPerPatient)),baseProfit=mean(control.map(row=>metrics(row).profitPerPatient)),baseRevisit=mean(control.map(row=>metrics(row).revisitRate));
+ const activeMetrics=active.map(metrics),averageAdditionalSales=mean(activeMetrics.map(value=>value.salesPerPatient-baseSales)),averageProfit=mean(activeMetrics.map(value=>value.profitPerPatient-baseProfit)),revisitImprovement=mean(activeMetrics.map(value=>value.revisitRate-baseRevisit)),unitPriceImprovement=baseSales?averageAdditionalSales/baseSales*100:0;
+ const successRate=activeMetrics.filter(value=>value.profitPerPatient>baseProfit).length/activeMetrics.length*100;
+ return{sampleCount:active.length,averageAdditionalSales:Math.max(0,averageAdditionalSales),averageProfit:Math.max(0,averageProfit),successRate,revisitImprovement,unitPriceImprovement};
 }
-function primaryMission(primary){const action=ACTIONS[primary.key];return[{key:primary.key,theme:action.theme,title:action.title,actions:action.actions.slice(0,3),effects:action.effects,reason:primary.reason,source:"今日の勝ち筋"}]}
+function learnCandidate(entries,definition){
+ const windows=[{size:30,label:"直近30営業日"},{size:90,label:"直近90営業日"},{size:Infinity,label:"全期間"}];
+ for(const window of windows){const rows=window.size===Infinity?entries:entries.slice(-window.size),learned=learnFromWindow(rows,definition);if(learned&&learned.sampleCount>=2)return{...definition,...learned,window:window.label,windowDays:rows.length}}
+ return null;
+}
+function feedbackAdjustment(candidate,history){const rows=(Array.isArray(history)?history:[]).filter(row=>row.key===candidate.key),recent=rows.slice(-30);return recent.length?mean(recent.map(row=>number(row.successRateDelta))):0}
+function rankCandidates(entries,learningHistory=[]){
+ const candidates=DEFINITIONS.map(definition=>learnCandidate(entries,definition)).filter(Boolean).map(candidate=>{
+  const successRate=clamp(candidate.successRate+feedbackAdjustment(candidate,learningHistory),0,100);
+  const score=candidate.averageProfit*SCORE_WEIGHTS.expectedProfit+successRate*SCORE_WEIGHTS.successRate+candidate.revisitImprovement*SCORE_WEIGHTS.revisitImprovement+candidate.unitPriceImprovement*SCORE_WEIGHTS.unitPriceImprovement;
+  return{...candidate,successRate,score};
+ });return candidates.sort((a,b)=>b.score-a.score||b.successRate-a.successRate||a.key.localeCompare(b.key));
+}
+function stableProfitRate(context={}){const margins=(context.recentMonths||[]).map(row=>number(row.sales)>0?(number(row.sales)-number(row.expense))/number(row.sales)*100:null).filter(value=>value!==null&&value>=-30&&value<=60);for(const count of [6,3,1])if(margins.length>=count){const values=margins.slice(-count).sort((a,b)=>a-b),middle=Math.floor(values.length/2),value=values.length%2?values[middle]:(values[middle-1]+values[middle])/2;return{value,source:`直近${count}か月`,description:`直近${count}か月平均利益率で推定`}}return{value:0,source:"利用可能な実績なし",description:"利益率を算出できる実績がありません"}}
 function generateTodayStrategy(context={}){
- const today=String(context.today||""),entries=(Array.isArray(context.entries)?context.entries:[]).filter(row=>(!today||String(row.date)<today)&&number(row.patients)>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
- if(context.closed)return{ready:true,closed:true,sampleDays:entries.length,missions:[]};
- if(context.readinessStatus==="collecting"||entries.length<5)return{ready:false,sampleDays:entries.length,missions:[]};
- const recent=entries.slice(-5),baseline=entries.slice(-30,-5),patients=recent.reduce((sum,row)=>sum+number(row.patients),0),candidates=[];
- const add=(key,score,reason)=>candidates.push({key,score,reason});
- const compare=(key,current,getter,fallback)=>{const base=baseline.length?average(baseline,getter):fallback;if(current<base)add(key,70+(base-current)*2,`最近5営業日で\n${ACTIONS[key].metric}が平均より低下しています。`)};
- compare("blood",rate(recent.reduce((sum,row)=>sum+number(row.clinical?.bloodTests),0),patients),row=>rate(number(row.clinical?.bloodTests),number(row.patients)),20);
- compare("ultrasound",rate(recent.reduce((sum,row)=>sum+number(row.clinical?.ultrasounds),0),patients),row=>rate(number(row.clinical?.ultrasounds),number(row.patients)),12);
- compare("checkup",rate(recent.reduce((sum,row)=>sum+number(row.checkups),0),patients),row=>rate(number(row.checkups),number(row.patients)),10);
- compare("newPatient",rate(recent.reduce((sum,row)=>sum+number(row.newPatients),0),patients),row=>rate(number(row.newPatients),number(row.patients)),10);
- const latestPatients=average(recent,row=>row.patients),basePatients=average(baseline,row=>row.patients);if(basePatients&&latestPatients<basePatients*.9)add("booking",84,"最近5営業日の来院件数が平均を下回っています。今日は予約枠の整理が来院機会の改善に有効です。");
- for(const anomaly of context.anomalies||[]){if(anomaly.metric==="利益率"||anomaly.metric==="総支出")add("fixedCost",110,"利益率または支出の異常を検知しています。今日は固定費の確認が利益改善に有効です。");if(anomaly.metric==="来院件数")add("booking",108,"来院件数の異常を検知しています。今日は予約枠の整理を優先してください。");if(anomaly.metric==="客単価")add("blood",109,"客単価の異常を検知しています。今日は血液検査の適応確認が改善に有効です。")}
- if(number(context.cashFlowLevel)>0&&number(context.cashFlowLevel)<=2)add("inventory",105,"キャッシュフロー予測の安全度が低下しています。今日は在庫確認を優先してください。");
- if(number(context.profitForecastRate)>0&&number(context.profitForecastRate)<80)add("fixedCost",103,"利益予測が目標を下回っています。今日は固定費の確認が利益改善に有効です。");
- if(!candidates.length)add("revisit",55,"主要指標は安定しています。今日は再診フォローが継続的な来院につながります。");
- const ranked=candidates.sort((a,b)=>b.score-a.score||a.key.localeCompare(b.key)),selected=ranked[0],action=ACTIONS[selected.key],secondary=ranked.find(item=>item.key!==selected.key)||{key:selected.key==="revisit"?"booking":"revisit"},nextAction=ACTIONS[secondary.key],margin=stableProfitRate(context),expectedProfit=Math.round(action.sales*margin.value/100/100)*100,missions=primaryMission(selected);
- return{ready:true,theme:action.theme,title:action.title,next:{theme:nextAction.theme,title:nextAction.title},impact:Math.max(1,Math.min(5,Math.ceil(selected.score/22))),reason:selected.reason,effects:action.effects,missions,expectedSales:action.sales,expectedRevenue:action.sales,expectedProfit,estimatedProfit:expectedProfit,profitRate:margin.value,profitRateSource:margin.source,profitRateDescription:margin.description,comment:{quote:action.title,reason:selected.reason.replace(/[。]+$/,""),effect:action.effects[0]}};
+ const entries=validEntries(context.entries,context.today);if(context.closed)return{ready:true,closed:true,sampleDays:entries.length,missions:[]};
+ if(entries.length<MIN_BUSINESS_DAYS)return{ready:false,learning:true,status:"学習中",sampleDays:entries.length,requiredDays:MIN_BUSINESS_DAYS,missions:[]};
+ const ranking=rankCandidates(entries,context.learningHistory);if(!ranking.length)return{ready:false,learning:true,status:"学習中",sampleDays:entries.length,requiredDays:MIN_BUSINESS_DAYS,missions:[]};
+ const primary=ranking[0],next=ranking[1],expectedSales=Math.round(primary.averageAdditionalSales/100)*100,expectedProfit=Math.round(primary.averageProfit/100)*100,impact=clamp(Math.ceil(primary.successRate/20),1,5),margin=stableProfitRate(context);
+ const reason=`${primary.window}では\n${primary.theme}提案日の利益が\n最も高くなっています。`,mission={key:primary.key,theme:primary.theme,title:primary.theme,actions:primary.actions.slice(0,3),effects:["利益","客単価","再診率"],reason,source:"実績学習"};
+ return{ready:true,learning:false,sampleDays:entries.length,theme:primary.theme,title:primary.theme,impact,reason,effects:mission.effects,missions:[mission],expectedSales,expectedRevenue:expectedSales,expectedProfit,estimatedProfit:expectedProfit,profitRate:margin.value,profitRateSource:margin.source,profitRateDescription:margin.description,successRate:primary.successRate,score:primary.score,weights:SCORE_WEIGHTS,learningWindow:primary.window,ranking:ranking.map(item=>({key:item.key,theme:item.theme,score:item.score,expectedProfit:Math.round(item.averageProfit),expectedSales:Math.round(item.averageAdditionalSales),successRate:item.successRate,window:item.window})),next:next?{key:next.key,theme:next.theme,title:next.theme,expectedProfit:Math.round(next.averageProfit)}:null,comment:{quote:primary.theme,reason:reason.replace(/\n/g,""),effect:"期待利益"}};
 }
-return{build:generateTodayStrategy,generateTodayStrategy,stableProfitRate};
+return{SCORE_WEIGHTS,MIN_BUSINESS_DAYS,DEFINITIONS,build:generateTodayStrategy,generateTodayStrategy,rankCandidates,learnCandidate,stableProfitRate};
 });
