@@ -35,6 +35,10 @@
 <main id="pageContainer">
 
 <section id="today" class="page active">
+  <article class="card strategy-card ai-management-brief" aria-labelledby="aiManagementBriefTitle">
+    <header><div><span class="eyebrow">DAILY EXECUTIVE BRIEF</span><h2 id="aiManagementBriefTitle">🎯 AI経営ブリーフ</h2></div><span>Knowledge Core</span></header>
+    <div id="aiManagementBrief" class="strategy-grid"><p>経営データを確認しています。</p></div>
+  </article>
   <section class="management-compass" id="managementCompass" aria-labelledby="managementCompassTitle">
     <header><div><h2 id="managementCompassTitle">🧭 AI経営コンパス</h2><p>Today's Strategy</p></div><span id="managementCompassStatus">分析中</span></header>
     <div id="managementCompassContent" aria-live="polite"><p class="compass-empty">診療データを確認しています。</p></div>
@@ -238,6 +242,13 @@
 <section id="report" class="page">
   <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p><p id="reportPeriod" class="clinical-trend-period"></p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
   <div id="reportStatus" class="report-status">集計中です。</div>
+  <div class="strategy-report-grid">
+    <article class="card strategy-card"><h3>🏆 成功ランキング</h3><div id="successRanking" class="strategy-list"></div></article>
+    <article class="card strategy-card"><h3>📈 成長診療</h3><div id="growthRanking" class="strategy-list"></div></article>
+    <article class="card strategy-card"><h3>⚠️ 注意項目</h3><div id="managementWarnings" class="strategy-list"></div></article>
+    <article class="card strategy-card"><h3>🗺 病院戦略マップ</h3><div id="strategyMap" class="strategy-list"></div></article>
+  </div>
+  <article class="card strategy-card"><h3>🔭 Future Forecast</h3><div id="futureForecast" class="strategy-grid"></div><h4>Tomorrow Strategy</h4><p id="tomorrowStrategy"></p><h4>AI発見・Season Intelligence</h4><div id="aiDiscoveries" class="strategy-list"></div></article>
   <article class="card clinical-trend-card" aria-labelledby="clinicalTrendTitle">
     <div class="clinical-trend-heading"><div><span class="eyebrow">OPERATIONS TREND</span><h3 id="clinicalTrendTitle">🧠 診療傾向</h3></div><span id="clinicalTrendConfidence">信頼度：低</span></div>
     <p id="clinicalTrendPeriod" class="clinical-trend-period">直近90日を確認しています。</p>
@@ -461,7 +472,7 @@
 <script src="learning-insights.js?v=1091"></script>
 <script src="weekly-insights.js?v=1092"></script>
 <script src="success-library.js?v=1093"></script>
-<script src="knowledge-core.js?v=1100"></script>
+<script src="knowledge-core.js?v=5000"></script>
 <script src="clinical-data.js?v=1076"></script>
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=1080"></script>

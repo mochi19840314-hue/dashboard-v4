@@ -8,7 +8,7 @@
  const validDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value||""));
  const number=value=>Number.isFinite(Number(value))?Number(value):null;
  function normalize(library){
-  return Array.isArray(library)?library.filter(item=>item&&typeof item.id==="string"&&typeof item.theme==="string"&&Number(item.count)>=MIN_COUNT&&validDate(item.firstSeen)&&validDate(item.lastSeen)).map(item=>({...item,count:Number(item.count),confidence:Math.max(1,Math.min(5,Number(item.confidence)||3)),metrics:item.metrics&&typeof item.metrics==="object"?item.metrics:{},comment:String(item.comment||"")})).sort(sortItems).slice(0,MAX_ITEMS):[];
+  return Array.isArray(library)?library.filter(item=>item&&typeof item.id==="string"&&typeof item.theme==="string"&&Number(item.count)>=MIN_COUNT&&validDate(item.firstSeen)&&validDate(item.lastSeen)).map(item=>({...item,count:Number(item.count),sampleCount:Number(item.sampleCount??item.count),confidence:Math.max(1,Math.min(5,Number(item.confidence)||3)),score:Math.max(0,Math.min(100,Number(item.score)||Number(item.confidence||3)*20)),trend:String(item.trend||"stable"),season:String(item.season||"通年"),weekday:String(item.weekday||"全曜日"),lastUpdated:item.lastUpdated||item.lastSeen,metrics:item.metrics&&typeof item.metrics==="object"?item.metrics:{},comment:String(item.comment||"")})).sort(sortItems).slice(0,MAX_ITEMS):[];
  }
  function sortItems(a,b){return b.count-a.count||b.confidence-a.confidence||b.lastSeen.localeCompare(a.lastSeen)||a.id.localeCompare(b.id)}
  function observations(learningHistory,weeklyLearningHistory){

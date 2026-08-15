@@ -1,0 +1,17 @@
+const test=require('node:test');const assert=require('node:assert/strict');
+const KnowledgeCore=require('./knowledge-core');const Backup=require('./backup-normalizer');
+const library=[{id:'checkup',theme:'健康診断',confidence:5,score:90,count:5,sampleCount:5,firstSeen:'2026-06-01',lastSeen:'2026-08-14',lastUpdated:'2026-08-14',trend:'up',season:'秋',weekday:'火曜',metrics:{profit:18,unit:12,revisitRate:8,visits:15,continuationRate:7},comment:'画像検査率が高い傾向'}];
+const entries=[{date:'2026-07-10',sales:100000,patients:10,checkups:1,clinical:{xrays:1}},{date:'2026-08-10',sales:120000,patients:10,checkups:3,clinical:{xrays:2,ultrasounds:2}}];
+const build=()=>KnowledgeCore.buildStrategyDashboard({entries,successLibrary:library,today:'2026-08-15',target:500000,expense:30000,businessDays:20});
+test('AI Brief is generated only through Knowledge Core',()=>{const x=build();assert.equal(x.brief.priority,'健康診断');assert.match(x.brief.comment,/適応・必要性/)});
+test('Success Ranking uses weighted score and confidence',()=>{const [x]=build().successRanking;assert.equal(x.theme,'健康診断');assert.equal(x.confidence,5);assert.ok(x.rankingScore>0)});
+test('Growth Ranking compares previous month',()=>assert.equal(build().growth.find(x=>x.theme==='健診').mom,200));
+test('Warnings expose priority without unsafe language',()=>assert.ok(build().warnings.every(x=>x.priority>=1&&x.priority<=5)));
+test('Weekly AI discoveries prohibit causal claims',()=>assert.match(build().discoveries[0],/因果を示しません/));
+test('Tomorrow Strategy includes medical safety',()=>assert.match(build().tomorrow.comment,/適応と必要性/));
+test('Season Intelligence comes from Success Library',()=>assert.equal(build().seasonLearning[0].season,'秋'));
+test('Future Forecast identifies Knowledge Core model',()=>assert.equal(build().forecast.model,'Knowledge Core'));
+test('Coach reviews clinical activity',()=>assert.match(build().coach.comment,/振り返り/));
+test('Strategy Map has strength improvement and growth',()=>assert.deepEqual(Object.keys(build().strategyMap),['strength','improvement','growth']));
+test('JSON additions remain compatible',()=>{const defaults={finance:{},clinic:{},historical:{},settings:{},monthlyReports:{}};const out=Backup.normalizeBackup({entries, strategyMap:{strength:['健診']},seasonLearning:[{season:'秋'}],forecastModel:{sales:1},coachHistory:[{date:'2026-08-15'}]},defaults,'key').data;assert.equal(out.forecastModel.sales,1);assert.equal(out.coachHistory.length,1)});
+test('Success Library metadata is normalized by Knowledge Core',()=>{const x=KnowledgeCore.normalize(library)[0];for(const key of ['confidence','score','trend','season','weekday','sampleCount','lastUpdated'])assert.ok(key in x)});
