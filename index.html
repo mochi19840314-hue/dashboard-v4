@@ -290,6 +290,7 @@
   <article class="card report-section"><div class="report-section-title"><span>📚</span><div><h3>今月の学び</h3><small>自動案を自由に編集できます</small></div></div><textarea id="reportLearning" class="report-learning" maxlength="500" placeholder="今月の学びを記録"></textarea><div class="report-save-row"><small id="reportLearningStatus">未保存</small><button id="saveReportLearning" class="primary" type="button">保存する</button></div></article>
   <article class="card report-section"><div class="report-section-title"><span>🎯</span><div><h3>来月の重点目標</h3><small>自動提案</small></div></div><ul id="reportNextGoals" class="report-list"></ul></article>
   <article class="card report-summary"><span class="eyebrow">AI MONTHLY SUMMARY</span><h3>AI総評</h3><p id="reportSummary">データを集計しています。</p></article>
+  <article class="card success-library" aria-labelledby="successLibraryTitle"><header><div><span class="eyebrow">SUCCESS LIBRARY</span><h3 id="successLibraryTitle">📚 AI経営ノート</h3></div><small>病院固有の成功パターン</small></header><div id="successLibraryItems" class="success-library-items"></div></article>
 </section>
 
 <section id="year" class="page">
@@ -444,6 +445,7 @@
 <div class="month-rollover-modal" id="monthRolloverModal" role="dialog" aria-modal="true" aria-labelledby="monthRolloverTitle" hidden><div class="month-rollover-dialog"><span class="eyebrow">MONTHLY UPDATE</span><h2 id="monthRolloverTitle">新しい月のデータ</h2><p id="monthRolloverMessage"></p><div class="month-rollover-actions"><button id="confirmMonthRollover" class="primary" type="button">はい</button><button id="deferMonthRollover" type="button">あとで</button></div></div></div>
 <div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
 <div class="clinical-trend-modal" id="clinicalTrendModal" role="dialog" aria-modal="true" aria-labelledby="clinicalTrendModalTitle" hidden><div class="clinical-trend-dialog"><button id="closeClinicalTrends" class="modal-close" type="button" aria-label="診療傾向を閉じる">×</button><div id="clinicalTrendDetail"></div></div></div>
+<div class="success-library-modal" id="successLibraryModal" role="dialog" aria-modal="true" aria-labelledby="successLibraryModalTitle" hidden><div class="success-library-dialog"><button id="closeSuccessLibrary" class="modal-close" type="button" aria-label="AI経営ノートを閉じる">×</button><div id="successLibraryDetail"></div></div></div>
 <script src="date-ranges.js?v=1060"></script>
 <script src="clinical-trends.js?v=1060"></script>
 <script src="report-month.js?v=1061"></script>
@@ -458,6 +460,7 @@
 <script src="backup-normalizer.js?v=1063"></script>
 <script src="learning-insights.js?v=1091"></script>
 <script src="weekly-insights.js?v=1092"></script>
+<script src="success-library.js?v=1093"></script>
 <script src="clinical-data.js?v=1076"></script>
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=1080"></script>
