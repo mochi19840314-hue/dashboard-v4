@@ -39,14 +39,25 @@ function rankCandidates(entries,learningHistory=[]){
   return{...candidate,successRate,score};
  });return candidates.sort((a,b)=>b.score-a.score||b.successRate-a.successRate||a.key.localeCompare(b.key));
 }
-function stableProfitRate(context={}){const margins=(context.recentMonths||[]).map(row=>number(row.sales)>0?(number(row.sales)-number(row.expense))/number(row.sales)*100:null).filter(value=>value!==null&&value>=-30&&value<=60);for(const count of [6,3,1])if(margins.length>=count){const values=margins.slice(-count).sort((a,b)=>a-b),middle=Math.floor(values.length/2),value=values.length%2?values[middle]:(values[middle-1]+values[middle])/2;return{value,source:`直近${count}か月`,description:`直近${count}か月平均利益率で推定`}}return{value:0,source:"利用可能な実績なし",description:"利益率を算出できる実績がありません"}}
+const validMargin=value=>Number.isFinite(Number(value))&&Number(value)>=-30&&Number(value)<=60;
+function median(values){const sorted=[...values].sort((a,b)=>a-b),middle=Math.floor(sorted.length/2);return sorted.length%2?sorted[middle]:(sorted[middle-1]+sorted[middle])/2}
+function stableProfitRate(context={}){
+ const margins=(context.recentMonths||[]).map(row=>number(row.sales)>0?(number(row.sales)-number(row.expense))/number(row.sales)*100:null).filter(value=>value!==null&&validMargin(value));
+ for(const count of [6,3,1])if(margins.length>=count){const value=median(margins.slice(-count));return{value,source:`直近${count}か月`,description:`直近${count}か月の利益率中央値で推定`}}
+ if(validMargin(context.annualProfitRate))return{value:Number(context.annualProfitRate),source:"年間利益率",description:"年間利益率で推定"};
+ if(validMargin(context.currentMonthProfitRate))return{value:Number(context.currentMonthProfitRate),source:"当月利益率",description:"当月利益率で推定"};
+ return{value:0,source:"利用可能な実績なし",description:"利益率を算出できる実績がありません"}
+}
+function performanceTrend(successRate){return successRate>=70?"高い":successRate>=40?"中程度":"参考"}
+function calculateExpectedProfit(expectedIncrementalSales,profitRate){return Math.round(number(expectedIncrementalSales)*(number(profitRate)/100)/100)*100}
 function generateTodayStrategy(context={}){
  const entries=validEntries(context.entries,context.today);if(context.closed)return{ready:true,closed:true,sampleDays:entries.length,missions:[]};
  if(entries.length<MIN_BUSINESS_DAYS)return{ready:false,learning:true,status:"学習中",sampleDays:entries.length,requiredDays:MIN_BUSINESS_DAYS,missions:[]};
  const ranking=rankCandidates(entries,context.learningHistory);if(!ranking.length)return{ready:false,learning:true,status:"学習中",sampleDays:entries.length,requiredDays:MIN_BUSINESS_DAYS,missions:[]};
- const primary=ranking[0],next=ranking[1],expectedSales=Math.round(primary.averageAdditionalSales/100)*100,expectedProfit=Math.round(primary.averageProfit/100)*100,impact=clamp(Math.ceil(primary.successRate/20),1,5),margin=stableProfitRate(context);
+ const primary=ranking[0],next=ranking[1],expectedIncrementalSales=Math.round(primary.averageAdditionalSales/100)*100,margin=stableProfitRate(context),expectedProfit=calculateExpectedProfit(expectedIncrementalSales,margin.value),impact=clamp(Math.ceil(primary.successRate/20),1,5);
  const reason=`${primary.window}では\n${primary.theme}提案日の利益が\n最も高くなっています。`,mission={key:primary.key,theme:primary.theme,title:primary.theme,actions:primary.actions.slice(0,3),effects:["利益","客単価","再診率"],reason,source:"実績学習"};
- return{ready:true,learning:false,sampleDays:entries.length,theme:primary.theme,title:primary.theme,impact,reason,effects:mission.effects,missions:[mission],expectedSales,expectedRevenue:expectedSales,expectedProfit,estimatedProfit:expectedProfit,profitRate:margin.value,profitRateSource:margin.source,profitRateDescription:margin.description,successRate:primary.successRate,score:primary.score,weights:SCORE_WEIGHTS,learningWindow:primary.window,ranking:ranking.map(item=>({key:item.key,theme:item.theme,score:item.score,expectedProfit:Math.round(item.averageProfit),expectedSales:Math.round(item.averageAdditionalSales),successRate:item.successRate,window:item.window})),next:next?{key:next.key,theme:next.theme,title:next.theme,expectedProfit:Math.round(next.averageProfit)}:null,comment:{quote:primary.theme,reason:reason.replace(/\n/g,""),effect:"期待利益"}};
+ const nextIncrementalSales=next?Math.round(next.averageAdditionalSales/100)*100:0,nextExpectedProfit=calculateExpectedProfit(nextIncrementalSales,margin.value);
+ return{ready:true,learning:false,sampleDays:entries.length,theme:primary.theme,title:primary.theme,impact,reason,effects:mission.effects,missions:[mission],expectedIncrementalSales,expectedSales:expectedIncrementalSales,expectedRevenue:expectedIncrementalSales,expectedProfit,estimatedProfit:expectedProfit,profitRate:margin.value,profitRateSource:margin.source,profitRateDescription:margin.description,performanceTrend:performanceTrend(primary.successRate),successRate:primary.successRate,score:primary.score,weights:SCORE_WEIGHTS,learningWindow:primary.window,ranking:ranking.map(item=>({key:item.key,theme:item.theme,score:item.score,expectedIncrementalSales:Math.round(item.averageAdditionalSales),expectedSales:Math.round(item.averageAdditionalSales),successRate:item.successRate,window:item.window})),next:next?{key:next.key,theme:next.theme,title:next.theme,expectedIncrementalSales:nextIncrementalSales,expectedSales:nextIncrementalSales,expectedProfit:nextExpectedProfit,performanceTrend:performanceTrend(next.successRate)}:null,comment:{quote:primary.theme,reason:reason.replace(/\n/g,""),effect:"期待利益"}};
 }
-return{SCORE_WEIGHTS,MIN_BUSINESS_DAYS,DEFINITIONS,build:generateTodayStrategy,generateTodayStrategy,rankCandidates,learnCandidate,stableProfitRate};
+return{SCORE_WEIGHTS,MIN_BUSINESS_DAYS,DEFINITIONS,build:generateTodayStrategy,generateTodayStrategy,rankCandidates,learnCandidate,stableProfitRate,performanceTrend,calculateExpectedProfit};
 });
