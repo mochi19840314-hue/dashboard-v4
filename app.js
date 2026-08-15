@@ -101,7 +101,7 @@ const yen=v=>`${Math.round(Number(v)||0).toLocaleString("ja-JP")}円`,pct=v=>`${
 const formatUpdated=v=>{if(!v)return "未記録";const d=new Date(v);return Number.isNaN(d.getTime())?"未記録":new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(d)};
 const iso=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 const monthNow=()=>iso().slice(0,7);
-function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,meta:{...base.meta,...(raw.meta||{})},finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},monthlyReports:{...(raw.monthlyReports||{})},historical:{...HISTORICAL,...(raw.historical||{})},clinic:{...DEFAULT_CLINIC,...(raw.clinic||{}),closedDates:Array.isArray(raw.clinic?.closedDates)?raw.clinic.closedDates:[]},entries:Array.isArray(raw.entries)?raw.entries:[],learningHistory:LearningInsights.normalizeHistory(raw.learningHistory),weeklyLearningHistory:WeeklyInsights.normalizeHistory(raw.weeklyLearningHistory),successLibrary:SuccessLibrary.normalize(raw.successLibrary)}}catch{return structuredClone(base)}}
+function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,meta:{...base.meta,...(raw.meta||{})},finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},monthlyReports:{...(raw.monthlyReports||{})},historical:{...HISTORICAL,...(raw.historical||{})},clinic:{...DEFAULT_CLINIC,...(raw.clinic||{}),closedDates:Array.isArray(raw.clinic?.closedDates)?raw.clinic.closedDates:[]},entries:Array.isArray(raw.entries)?raw.entries:[],learningHistory:LearningInsights.normalizeHistory(raw.learningHistory),weeklyLearningHistory:WeeklyInsights.normalizeHistory(raw.weeklyLearningHistory),successLibrary:(typeof KnowledgeCore!=="undefined"?KnowledgeCore:SuccessLibrary).normalize(raw.successLibrary)}}catch{return structuredClone(base)}}
 function save(){data.meta={...(data.meta||{}),lastUpdated:new Date().toISOString()};localStorage.setItem(KEY,JSON.stringify(data));storage()}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout($("toast").t);$("toast").t=setTimeout(()=>$("toast").classList.remove("show"),1600)}
 function currentProfitRate(){const s=monthSummary(monthNow());return s.sales&&s.expense?(s.sales-s.expense)/s.sales*100:null}
@@ -147,7 +147,9 @@ function renderDailyShadowBrief(){
   const builder=globalThis?.DailyShadowBrief?.buildDailyShadowActions;if(typeof builder!=="function"){showEmpty();return}
   let anomalies=[];try{if(typeof BusinessAnomalies!=="undefined")anomalies=BusinessAnomalies.detectBusinessAnomalies(data,{today:todayDate,hour:new Date().getHours()})}catch(error){console.error(error)}
   let clinicalAnalysis=null;try{if(typeof ClinicalIntelligence!=="undefined")clinicalAnalysis=ClinicalIntelligence.analyze(data?.entries??[],{closedDates:data?.clinic?.closedDates??[]})}catch(error){console.error(error)}
-  const insights=builder({today:todayDate,entries:Array.isArray(data?.entries)?data.entries:[],clinicalAnalysis,monthlyTarget:Number(setting.target)||MONTHLY_TARGET,remainingBusinessDays,clinic:data?.clinic??{},anomalies});
+  const todayInput=data.entries.find(entry=>entry.date===todayDate),themes=KnowledgeCore.getTopThemes(data.successLibrary,{limit:3});
+  const coreInsights=themes.map(item=>({title:item.theme,category:"knowledge-core",level:item.trend==="down"?"warning":"normal",message:todayInput?`${item.comment||item.theme+"の傾向"} 今日の入力と照合しました。`:`${item.theme}を確認するには、今日の実績を入力してください。`}));
+  const insights=coreInsights.length?coreInsights:builder({today:todayDate,entries:Array.isArray(data?.entries)?data.entries:[],clinicalAnalysis,monthlyTarget:Number(setting.target)||MONTHLY_TARGET,remainingBusinessDays,clinic:data?.clinic??{},anomalies});
   if(!Array.isArray(insights)||!insights.length){showEmpty();return}
   const emphasize=text=>escapeHtml(text).replace(/([↑↓+-]?\s*\d[\d,.]*(?:\.\d+)?(?:円|万円|件|%|営業日)?)/g,"<strong>$1</strong>");
   list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}" data-category="${item.category||""}"><span class="daily-shadow-marker" aria-hidden="true">${item.category==="goal"?"🎯":item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":`${index+1}`}</span><div><h4>${index+1}. ${escapeHtml(item.title||"")}</h4><p>${emphasize(item.message||emptyMessage)}</p></div></li>`).join("");
@@ -163,29 +165,29 @@ function renderManagementCompass(result){
 function renderLearningInsight(){
  const text=$("learningInsightText");if(!text||typeof LearningInsights==="undefined")return;
  const today=iso(),night=LearningInsights.learnAtNight({entries:data.entries,history:data.learningHistory,today,hour:new Date().getHours()});
- if(night.saved){data.learningHistory=night.history;save()}
+ if(night.saved){data.learningHistory=night.history;const item=night.record;if(item?.key&&item.key!=="learning")data.successLibrary=KnowledgeCore.learn(data.successLibrary,{id:item.key.split(":")[0],theme:SuccessLibrary.THEMES[item.key.split(":")[0]]||item.key,confidence:3,importance:Math.abs(Number(item.difference)||1),count:1,firstSeen:item.date,lastSeen:item.date,metrics:{[item.key.split(":")[1]]:Math.round(Number(item.difference)||0)},comment:item.result,category:"recent-learning"});save()}
  const insight=LearningInsights.displayed({entries:data.entries,history:data.learningHistory,today});text.textContent=insight.text||LearningInsights.EMPTY;
 }
 function renderWeeklyInsights(){
  const list=$("weeklyInsightItems");if(!list||typeof WeeklyInsights==="undefined")return;
  const today=iso(),options={entries:data.entries,history:data.weeklyLearningHistory,today,learningHistory:data.learningHistory,compassLearning:data.aiCompassLearning||[]},night=WeeklyInsights.learnAtNight({...options,hour:new Date().getHours()});
- if(night.saved){data.weeklyLearningHistory=night.history;save()}
+ if(night.saved){data.weeklyLearningHistory=night.history;const candidates=(night.record?.insights||[]).map(item=>({id:item.key.split(":")[0],theme:SuccessLibrary.THEMES[item.key.split(":")[0]]||item.key,confidence:Math.max(1,Math.min(5,Math.ceil(Math.abs(Number(item.difference)||0)/10))),importance:Math.abs(Number(item.importance)||0),count:1,firstSeen:night.record.date,lastSeen:night.record.date,trend:Number(item.difference)>0?"up":Number(item.difference)<0?"down":"stable",metrics:{[item.key.split(":")[1]]:Math.round(Number(item.difference)||0)},comment:item.text,category:"weekly"}));data.successLibrary=KnowledgeCore.update(data.successLibrary,candidates,{weekly:true});save()}
  const result=WeeklyInsights.displayed({...options,history:data.weeklyLearningHistory});list.innerHTML=(result.insights?.length?result.insights:[{text:WeeklyInsights.EMPTY}]).map(item=>`<li>${escapeHtml(item.text)}</li>`).join("");
 }
-function updateSuccessLibrary(){if(typeof SuccessLibrary==="undefined")return;const learned=SuccessLibrary.learnAtNight({learningHistory:data.learningHistory,weeklyLearningHistory:data.weeklyLearningHistory,existing:data.successLibrary,hour:new Date().getHours()});if(learned.saved){data.successLibrary=learned.library;save()}}
+function updateSuccessLibrary(){if(typeof KnowledgeCore==="undefined")return;const normalized=KnowledgeCore.normalize(data.successLibrary);if(JSON.stringify(normalized)!==JSON.stringify(data.successLibrary)){data.successLibrary=normalized;save()}}
 function renderSuccessLibrary(){
- const list=$("successLibraryItems");if(!list||typeof SuccessLibrary==="undefined")return;updateSuccessLibrary();const items=SuccessLibrary.normalize(data.successLibrary);
+ const list=$("successLibraryItems");if(!list||typeof SuccessLibrary==="undefined")return;updateSuccessLibrary();const items=KnowledgeCore.rank(data.successLibrary);
  if(!items.length){list.innerHTML='<p class="success-library-empty">まだ十分なデータがありません。<br><br>AIは現在、<br>病院固有の成功パターンを学習しています。</p>';return}
  list.innerHTML=items.map(item=>`<button class="success-pattern" type="button" data-success-id="${escapeHtml(item.id)}"><span class="success-stars" data-confidence="${item.confidence}">${"★".repeat(item.confidence)}${"☆".repeat(5-item.confidence)}</span><h4>${escapeHtml(item.theme)}</h4><dl><div><dt>確認回数</dt><dd>${item.count}回</dd></div><div><dt>最近確認</dt><dd>${item.lastSeen}</dd></div></dl><div class="success-metrics">${Object.entries(item.metrics).map(([key,value])=>`<span>${escapeHtml(SuccessLibrary.METRICS[key]||key)} <b>${value>=0?"+":""}${value}%</b></span>`).join("")}</div></button>`).join("");
  list.querySelectorAll("[data-success-id]").forEach(button=>button.onclick=()=>openSuccessLibrary(button.dataset.successId));
 }
-function openSuccessLibrary(id){const item=SuccessLibrary.normalize(data.successLibrary).find(row=>row.id===id);if(!item)return;const metrics=Object.entries(item.metrics).map(([key,value])=>`${SuccessLibrary.METRICS[key]||key} ${value>=0?"+":""}${value}%`).join("・")||"—";$("successLibraryDetail").innerHTML=`<span class="eyebrow">SUCCESS LIBRARY</span><h2 id="successLibraryModalTitle">${escapeHtml(item.theme)}</h2><dl><div><dt>確認回数</dt><dd>${item.count}回</dd></div><div><dt>初回学習日</dt><dd>${item.firstSeen}</dd></div><div><dt>最終学習日</dt><dd>${item.lastSeen}</dd></div><div><dt>平均改善値</dt><dd>${escapeHtml(metrics)}</dd></div></dl><section><h3>AIコメント</h3><p>${escapeHtml(item.comment)}</p></section>`;openOverlay($("successLibraryModal"));$("closeSuccessLibrary").focus()}
+function openSuccessLibrary(id){const item=KnowledgeCore.find(data.successLibrary,id);if(!item)return;const metrics=Object.entries(item.metrics).map(([key,value])=>`${SuccessLibrary.METRICS[key]||key} ${value>=0?"+":""}${value}%`).join("・")||"—";$("successLibraryDetail").innerHTML=`<span class="eyebrow">SUCCESS LIBRARY</span><h2 id="successLibraryModalTitle">${escapeHtml(item.theme)}</h2><dl><div><dt>確認回数</dt><dd>${item.count}回</dd></div><div><dt>初回学習日</dt><dd>${item.firstSeen}</dd></div><div><dt>最終学習日</dt><dd>${item.lastSeen}</dd></div><div><dt>平均改善値</dt><dd>${escapeHtml(metrics)}</dd></div></dl><section><h3>AIコメント</h3><p>${escapeHtml(item.comment)}</p></section>`;openOverlay($("successLibraryModal"));$("closeSuccessLibrary").focus()}
 function closeSuccessLibrary(){closeOverlay($("successLibraryModal"))}
 function generateTodayStrategy(){
- if(typeof TodayWinningStrategy==="undefined")return null;const today=iso(),historical=data.entries.filter(entry=>entry.date<today),readiness=ClinicalIntelligence.getClinicalAnalysisReadiness(historical,{closedDates:data.clinic?.closedDates||[]});let anomalies=[];try{anomalies=typeof BusinessAnomalies!=="undefined"?BusinessAnomalies.detectBusinessAnomalies(data,{today,hour:new Date().getHours()}):[]}catch(error){console.error(error)}
- const current=monthSummary(monthNow()),monthKeys=[...new Set([...Object.keys(data.historical||{}),...historical.map(entry=>entry.date.slice(0,7))])].filter(month=>month<monthNow()).sort(),months=monthKeys.map(month=>monthSummary(month)),annualRows=months.filter(row=>row.sales>0),annualSales=annualRows.reduce((sum,row)=>sum+row.sales,0),annualExpense=annualRows.reduce((sum,row)=>sum+row.expense,0),annualProfitRate=annualSales?(annualSales-annualExpense)/annualSales*100:undefined;
- const currentMonthProfitRate=current.sales?(current.sales-current.expense)/current.sales*100:undefined;
- return TodayWinningStrategy.generateTodayStrategy({entries:historical,today,readinessStatus:readiness.status,closed:clinicDayInfo(today).type==="closed",currentMonthSales:current.sales,currentMonthExpense:current.expense,currentMonthProfitRate,recentMonths:months,annualProfitRate,anomalies,learningHistory:data.aiCompassLearning||[]});
+ if(typeof KnowledgeCore==="undefined")return null;const today=iso(),closed=clinicDayInfo(today).type==="closed",top=KnowledgeCore.getTopThemes(data.successLibrary,{limit:2}),primary=top[0],next=top[1];
+ if(closed)return {ready:true,closed:true,missions:[]};if(!primary)return {ready:false,sampleDays:data.entries.length,requiredDays:15,missions:[]};
+ const metric=Object.values(primary.metrics)[0]||0,mission={actions:[`${primary.theme}の対象を確認`,"必要な提案を行う","結果を今日の実績に記録"]};
+ return {ready:true,closed:false,title:primary.theme,theme:primary.theme,impact:primary.confidence,missions:[mission],expectedIncrementalSales:0,expectedProfit:0,performanceTrend:primary.trend==="up"?"上昇":primary.trend==="down"?"低下":"安定",reason:primary.comment||`信頼度${primary.confidence}、重要度${primary.importance}のKnowledge Core最上位テーマです。`,next:next?{title:next.theme,expectedIncrementalSales:0,expectedProfit:0}:null,metric};
 }
 function renderTodayStrategy(){
  const strategy=generateTodayStrategy();renderManagementCompass(strategy);if(!strategy)return;
@@ -496,15 +498,16 @@ function availableChartYears(selectedYear){
   return [...years].filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>Number(a)-Number(b)).slice(-4);
 }
 function annualChartSummary(rows,states){
+  const annualTop=typeof KnowledgeCore!=="undefined"?KnowledgeCore.rank(data.successLibrary,{limit:10}).map(item=>item.theme).join("・"):"";
   const available=states.map((state,index)=>state.hasData?index:-1).filter(index=>index>=0);
-  if(!available.length)return "年間データが揃うと、ここに推移の要約を表示します。";
+  if(!available.length)return `年間データが揃うと、ここに推移の要約を表示します。${annualTop?` 年間テーマ TOP10：${annualTop}`:""}`;
   const best=available.reduce((best,index)=>rows[index].sales>rows[best].sales?index:best,available[0]);
   const recent=available.slice(-3).map(index=>rows[index].sales);
-  if(recent.length<3)return `${best+1}月が年間最高です。直近の推移は、3か月分のデータが揃うと表示します。`;
+  if(recent.length<3)return `${best+1}月が年間最高です。直近の推移は、3か月分のデータが揃うと表示します。${annualTop?` 年間テーマ TOP10：${annualTop}`:""}`;
   const average=recent.reduce((sum,value)=>sum+value,0)/recent.length;
   const change=recent[2]-recent[0];
   const direction=Math.abs(change)<=average*.1?"緩やかに推移しています":change>0?"上向きに推移しています":"落ち着く傾向です";
-  return `${best+1}月が年間最高、直近3か月は${direction}。`;
+  return `${best+1}月が年間最高、直近3か月は${direction}。${annualTop?` 年間テーマ TOP10：${annualTop}`:""}`;
 }
 function renderYearChart(rows,yearValue){
   const el=$("yearChart"),detail=$("chartDetail"),legend=$("yearChartLegend"),summary=$("yearChartSummary"),w=760,h=320,pad={l:58,r:18,t:18,b:38};
@@ -890,7 +893,7 @@ function renderMonthlyReport(){
   $("reportGoodPoints").innerHTML=(availability.empty?["データ入力後に良かった点を表示します"]:good.slice(0,3).length?good.slice(0,3):["データが増えると良かった点を表示します"]).map(x=>`<li>${x}</li>`).join("");$("reportImprovePoints").innerHTML=(availability.empty?["データ入力後に改善点を表示します"]:improve.slice(0,3).length?improve.slice(0,3):["現時点で大きな改善警告はありません"]).map(x=>`<li>${x}</li>`).join("");
   const autoLearning=rate>=30?"支出が増えても、売上と利益率を同時に確認することで、成長投資か利益圧迫かを判断できた月でした。":"売上だけでなく支出構成を確認し、利益率を保つことの重要性が見えた月でした。";const saved=data.monthlyReports?.[m]?.learningText;$("reportLearning").value=saved||autoLearning;$("reportLearningStatus").textContent=saved?"保存済み":"自動案";
   const goals=[];goals.push(`月間売上${yen(target)}以上`);goals.push("利益率30%以上を維持");if(s.checkups<10)goals.push("健診10件以上");else if(unit)goals.push(`客単価${yen(Math.round(unit/1000)*1000)}以上を維持`);$("reportNextGoals").innerHTML=goals.slice(0,3).map(x=>`<li>${x}</li>`).join("");
-  const condition=progress>=100&&rate>=30?"売上と利益の両面で好調":"改善余地を確認しながら前進",memoContext=memoAnalysis.top.length?` 日々のメモでは${memoAnalysis.top.map(x=>x.label).join("・")}の記録が目立ち、数値変化の背景として注目されます。`:"";$("reportSummary").textContent=availability.empty?`${monthLabel(m)}は集計途中です。入力データがそろうまで月間総括を保留します。`:`${monthLabel(m)}は「${condition}」な月です。${driver}が売上を支え、利益率は${pct(rate)}でした。${memoContext}支出では人件費・薬品医療材料費・カード決済手数料の3項目に絞って変化を確認し、来月は売上目標と利益率を両立させることが重点です。`;
+  const condition=progress>=100&&rate>=30?"売上と利益の両面で好調":"改善余地を確認しながら前進",memoContext=memoAnalysis.top.length?` 日々のメモでは${memoAnalysis.top.map(x=>x.label).join("・")}の記録が目立ち、数値変化の背景として注目されます。`:"",monthlyTop=KnowledgeCore.rank(data.successLibrary,{limit:5}).map(item=>item.theme).join("・");$("reportSummary").textContent=availability.empty?`${monthLabel(m)}は集計途中です。入力データがそろうまで月間総括を保留します。`:`${monthLabel(m)}は「${condition}」な月です。${driver}が売上を支え、利益率は${pct(rate)}でした。${memoContext}支出では人件費・薬品医療材料費・カード決済手数料の3項目に絞って変化を確認し、来月は売上目標と利益率を両立させることが重点です。${monthlyTop?` Knowledge Core TOP5：${monthlyTop}。`:""}`;
 }
 
 function renderClinicalIntelligence(){

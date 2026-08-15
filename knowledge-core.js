@@ -1,0 +1,15 @@
+(function(root,factory){
+ const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;root.KnowledgeCore=api;
+})(typeof globalThis!=="undefined"?globalThis:this,function(){
+ "use strict";
+ const MAX_ITEMS=100,VALID_TRENDS=new Set(["up","down","stable","new"]),trendScore={up:3,new:2,stable:1,down:0};
+ const validDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value||"")),clamp=(value,min,max)=>Math.max(min,Math.min(max,Number(value)||0)),idOf=value=>String(value?.id||value?.key||value?.theme||"").trim();
+ function normalize(library){return (Array.isArray(library)?library:[]).filter(item=>item&&idOf(item)&&typeof item.theme==="string").map(item=>{const firstSeen=validDate(item.firstSeen)?item.firstSeen:(validDate(item.lastSeen)?item.lastSeen:"1970-01-01"),lastSeen=validDate(item.lastSeen)?item.lastSeen:firstSeen;return {...item,id:idOf(item),theme:String(item.theme),confidence:clamp(item.confidence||1,1,5),importance:clamp(item.importance||item.confidence||1,1,100),count:Math.max(1,Math.trunc(Number(item.count)||1)),firstSeen,lastSeen,metrics:item.metrics&&typeof item.metrics==="object"&&!Array.isArray(item.metrics)?{...item.metrics}:{},trend:VALID_TRENDS.has(item.trend)?item.trend:"stable",comment:String(item.comment||""),category:String(item.category||"general")}}).sort((a,b)=>b.confidence-a.confidence||b.importance-a.importance||trendScore[b.trend]-trendScore[a.trend]||b.count-a.count||b.lastSeen.localeCompare(a.lastSeen)||a.id.localeCompare(b.id)).slice(0,MAX_ITEMS)}
+ function find(library,query){const value=typeof query==="object"?idOf(query):String(query||"");return normalize(library).find(item=>item.id===value||item.theme===value)||null}
+ function rank(library,{limit=MAX_ITEMS,category}={}){return normalize(library).filter(item=>!category||item.category===category).slice(0,Math.max(0,limit))}
+ function getTopThemes(library,options={}){return rank(library,{...options,limit:options.limit||1})}
+ function merge(library,candidate,{weekly=false}={}){const current=normalize(library),id=idOf(candidate);if(!id)return current;const index=current.findIndex(item=>item.id===id);if(index<0)return normalize([...current,{...candidate,id,firstSeen:candidate.firstSeen||candidate.lastSeen,count:candidate.count||1,trend:candidate.trend||"new"}]);const old=current[index],next=weekly?{...old,count:Math.max(old.count,Number(candidate.count)||old.count+1),trend:candidate.trend||old.trend,lastSeen:candidate.lastSeen||old.lastSeen}:{...old,...candidate,id,firstSeen:old.firstSeen,count:Number(candidate.count)||old.count};current[index]=next;return normalize(current)}
+ function update(library,candidates,options={}){return (Array.isArray(candidates)?candidates:[candidates]).filter(Boolean).reduce((items,item)=>merge(items,item,options),normalize(library))}
+ function learn(library,candidate){return merge(library,{...candidate,category:candidate?.category||"learning",trend:candidate?.trend||"new"})}
+ return {MAX_ITEMS,normalize,getTopThemes,update,rank,find,learn,merge};
+});
