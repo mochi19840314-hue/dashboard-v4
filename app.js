@@ -161,12 +161,12 @@ function managementCompassReadiness(result){
  return {businessDays,requiredDays,hasProposal,isLearning:!hasProposal&&businessDays<requiredDays};
 }
 function renderManagementCompass(result){
- const content=$("managementCompassContent"),status=$("managementCompassStatus");if(!content||!result)return;const readiness=managementCompassReadiness(result);status.textContent=result.closed?"休診日":readiness.hasProposal?"今日の1件":readiness.isLearning?"学習中":"分析中";
+ const content=$("managementCompassContent"),status=$("managementCompassStatus");if(!content||!result)return;const readiness=managementCompassReadiness(result);status.textContent=result.closed?"休診日":readiness.hasProposal?(result.isTomorrow?"明日の候補":"今日の1件"):readiness.isLearning?"学習中":"分析中";
  if(result.closed){content.innerHTML='<p class="compass-empty">本日は休診日です。必要な確認だけ行いましょう。</p>';return}
  if(readiness.isLearning){content.innerHTML=`<p class="compass-empty">学習中（${readiness.businessDays}/${readiness.requiredDays}営業日）です。昨日までの記録を続けてください。</p>`;return}
- if(!readiness.hasProposal){content.innerHTML=`<p class="compass-empty">${readiness.businessDays}営業日のデータから分析しています。</p>`;return}
- const mission=result.missions[0],revenue=result.expectedIncrementalSales?`約${yen(result.expectedIncrementalSales)}`:"追加売上なし",profit=result.expectedIncrementalSales?`約${yen(result.expectedProfit)}`:"—";
- content.innerHTML=`<section><h4>Mission</h4><ul>${mission.actions.slice(0,3).map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></section><div class="compass-values"><section><h4>期待利益</h4><strong>${profit}</strong></section><section><h4>追加期待売上</h4><strong>${revenue}</strong></section></div><section class="compass-reason"><h4>理由</h4><p>${escapeHtml(result.reason)}</p></section>${result.next?`<section class="compass-next"><h4>次点</h4><strong>${escapeHtml(result.next.title)}　追加期待売上 約${yen(result.next.expectedIncrementalSales)}　期待利益 約${yen(result.next.expectedProfit)}</strong></section>`:""}`;
+ if(!readiness.hasProposal){content.innerHTML=`<p class="compass-empty">${readiness.businessDays>=readiness.requiredDays?"現在も診療データを分析中です。":`学習中（${readiness.businessDays}/${readiness.requiredDays}営業日）です。昨日までの記録を続けてください。`}</p>`;return}
+ const mission=result.missions[0];
+ content.innerHTML=`<p class="compass-analysis">${readiness.businessDays}営業日のデータから分析しています。</p><section class="compass-priority"><h4>${result.isTomorrow?"明日の候補":"今日の最優先"}</h4><strong>${escapeHtml(result.title||result.theme)}</strong></section><section><h4>Mission</h4><ul>${mission.actions.slice(0,3).map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></section><section class="compass-reason"><h4>理由</h4><p>${escapeHtml(result.reason)}</p></section>${result.next?`<section class="compass-next"><h4>次点</h4><strong>${escapeHtml(result.next.title)}</strong></section>`:""}`;
 }
 function renderLearningInsight(){
  const text=$("learningInsightText");if(!text||typeof LearningInsights==="undefined")return;
@@ -207,10 +207,9 @@ function renderStrategyIntelligence(){
 function openSuccessLibrary(id){const item=KnowledgeCore.find(data.successLibrary,id);if(!item)return;const metrics=Object.entries(item.metrics).map(([key,value])=>`${SuccessLibrary.METRICS[key]||key} ${value>=0?"+":""}${value}%`).join("・")||"—";$("successLibraryDetail").innerHTML=`<span class="eyebrow">SUCCESS LIBRARY</span><h2 id="successLibraryModalTitle">${escapeHtml(item.theme)}</h2><dl><div><dt>確認回数</dt><dd>${item.count}回</dd></div><div><dt>初回学習日</dt><dd>${item.firstSeen}</dd></div><div><dt>最終学習日</dt><dd>${item.lastSeen}</dd></div><div><dt>平均改善値</dt><dd>${escapeHtml(metrics)}</dd></div></dl><section><h3>AIコメント</h3><p>${escapeHtml(item.comment)}</p></section>`;openOverlay($("successLibraryModal"));$("closeSuccessLibrary").focus()}
 function closeSuccessLibrary(){closeOverlay($("successLibraryModal"))}
 function generateTodayStrategy(){
- if(typeof KnowledgeCore==="undefined")return null;const today=iso(),closed=clinicDayInfo(today).type==="closed",top=KnowledgeCore.getTopThemes(data.successLibrary,{limit:2}),primary=top[0],next=top[1];
- if(closed)return {ready:true,closed:true,missions:[]};if(!primary)return {ready:false,sampleDays:data.entries.length,requiredDays:15,missions:[]};
- const metric=Object.values(primary.metrics)[0]||0,mission={actions:[`${primary.theme}の対象を確認`,"必要な提案を行う","結果を今日の実績に記録"]};
- return {ready:true,closed:false,title:primary.theme,theme:primary.theme,impact:primary.confidence,missions:[mission],expectedIncrementalSales:0,expectedProfit:0,performanceTrend:primary.trend==="up"?"上昇":primary.trend==="down"?"低下":"安定",reason:primary.comment||`信頼度${primary.confidence}、重要度${primary.importance}のKnowledge Core最上位テーマです。`,next:next?{title:next.theme,expectedIncrementalSales:0,expectedProfit:0}:null,metric};
+ if(typeof ManagementCompass==="undefined")return null;const today=iso(),closed=clinicDayInfo(today).type==="closed";
+ if(closed)return {ready:true,closed:true,missions:[]};
+ return ManagementCompass.build({knowledgeCore:typeof KnowledgeCore!=="undefined"?KnowledgeCore:null,successLibrary:data.successLibrary,weeklyLearningHistory:data.weeklyLearningHistory,learningHistory:data.learningHistory,clinicalIntelligence:typeof ClinicalIntelligence!=="undefined"?ClinicalIntelligence:null,entries:data.entries,closedDates:data.clinic?.closedDates,hour:new Date().getHours()});
 }
 function renderTodayStrategy(){
  const strategy=generateTodayStrategy();renderManagementCompass(strategy);if(!strategy)return;
