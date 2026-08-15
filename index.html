@@ -42,11 +42,16 @@
     <aside class="compass-shadow" aria-live="polite"><h3 id="compassShadowTitle">影武者｜今日の方針</h3><p id="compassShadowComment">今日のデータを確認しています。</p></aside>
   </section>
   <article class="learning-insight-card" id="learningInsightCard" aria-labelledby="learningInsightTitle" aria-live="polite"><h2 id="learningInsightTitle">🧠 AIが最近学習したこと</h2><p id="learningInsightText">現在も診療データを学習中です。<br>明確な傾向が確認できると表示します。</p></article>
-  <h2>今日の入力</h2>
+  <article class="weekly-insight-card" id="weeklyInsightCard" aria-labelledby="weeklyInsightTitle" aria-live="polite">
+    <header><span class="weekly-insight-icon" aria-hidden="true">💡</span><div><h2 id="weeklyInsightTitle">AIが今週発見したこと</h2><p>Weekly Insights</p></div></header>
+    <ol id="weeklyInsightItems"><li>今週は新しい傾向は見つかりませんでした。</li></ol>
+    <footer><small>解析対象<br><strong>7営業日</strong></small><small>比較対象<br><strong>30営業日</strong></small></footer>
+  </article>
   <article class="card business-anomaly-card" id="businessAnomalyCard" aria-live="polite" hidden>
     <h3 id="businessAnomalyTitle"></h3>
     <div id="businessAnomalyItems" class="business-anomaly-items"></div>
   </article>
+  <h2>今日の入力</h2>
   <div class="card weather-card" id="weatherCard" aria-live="polite">
     <div class="weather-icon" id="weatherIcon">⌁</div>
     <div class="weather-main">
@@ -452,6 +457,7 @@
 <script src="anomaly-detection.js?v=1064"></script>
 <script src="backup-normalizer.js?v=1063"></script>
 <script src="learning-insights.js?v=1091"></script>
+<script src="weekly-insights.js?v=1092"></script>
 <script src="clinical-data.js?v=1076"></script>
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=1080"></script>

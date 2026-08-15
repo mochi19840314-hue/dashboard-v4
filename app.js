@@ -84,7 +84,7 @@ const HISTORICAL={
   "2026-06":{sales:4727145,expense:3666032}
 };
 const DEFAULT_CLINIC={fullDayTarget:180000,saturdayTarget:100000,fullDayPatients:17.5,saturdayPatients:9,closedDates:[]};
-const base={entries:[],learningHistory:[],settings:{},weatherCache:null,meta:{lastUpdated:null},finance:{balance:0,monthlyExpense:0,personnelExpense:0,medicalExpense:0,cardFee:0,loan:0,repayment:0,incomeTarget:0,morikuboOnline:0,royalCanin:0,purina:0},financeByMonth:{},monthlyReports:{},historical:{...HISTORICAL},clinic:{...DEFAULT_CLINIC},memo:""};
+const base={entries:[],learningHistory:[],weeklyLearningHistory:[],settings:{},weatherCache:null,meta:{lastUpdated:null},finance:{balance:0,monthlyExpense:0,personnelExpense:0,medicalExpense:0,cardFee:0,loan:0,repayment:0,incomeTarget:0,morikuboOnline:0,royalCanin:0,purina:0},financeByMonth:{},monthlyReports:{},historical:{...HISTORICAL},clinic:{...DEFAULT_CLINIC},memo:""};
 let data=load(),memoTimer;
 let kagemushaCommentSignature="",kagemushaCommentTimer;
 const $=id=>document.getElementById(id),num=id=>Math.max(0,Number($(id).value)||0);
@@ -101,7 +101,7 @@ const yen=v=>`${Math.round(Number(v)||0).toLocaleString("ja-JP")}円`,pct=v=>`${
 const formatUpdated=v=>{if(!v)return "未記録";const d=new Date(v);return Number.isNaN(d.getTime())?"未記録":new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(d)};
 const iso=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 const monthNow=()=>iso().slice(0,7);
-function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,meta:{...base.meta,...(raw.meta||{})},finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},monthlyReports:{...(raw.monthlyReports||{})},historical:{...HISTORICAL,...(raw.historical||{})},clinic:{...DEFAULT_CLINIC,...(raw.clinic||{}),closedDates:Array.isArray(raw.clinic?.closedDates)?raw.clinic.closedDates:[]},entries:Array.isArray(raw.entries)?raw.entries:[],learningHistory:LearningInsights.normalizeHistory(raw.learningHistory)}}catch{return structuredClone(base)}}
+function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||"{}");const settings={...(raw.settings||{})};Object.keys(settings).forEach(m=>{if(!settings[m].target||settings[m].target===4500000)settings[m].target=MONTHLY_TARGET});return {...base,...raw,settings,meta:{...base.meta,...(raw.meta||{})},finance:{...base.finance,...(raw.finance||{})},financeByMonth:{...(raw.financeByMonth||{})},monthlyReports:{...(raw.monthlyReports||{})},historical:{...HISTORICAL,...(raw.historical||{})},clinic:{...DEFAULT_CLINIC,...(raw.clinic||{}),closedDates:Array.isArray(raw.clinic?.closedDates)?raw.clinic.closedDates:[]},entries:Array.isArray(raw.entries)?raw.entries:[],learningHistory:LearningInsights.normalizeHistory(raw.learningHistory),weeklyLearningHistory:WeeklyInsights.normalizeHistory(raw.weeklyLearningHistory)}}catch{return structuredClone(base)}}
 function save(){data.meta={...(data.meta||{}),lastUpdated:new Date().toISOString()};localStorage.setItem(KEY,JSON.stringify(data));storage()}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");clearTimeout($("toast").t);$("toast").t=setTimeout(()=>$("toast").classList.remove("show"),1600)}
 function currentProfitRate(){const s=monthSummary(monthNow());return s.sales&&s.expense?(s.sales-s.expense)/s.sales*100:null}
@@ -165,6 +165,12 @@ function renderLearningInsight(){
  const today=iso(),night=LearningInsights.learnAtNight({entries:data.entries,history:data.learningHistory,today,hour:new Date().getHours()});
  if(night.saved){data.learningHistory=night.history;save()}
  const insight=LearningInsights.displayed({entries:data.entries,history:data.learningHistory,today});text.textContent=insight.text||LearningInsights.EMPTY;
+}
+function renderWeeklyInsights(){
+ const list=$("weeklyInsightItems");if(!list||typeof WeeklyInsights==="undefined")return;
+ const today=iso(),options={entries:data.entries,history:data.weeklyLearningHistory,today,learningHistory:data.learningHistory,compassLearning:data.aiCompassLearning||[]},night=WeeklyInsights.learnAtNight({...options,hour:new Date().getHours()});
+ if(night.saved){data.weeklyLearningHistory=night.history;save()}
+ const result=WeeklyInsights.displayed({...options,history:data.weeklyLearningHistory});list.innerHTML=(result.insights?.length?result.insights:[{text:WeeklyInsights.EMPTY}]).map(item=>`<li>${escapeHtml(item.text)}</li>`).join("");
 }
 function generateTodayStrategy(){
  if(typeof TodayWinningStrategy==="undefined")return null;const today=iso(),historical=data.entries.filter(entry=>entry.date<today),readiness=ClinicalIntelligence.getClinicalAnalysisReadiness(historical,{closedDates:data.clinic?.closedDates||[]});let anomalies=[];try{anomalies=typeof BusinessAnomalies!=="undefined"?BusinessAnomalies.detectBusinessAnomalies(data,{today,hour:new Date().getHours()}):[]}catch(error){console.error(error)}
@@ -991,7 +997,7 @@ function switchPage(id){
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
 function render(){
- const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderTodayStrategy,renderLearningInsight,renderBusinessAnomalies,renderDailyReview,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
+ const sections=[recent,month,renderMonthlyReport,renderClinicalIntelligence,renderClinicalTrends,years,year,finance,renderClinicSettings,storage,renderTodaySummary,renderDailyShadowBrief,renderTodayStrategy,renderLearningInsight,renderWeeklyInsights,renderBusinessAnomalies,renderDailyReview,renderKagemusha,renderKagemushaDiary,renderPhase1Director,renderManagementInsight];
  sections.forEach(section=>{try{section()}catch(error){console.error(error)}});
  try{const memo=$("memoText");if(memo)memo.value=data?.memo??""}catch(error){console.error(error)}
 }

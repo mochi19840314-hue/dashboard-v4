@@ -1,0 +1,25 @@
+(function(root,factory){
+ const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;root.WeeklyInsights=api;
+})(typeof globalThis!=="undefined"?globalThis:this,function(){
+ "use strict";
+ const EMPTY="今週は新しい傾向は見つかりませんでした。",RECENT_DAYS=7,BASELINE_DAYS=30,MIN_RECENT_DAYS=4,MIN_DIFFERENCE=5,MIN_GROUP_DAYS=2,MAX_INSIGHTS=3;
+ const number=value=>Number.isFinite(Number(value))?Number(value):0,average=values=>values.length?values.reduce((sum,value)=>sum+value,0)/values.length:0;
+ const clinical=(entry,key)=>number(entry?.clinical?.[key]),unit=entry=>number(entry.patients)>0?number(entry.sales)/number(entry.patients):0;
+ const SIGNALS=[
+  {key:"checkup",label:"健診を実施した",test:e=>number(e.checkups)>0},{key:"imaging",label:"画像検査を実施した",test:e=>clinical(e,"xrays")+clinical(e,"ultrasounds")>0},{key:"blood",label:"血液検査を実施した",test:e=>clinical(e,"bloodTests")>0},{key:"surgery",label:"手術を実施した",test:e=>number(e.surgeries)>0},{key:"newPatient",label:"新患があった",test:e=>number(e.newPatients)>0},{key:"prevention",label:"予防診療を実施した",test:e=>clinical(e,"preventive")>0}
+ ];
+ const OUTCOMES=[{key:"unit",label:"客単価",value:unit},{key:"visits",label:"来院件数",value:e=>number(e.patients)},{key:"revisitRate",label:"再診率",value:e=>number(e.patients)>0?Math.max(0,number(e.patients)-number(e.newPatients))/number(e.patients)*100:0}];
+ const dateMinus=(date,days)=>{const value=new Date(`${date}T00:00:00Z`);value.setUTCDate(value.getUTCDate()-days);return value.toISOString().slice(0,10)};
+ function normalizeHistory(history){return Array.isArray(history)?history.filter(record=>record&&/^\d{4}-\d{2}-\d{2}$/.test(record.date)&&Array.isArray(record.insights)).map(record=>({...record,insights:record.insights.filter(item=>item&&typeof item.key==="string"&&typeof item.text==="string").slice(0,MAX_INSIGHTS)})).sort((a,b)=>a.date.localeCompare(b.date)).slice(-30):[]}
+ function duplicateKeys({learningHistory=[],compassLearning=[],weeklyHistory=[],today}){const keys=new Set();for(const item of Array.isArray(learningHistory)?learningHistory:[])if(item?.key)keys.add(item.key);for(const item of Array.isArray(compassLearning)?compassLearning:[])if(item?.key)keys.add(item.key);for(const record of normalizeHistory(weeklyHistory))if(record.date>=dateMinus(today,7))for(const item of record.insights)keys.add(item.key);return keys}
+ function analyze(entries,{today="9999-12-31",learningHistory=[],compassLearning=[],weeklyHistory=[]}={}){
+  const businessDays=(Array.isArray(entries)?entries:[]).filter(entry=>entry&&entry.date<today&&number(entry.patients)>0).sort((a,b)=>a.date.localeCompare(b.date)),baseline=businessDays.slice(-BASELINE_DAYS),recent=businessDays.slice(-RECENT_DAYS);
+  if(recent.length<MIN_RECENT_DAYS||baseline.length<=recent.length)return {ready:false,insights:[],text:EMPTY,recentDays:recent.length,baselineDays:baseline.length};
+  const previous=baseline,duplicates=duplicateKeys({learningHistory,compassLearning,weeklyHistory,today}),candidates=[];
+  for(const signal of SIGNALS){const recentSelected=recent.filter(signal.test),previousSelected=previous.filter(signal.test);if(recentSelected.length<MIN_GROUP_DAYS||previousSelected.length<MIN_GROUP_DAYS)continue;for(const outcome of OUTCOMES){const current=average(recentSelected.map(outcome.value)),comparison=average(previousSelected.map(outcome.value));if(comparison<=0)continue;const difference=(current-comparison)/comparison*100,key=`${signal.key}:${outcome.key}`;if(Math.abs(difference)<MIN_DIFFERENCE||(duplicates.has(key)||duplicates.has(signal.key)))continue;const direction=difference>=0?"高い":"低い",percent=Math.round(Math.abs(difference));candidates.push({key,importance:Math.abs(difference),difference,text:`今週は、${signal.label}日の${outcome.label}が通常より${percent}%${direction}傾向でした。`})}}
+  const insights=candidates.sort((a,b)=>b.importance-a.importance||a.key.localeCompare(b.key)).slice(0,MAX_INSIGHTS);return {ready:insights.length>0,insights,text:insights.length?insights.map(item=>item.text).join("\n"):EMPTY,recentDays:recent.length,baselineDays:baseline.length};
+ }
+ function learnAtNight({entries,history,today,hour,learningHistory=[],compassLearning=[]}){const normalized=normalizeHistory(history);if(Number(hour)<18||normalized.some(record=>record.date===today))return {history:normalized,saved:false};const result=analyze(entries,{today:dateMinus(today,-1),learningHistory,compassLearning,weeklyHistory:normalized}),record={date:today,insights:result.insights,recentDays:result.recentDays,baselineDays:result.baselineDays};return {history:[...normalized,record].slice(-30),saved:true,record,result}}
+ function displayed({entries,history,today,learningHistory=[],compassLearning=[]}){const normalized=normalizeHistory(history),saved=[...normalized].reverse().find(record=>record.date<today);return saved?{...saved,ready:saved.insights.length>0,text:saved.insights.length?saved.insights.map(item=>item.text).join("\n"):EMPTY}:analyze(entries,{today,learningHistory,compassLearning,weeklyHistory:normalized})}
+ return {EMPTY,RECENT_DAYS,BASELINE_DAYS,MIN_RECENT_DAYS,MIN_DIFFERENCE,MIN_GROUP_DAYS,MAX_INSIGHTS,normalizeHistory,analyze,learnAtNight,displayed};
+});
