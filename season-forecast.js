@@ -1,0 +1,33 @@
+(function(root,factory){
+ const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;root.SeasonForecast=api;
+})(typeof globalThis!=="undefined"?globalThis:this,function(){
+ "use strict";
+ const MIN_SAMPLES=20,MAX_FORECASTS=3,HISTORY_LIMIT=180;
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v)||0)),num=v=>Number(v)||0,validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||""));
+ const definitions=[
+  {key:"patients",label:"診療",fields:["patients"],preparation:["予約枠を確認","スタッフ配置を確認","再診枠を確保"]},
+  {key:"sales",label:"売上",fields:["sales"],preparation:["在庫を確認","予約状況を確認","会計体制を確認"]},
+  {key:"vaccines",label:"ワクチン",fields:["vaccines","preventive"],preparation:["ワクチン在庫確認","案内対象を確認","予約枠を確保"]},
+  {key:"healthCheck",label:"健康診断",fields:["healthCheck","checkups"],preparation:["健診資材を確認","LINE配信を準備","健診枠を確保"]},
+  {key:"bloodTest",label:"血液検査",fields:["bloodTest","bloodTests"],preparation:["検査試薬を確認","採血資材を確認","検査枠を確保"]},
+  {key:"imaging",label:"画像検査",fields:["imaging","xrays","ultrasounds"],preparation:["画像機器を点検","検査枠を確認","説明資料を準備"]},
+  {key:"surgery",label:"手術",fields:["surgery","surgeries"],preparation:["手術物品を確認","麻酔薬を確認","手術枠を確保"]}
+ ];
+ function value(entry,fields){const clinical=entry?.clinical||{};return fields.reduce((sum,key)=>sum+num(entry?.[key]??clinical[key]),0)}
+ function normalizeLearning(value){if(Array.isArray(value))return {patterns:[...value],features:[],sampleCount:0,updatedAt:null};return value&&typeof value==="object"?{...value}:{features:[],sampleCount:0,updatedAt:null}}
+ function normalizeForecast(value){return value&&typeof value==="object"&&!Array.isArray(value)?{...value,items:Array.isArray(value.items)?value.items.slice(0,MAX_FORECASTS):[]}:{date:null,items:[]}}
+ function normalizeHistory(value){return (Array.isArray(value)?value:[]).filter(x=>x&&validDate(x.date)).map(x=>({...x,items:Array.isArray(x.items)?x.items.slice(0,MAX_FORECASTS):[]})).sort((a,b)=>a.date.localeCompare(b.date)).slice(-HISTORY_LIMIT)}
+ function clean(rows,definition){const values=rows.map(row=>value(row,definition.fields)),sorted=[...values].sort((a,b)=>a-b);if(sorted.length<4)return rows;const q=p=>sorted[Math.floor((sorted.length-1)*p)],q1=q(.25),q3=q(.75),iqr=q3-q1,low=Math.max(0,q1-1.5*iqr),high=q3+1.5*iqr;return rows.filter(row=>{const v=value(row,definition.fields);return v>=low&&v<=high})}
+ function inWindow(date,target){const md=date.slice(5),start=target.slice(5),end=new Date(`${target}T00:00:00Z`);end.setUTCDate(end.getUTCDate()+13);const endMd=end.toISOString().slice(5,10);return start<=endMd?md>=start&&md<=endMd:md>=start||md<=endMd}
+ function average(rows,definition){return rows.length?rows.reduce((s,row)=>s+value(row,definition.fields),0)/rows.length:0}
+ function build({entries=[],today=new Date().toISOString().slice(0,10),weather=null,seasonLearning={},strategyMap={},successLibrary=[],learningHistory=[],weeklyLearningHistory=[],clinic={}}={}){
+  const valid=(Array.isArray(entries)?entries:[]).filter(row=>validDate(row?.date)&&row.date<today).sort((a,b)=>a.date.localeCompare(b.date));
+  const learning={...normalizeLearning(seasonLearning),updatedAt:today,sampleCount:valid.length,features:["month","weekday","temperature","weather","rain","patients","sales","unitPrice","newPatients","vaccines","healthCheck","bloodTest","imaging","surgery","dogRatio","catRatio"],sources:{strategyMap:Boolean(Object.keys(strategyMap||{}).length),successLibrary:(successLibrary||[]).length,learningHistory:(learningHistory||[]).length,weeklyLearningHistory:(weeklyLearningHistory||[]).length,clinic:Boolean(Object.keys(clinic||{}).length)}};
+  if(valid.length<MIN_SAMPLES)return {learning,forecast:{date:today,horizonDays:14,sampleCount:valid.length,requiredSamples:MIN_SAMPLES,ready:false,items:[],message:"現在は十分な季節データがありません。"}};
+  const cutoff=`${Number(today.slice(0,4))-3}${today.slice(4)}`,recent=valid.filter(row=>row.date>=cutoff),pool=recent.length>=MIN_SAMPLES?recent:valid,targetWeekday=new Date(`${today}T00:00:00Z`).getUTCDay();
+  const items=definitions.map(def=>{const rows=clean(pool,def),seasonal=rows.filter(row=>inWindow(row.date,today)),baseline=average(rows,def),seasonAverage=average(seasonal,def);if(!seasonal.length||baseline<=0||seasonAverage<=baseline)return null;const increase=Math.round((seasonAverage-baseline)/baseline*100),sameDirection=seasonal.filter(row=>value(row,def.fields)>baseline).length/seasonal.length,years=new Set(seasonal.map(row=>row.date.slice(0,4))).size,weekdayRows=seasonal.filter(row=>new Date(`${row.date}T00:00:00Z`).getUTCDay()===targetWeekday),weekdayMatch=weekdayRows.length?weekdayRows.filter(row=>value(row,def.fields)>baseline).length/weekdayRows.length:sameDirection,weatherRows=seasonal.filter(row=>weather&&row.weather&&(row.weather.condition===weather.condition||Math.abs(num(row.weather.temperature)-num(weather.temperature))<=3)),weatherMatch=weatherRows.length?weatherRows.filter(row=>value(row,def.fields)>baseline).length/weatherRows.length:sameDirection,previousYear=seasonal.filter(row=>row.date.startsWith(String(Number(today.slice(0,4))-1))),previousMatch=previousYear.length?previousYear.filter(row=>value(row,def.fields)>baseline).length/previousYear.length:sameDirection,confidence=Math.round(clamp(Math.min(1,seasonal.length/MIN_SAMPLES)*20+sameDirection*25+Math.min(1,years/3)*20+previousMatch*15+weekdayMatch*10+weatherMatch*10,0,100));return {key:def.key,label:def.label,confidence,increase,sampleCount:seasonal.length,expectedEffect:Math.round(seasonAverage-baseline),reason:`過去${years>=3?"3年間":"の記録"}では、今後2週間に${def.label}が平均${increase}%増える傾向。`,preparation:def.preparation,score:increase*Math.max(1,seasonAverage)*confidence};}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,MAX_FORECASTS);
+  return {learning,forecast:{date:today,horizonDays:14,sampleCount:valid.length,requiredSamples:MIN_SAMPLES,ready:items.length>0,items,message:items.length?"":"現在は十分な季節データがありません。",comment:items.length?`今日は${items[0].label}が増える可能性があります。${items[0].preparation[0]}を進めましょう。`:""}};
+ }
+ function updateAtNight(options={}){const today=options.today||new Date().toISOString().slice(0,10),history=normalizeHistory(options.forecastHistory),existing=history.find(x=>x.date===today);if(Number(options.hour)<18||existing)return {saved:false,seasonLearning:normalizeLearning(options.seasonLearning),seasonForecast:existing||normalizeForecast(options.seasonForecast),forecastHistory:history};const result=build({...options,today}),record=result.forecast;return {saved:true,seasonLearning:result.learning,seasonForecast:record,forecastHistory:normalizeHistory([...history,record])}}
+ return {MIN_SAMPLES,MAX_FORECASTS,build,updateAtNight,normalizeLearning,normalizeForecast,normalizeHistory};
+});
