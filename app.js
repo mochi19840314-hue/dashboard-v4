@@ -155,10 +155,16 @@ function renderDailyShadowBrief(){
   list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}" data-category="${item.category||""}"><span class="daily-shadow-marker" aria-hidden="true">${item.category==="goal"?"🎯":item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":`${index+1}`}</span><div><h4>${index+1}. ${escapeHtml(item.title||"")}</h4><p>${emphasize(item.message||emptyMessage)}</p></div></li>`).join("");
  }catch(error){console.error(error);showEmpty()}
 }
+function managementCompassReadiness(result){
+ const businessDays=Math.max(0,Math.floor(Number(result?.sampleDays)||0)),requiredDays=Math.max(1,Math.floor(Number(result?.requiredDays)||15));
+ const hasProposal=Boolean(result?.ready&&Array.isArray(result.missions)&&result.missions[0]&&Array.isArray(result.missions[0].actions)&&result.missions[0].actions.length);
+ return {businessDays,requiredDays,hasProposal,isLearning:!hasProposal&&businessDays<requiredDays};
+}
 function renderManagementCompass(result){
- const content=$("managementCompassContent"),status=$("managementCompassStatus");if(!content||!result)return;status.textContent=result.closed?"休診日":result.ready?"今日の1件":"学習中";
+ const content=$("managementCompassContent"),status=$("managementCompassStatus");if(!content||!result)return;const readiness=managementCompassReadiness(result);status.textContent=result.closed?"休診日":readiness.hasProposal?"今日の1件":readiness.isLearning?"学習中":"分析中";
  if(result.closed){content.innerHTML='<p class="compass-empty">本日は休診日です。必要な確認だけ行いましょう。</p>';return}
- if(!result.ready){content.innerHTML=`<p class="compass-empty">学習中（${result.sampleDays||0}/${result.requiredDays||15}営業日）です。昨日までの記録を続けてください。</p>`;return}
+ if(readiness.isLearning){content.innerHTML=`<p class="compass-empty">学習中（${readiness.businessDays}/${readiness.requiredDays}営業日）です。昨日までの記録を続けてください。</p>`;return}
+ if(!readiness.hasProposal){content.innerHTML=`<p class="compass-empty">${readiness.businessDays}営業日のデータから分析しています。</p>`;return}
  const mission=result.missions[0],revenue=result.expectedIncrementalSales?`約${yen(result.expectedIncrementalSales)}`:"追加売上なし",profit=result.expectedIncrementalSales?`約${yen(result.expectedProfit)}`:"—";
  content.innerHTML=`<section><h4>Mission</h4><ul>${mission.actions.slice(0,3).map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></section><div class="compass-values"><section><h4>期待利益</h4><strong>${profit}</strong></section><section><h4>追加期待売上</h4><strong>${revenue}</strong></section></div><section class="compass-reason"><h4>理由</h4><p>${escapeHtml(result.reason)}</p></section>${result.next?`<section class="compass-next"><h4>次点</h4><strong>${escapeHtml(result.next.title)}　追加期待売上 約${yen(result.next.expectedIncrementalSales)}　期待利益 約${yen(result.next.expectedProfit)}</strong></section>`:""}`;
 }
