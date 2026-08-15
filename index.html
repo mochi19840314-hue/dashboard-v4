@@ -43,11 +43,13 @@
   <section class="winning-strategy" id="todayWinningStrategy" aria-labelledby="winningStrategyTitle">
     <header><div><h2 id="winningStrategyTitle">🏆 今日の勝ち筋</h2><p>今日一番おすすめの行動</p></div><span id="winningStrategyStatus">分析中</span></header>
     <div id="winningStrategyContent" aria-live="polite"><p class="winning-strategy-empty">診療データを確認しています。</p></div>
+    <p id="winningStrategyNext" class="winning-strategy-next" hidden></p>
   </section>
   <section class="today-mission" id="todayMission" aria-labelledby="todayMissionTitle">
     <header><div><h2 id="todayMissionTitle">🎯 今日のミッション</h2><p>TODAY'S MISSION</p></div><span id="todayMissionStatus">分析中</span></header>
     <div id="todayMissionList" class="today-mission-list" aria-live="polite"><p class="today-mission-empty">診療データを確認しています。</p></div>
     <aside id="todayMissionComment" class="today-mission-comment" aria-live="polite" hidden></aside>
+    <section id="todayResult" class="today-result" aria-labelledby="todayResultTitle" hidden><h3 id="todayResultTitle">🌙 今日の結果</h3><div id="todayResultItems"></div><p id="todayResultComment"></p></section>
   </section>
   <article class="card business-anomaly-card" id="businessAnomalyCard" aria-live="polite" hidden>
     <h3 id="businessAnomalyTitle"></h3>
@@ -451,6 +453,7 @@
 <script src="month-rollover.js?v=1059"></script>
 <script src="clinical-intelligence.js?v=1084"></script>
 <script src="today-winning-strategy.js?v=1088"></script>
+<script src="today-result.js?v=1090"></script>
 <script src="today-mission.js?v=1088"></script>
 <script src="daily-brief.js?v=1074"></script>
 <script src="daily-review.js?v=1087"></script>
