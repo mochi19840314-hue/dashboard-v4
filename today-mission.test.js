@@ -4,8 +4,8 @@ const entry=(day,blood=0)=>({date:`2026-08-${String(day).padStart(2,"0")}`,patie
 const entries=[entry(1,4),entry(2,4),entry(3,4),entry(4,4),entry(5,4),entry(6),entry(7),entry(8),entry(9),entry(10)];
 const result=Mission.build({entries,recentMonths:Array.from({length:6},()=>({sales:100,expense:60}))});
 assert.equal(result.ready,true);
-assert.equal(result.missions.length,3);
+assert.equal(result.missions.length,1,"勝ち筋と異なる詳細カードを増やさない");
 assert.equal(result.missions[0].title,result.title,"Mission #1は勝ち筋と同じテーマ・行動にする");
-assert.equal(new Set(result.missions.map(item=>item.key)).size,3,"補助ミッションを重複させない");
+assert.ok(result.missions[0].actions.length<=3,"具体策は最大3件にする");
 assert.ok(result.comment.quote&&result.comment.reason&&result.comment.effect);
 console.log("Today's Mission compatibility API uses the unified strategy result");
