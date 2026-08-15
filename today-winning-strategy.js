@@ -18,9 +18,6 @@ function validMargins(months){return (Array.isArray(months)?months:[]).map(row=>
 function stableProfitRate(context={}){
  const margins=validMargins(context.recentMonths);
  for(const count of [6,3,1])if(margins.length>=count)return{value:median(margins.slice(-count)),source:`直近${count}か月`,description:`直近${count}か月平均利益率で推定`};
- const annual=Number(context.annualProfitRate);if(Number.isFinite(annual)&&annual>=-30&&annual<=60)return{value:annual,source:"年間",description:"年間利益率で推定"};
- const sales=number(context.currentMonthSales),expense=number(context.currentMonthExpense),current=sales>0?(sales-expense)/sales*100:null;
- if(current!==null&&current>=-30&&current<=60)return{value:current,source:"当月",description:"当月利益率で推定"};
  return{value:0,source:"利用可能な実績なし",description:"利益率を算出できる実績がありません"};
 }
 function primaryMission(primary){const action=ACTIONS[primary.key];return[{key:primary.key,theme:action.theme,title:action.title,actions:action.actions.slice(0,3),effects:action.effects,reason:primary.reason,source:"今日の勝ち筋"}]}
@@ -30,7 +27,7 @@ function generateTodayStrategy(context={}){
  if(context.readinessStatus==="collecting"||entries.length<5)return{ready:false,sampleDays:entries.length,missions:[]};
  const recent=entries.slice(-5),baseline=entries.slice(-30,-5),patients=recent.reduce((sum,row)=>sum+number(row.patients),0),candidates=[];
  const add=(key,score,reason)=>candidates.push({key,score,reason});
- const compare=(key,current,getter,fallback)=>{const base=baseline.length?average(baseline,getter):fallback;if(current<base)add(key,70+(base-current)*2,`最近5営業日の${ACTIONS[key].metric}が平均より低下しています。今日は${ACTIONS[key].title}ことが最も改善効果があります。`)};
+ const compare=(key,current,getter,fallback)=>{const base=baseline.length?average(baseline,getter):fallback;if(current<base)add(key,70+(base-current)*2,`最近5営業日で\n${ACTIONS[key].metric}が平均より低下しています。`)};
  compare("blood",rate(recent.reduce((sum,row)=>sum+number(row.clinical?.bloodTests),0),patients),row=>rate(number(row.clinical?.bloodTests),number(row.patients)),20);
  compare("ultrasound",rate(recent.reduce((sum,row)=>sum+number(row.clinical?.ultrasounds),0),patients),row=>rate(number(row.clinical?.ultrasounds),number(row.patients)),12);
  compare("checkup",rate(recent.reduce((sum,row)=>sum+number(row.checkups),0),patients),row=>rate(number(row.checkups),number(row.patients)),10);

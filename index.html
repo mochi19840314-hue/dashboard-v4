@@ -35,22 +35,13 @@
 <main id="pageContainer">
 
 <section id="today" class="page active">
+  <section class="management-compass" id="managementCompass" aria-labelledby="managementCompassTitle">
+    <header><div><h2 id="managementCompassTitle">🧭 AI経営コンパス</h2><p>Today's Strategy</p></div><span id="managementCompassStatus">分析中</span></header>
+    <div id="managementCompassContent" aria-live="polite"><p class="compass-empty">診療データを確認しています。</p></div>
+    <section id="todayResult" class="compass-result" aria-labelledby="todayResultTitle" hidden><h3 id="todayResultTitle">今日の結果</h3><div id="todayResultItems"></div></section>
+    <aside class="compass-shadow" aria-live="polite"><h3 id="compassShadowTitle">影武者｜今日の方針</h3><p id="compassShadowComment">今日のデータを確認しています。</p></aside>
+  </section>
   <h2>今日の入力</h2>
-  <article class="card daily-shadow-card" id="dailyShadowCard" aria-labelledby="dailyShadowTitle">
-    <div class="daily-shadow-heading"><span class="daily-shadow-icon" aria-hidden="true">🧠</span><div><h3 id="dailyShadowTitle">今日の影武者</h3><p>Today's operational briefing</p></div></div>
-    <ul id="dailyShadowInsights" class="daily-shadow-insights" aria-live="polite"><li>今日のデータを確認しています。</li></ul>
-  </article>
-  <section class="winning-strategy" id="todayWinningStrategy" aria-labelledby="winningStrategyTitle">
-    <header><div><h2 id="winningStrategyTitle">🏆 今日の勝ち筋</h2><p>今日一番おすすめの行動</p></div><span id="winningStrategyStatus">分析中</span></header>
-    <div id="winningStrategyContent" aria-live="polite"><p class="winning-strategy-empty">診療データを確認しています。</p></div>
-    <p id="winningStrategyNext" class="winning-strategy-next" hidden></p>
-  </section>
-  <section class="today-mission" id="todayMission" aria-labelledby="todayMissionTitle">
-    <header><div><h2 id="todayMissionTitle">🎯 今日のミッション</h2><p>TODAY'S MISSION</p></div><span id="todayMissionStatus">分析中</span></header>
-    <div id="todayMissionList" class="today-mission-list" aria-live="polite"><p class="today-mission-empty">診療データを確認しています。</p></div>
-    <aside id="todayMissionComment" class="today-mission-comment" aria-live="polite" hidden></aside>
-    <section id="todayResult" class="today-result" aria-labelledby="todayResultTitle" hidden><h3 id="todayResultTitle">🌙 今日の結果</h3><div id="todayResultItems"></div><p id="todayResultComment"></p></section>
-  </section>
   <article class="card business-anomaly-card" id="businessAnomalyCard" aria-live="polite" hidden>
     <h3 id="businessAnomalyTitle"></h3>
     <div id="businessAnomalyItems" class="business-anomaly-items"></div>

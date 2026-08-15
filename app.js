@@ -153,18 +153,12 @@ function renderDailyShadowBrief(){
   list.innerHTML=insights.map((item,index)=>`<li style="--brief-delay:${index*120}ms" data-level="${item.level||"normal"}" data-category="${item.category||""}"><span class="daily-shadow-marker" aria-hidden="true">${item.category==="goal"?"🎯":item.level==="danger"?"🔴":item.level==="warning"?"🟡":item.level==="good"?"✨":`${index+1}`}</span><div><h4>${index+1}. ${escapeHtml(item.title||"")}</h4><p>${emphasize(item.message||emptyMessage)}</p></div></li>`).join("");
  }catch(error){console.error(error);showEmpty()}
 }
-function renderTodayMission(result){
- const container=$("todayMissionList"),comment=$("todayMissionComment"),status=$("todayMissionStatus");if(!container||!result)return;comment.hidden=true;status.textContent=result.closed?"休診日":result.ready?`${result.missions[0]?.actions.length||0}件`:`${result.sampleDays}日`;
- if(result.closed){container.innerHTML='<p class="today-mission-empty">本日は休診日です。必要な確認だけ行いましょう。</p>';return}
- if(!result.ready){container.innerHTML='<p class="today-mission-empty">診療データ蓄積中です。昨日までの記録を続けてください。</p>';return}
- const mission=result.missions[0];container.innerHTML=`<article class="mission-card"><h3>${escapeHtml(mission.theme)}</h3><ul>${mission.actions.slice(0,3).map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></article>`;
-}
-function renderTodayWinningStrategy(result){
- const content=$("winningStrategyContent"),status=$("winningStrategyStatus"),next=$("winningStrategyNext");if(!content||!result)return;status.textContent=result.closed?"休診日":result.ready?"今日の1件":"データ蓄積中";next.hidden=true;
- if(result.closed){content.innerHTML='<p class="winning-strategy-empty">本日は休診日です。営業提案はお休みします。</p>';return}
- if(!result.ready){content.innerHTML='<p class="winning-strategy-empty">昨日までの診療データを蓄積中です。</p>';return}
- const revenue=result.expectedSales?`約${yen(result.expectedSales)}`:"直接売上なし",profit=result.expectedSales?`約${yen(result.expectedProfit)}`:"—";content.innerHTML=`<div class="winning-action"><h3>${escapeHtml(result.title)}</h3></div><section class="winning-reason"><h4>理由</h4><p>${escapeHtml(result.reason)}</p></section><section><h4>期待効果</h4><div class="winning-tags">${result.effects.slice(0,3).map(effect=>`<span>＋${escapeHtml(effect)}</span>`).join("")}</div></section><div class="winning-values"><section><h4>期待売上</h4><strong>${revenue}</strong></section><section><h4>期待利益</h4><strong>${profit}</strong></section></div><p class="winning-formula">※期待利益は${escapeHtml(result.profitRateDescription)}（安定利益率）を使用</p>`;
- if(result.next){next.textContent=`次点：${result.next.title}`;next.hidden=false}
+function renderManagementCompass(result){
+ const content=$("managementCompassContent"),status=$("managementCompassStatus");if(!content||!result)return;status.textContent=result.closed?"休診日":result.ready?"今日の1件":"データ蓄積中";
+ if(result.closed){content.innerHTML='<p class="compass-empty">本日は休診日です。必要な確認だけ行いましょう。</p>';return}
+ if(!result.ready){content.innerHTML='<p class="compass-empty">診療データ蓄積中です。昨日までの記録を続けてください。</p>';return}
+ const mission=result.missions[0],revenue=result.expectedSales?`約${yen(result.expectedSales)}`:"直接売上なし",profit=result.expectedSales?`約${yen(result.expectedProfit)}`:"—";
+ content.innerHTML=`<div class="compass-priority"><span>${"★".repeat(result.impact)}${"☆".repeat(5-result.impact)}</span><small>今日の最優先</small><h3>${escapeHtml(result.title)}</h3></div><section><h4>今日やること</h4><ul>${mission.actions.slice(0,3).map(action=>`<li>${escapeHtml(action)}</li>`).join("")}</ul></section><section><h4>期待効果</h4><div class="compass-tags">${result.effects.slice(0,3).map(effect=>`<span>＋${escapeHtml(effect)}</span>`).join("")}</div></section><div class="compass-values"><section><h4>予想追加売上</h4><strong>${revenue}</strong></section><section><h4>予想追加利益</h4><strong>${profit}</strong></section></div><section class="compass-reason"><h4>理由</h4><p>${escapeHtml(result.reason)}</p></section>${result.next?`<section class="compass-next"><h4>次に狙う</h4><strong>${escapeHtml(result.next.title)}</strong></section>`:""}`;
 }
 function generateTodayStrategy(){
  if(typeof TodayWinningStrategy==="undefined")return null;const today=iso(),historical=data.entries.filter(entry=>entry.date<today),readiness=ClinicalIntelligence.getClinicalAnalysisReadiness(historical,{closedDates:data.clinic?.closedDates||[]});let anomalies=[];try{anomalies=typeof BusinessAnomalies!=="undefined"?BusinessAnomalies.detectBusinessAnomalies(data,{today,hour:new Date().getHours()}):[]}catch(error){console.error(error)}
@@ -172,11 +166,12 @@ function generateTodayStrategy(){
  return TodayWinningStrategy.generateTodayStrategy({entries:historical,today,readinessStatus:readiness.status,closed:clinicDayInfo(today).type==="closed",currentMonthSales:current.sales,currentMonthExpense:current.expense,recentMonths:months,annualProfitRate,anomalies});
 }
 function renderTodayStrategy(){
- const strategy=generateTodayStrategy();renderTodayWinningStrategy(strategy);renderTodayMission(strategy);if(!strategy)return;
+ const strategy=generateTodayStrategy();renderManagementCompass(strategy);if(!strategy)return;
  const today=iso(),entry=data.entries.find(row=>row.date===today),hour=new Date().getHours(),setting=data.settings?.[today.slice(0,7)]||{};let anomalies=[];try{anomalies=typeof BusinessAnomalies!=="undefined"?BusinessAnomalies.detectBusinessAnomalies(data,{today,hour}):[]}catch(error){console.error(error)}
  const result=typeof TodayResult!=="undefined"?TodayResult.build({hour,entry,history:data.entries,target:clinicDayInfo(today).type==="saturday"?Number(setting.saturdayTarget)||data.clinic?.saturdayTarget:Number(setting.dailyTarget)||data.clinic?.fullDayTarget,anomalies}):{visible:false},section=$("todayResult");section.hidden=!result.visible;
- if(result.visible){$("todayResultItems").innerHTML=result.items.map(item=>`<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("");$("todayResultComment").textContent=result.comment}
- const shadow=$("dailyShadowInsights");if(strategy.closed)shadow.innerHTML='<li>本日は休診日です。直近営業日の振り返りだけ行いましょう。</li>';else if(result.visible)shadow.innerHTML=`<li><strong>${escapeHtml(result.comment)}</strong></li>`;else if(strategy.ready)shadow.innerHTML=`<li><strong>先生、今日は${escapeHtml(strategy.theme)}を意識しましょう。</strong></li>`;
+ const shadowTitle=$("compassShadowTitle"),shadowComment=$("compassShadowComment");
+ if(result.visible){$("todayResultItems").innerHTML=result.items.map(item=>`<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("");shadowTitle.textContent="影武者｜今日の振り返り";shadowComment.textContent=result.comment}
+ else{shadowTitle.textContent="影武者｜今日の方針";shadowComment.textContent=strategy.closed?"本日は休診日です。直近営業日の振り返りだけ行いましょう。":strategy.ready?`今日は${strategy.theme}を意識しましょう。`:"昨日までの記録を続けましょう。"}
 }
 function renderBusinessAnomalies(){
  const card=$("businessAnomalyCard"),items=$("businessAnomalyItems");if(!card||!items)return;
