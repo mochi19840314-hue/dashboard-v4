@@ -11,7 +11,7 @@ assert.deepEqual(old.data.monthlyReports,{});
 assert.equal(old.data.clinic.fullDayTarget,180000);
 assert.equal(old.data.weatherCache,null);
 
-const complete={entries:[{date:"2026-07-31"}],financeByMonth:{"2026-07":{balance:99}},monthlyReports:{"2026-07":{memo:"report"}},clinic:{fullDayTarget:200000,closedDates:["2026-08-01"]},weatherCache:{condition:"sunny"},historical:{"2025-12":{sales:20}},settings:{"2026-07":{target:5}},kagemushaDiary:[{date:"2026-07-31"}],memo:"note",finance:{monthlyExpense:7}};
+const complete={entries:[{date:"2026-07-31"}],successLibrary:[{id:"checkup"}],financeByMonth:{"2026-07":{balance:99}},monthlyReports:{"2026-07":{memo:"report"}},clinic:{fullDayTarget:200000,closedDates:["2026-08-01"]},weatherCache:{condition:"sunny"},historical:{"2025-12":{sales:20}},settings:{"2026-07":{target:5}},kagemushaDiary:[{date:"2026-07-31"}],memo:"note",finance:{monthlyExpense:7}};
 const current=normalizeBackup({data:complete},defaults,KEY);
 assert.equal(current.data.financeByMonth["2026-07"].monthlyExpense,0);
 assert.equal(current.data.monthlyReports["2026-07"].memo,"report");
@@ -20,6 +20,7 @@ assert.equal(current.data.weatherCache.condition,"sunny");
 assert.equal(current.data.historical["2025-12"].sales,20);
 assert.equal(current.data.settings["2026-07"].target,5);
 assert.equal(current.data.memo,"note");
+assert.equal(current.data.successLibrary[0].id,"checkup");
 assert.equal(current.data.finance.balance,0);
 assert.equal(current.kagemushaDiary.length,1);
 
