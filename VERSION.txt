@@ -1,1 +1,3 @@
-Dashboard Version 5.1 — AI Season Forecast / Knowledge Core連携
+Dashboard Version 6.0
+Business Simulator
+Knowledge Core Integration
