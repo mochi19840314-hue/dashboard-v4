@@ -3,5 +3,6 @@
  function stableRate(months){const usable=(Array.isArray(months)?months:[]).filter(row=>Number(row?.sales)>0),count=usable.length>=6?6:usable.length>=3?3:usable.length?1:0,selected=count?usable.slice(-count):[],sales=selected.reduce((sum,row)=>sum+(Number(row.sales)||0),0),profit=selected.reduce((sum,row)=>sum+(Number(row.sales)||0)-(Number(row.expense)||0),0);return{rate:sales?profit/sales:0,months:count,sales,profit}}
  function confidence(businessDays){const days=Math.max(0,Math.floor(Number(businessDays)||0)),level=days>=21?5:days>=16?4:days>=11?3:days>=6?2:days>=1?1:0;return{days,level,stars:`${"★".repeat(level)}${"☆".repeat(5-level)}`}}
  function calculate({yearSales=0,yearExpense=0,activeMonths=0,recentMonths=[],businessDays=0}={}){const factor=activeMonths>0?12/activeMonths:0,salesForecast=(Number(yearSales)||0)*factor,shortRate=Number(yearSales)>0?((Number(yearSales)||0)-(Number(yearExpense)||0))/Number(yearSales):0,stable=stableRate(recentMonths);return{salesForecast,shortRate,shortForecast:salesForecast*shortRate,stableRate:stable.rate,stableForecast:salesForecast*stable.rate,stableMonths:stable.months,confidence:confidence(businessDays)}}
- return{stableRate,confidence,calculate}
+ function getStableAnnualProfitForecast(source={}){return calculate(source).stableForecast}
+ return{stableRate,confidence,calculate,getStableAnnualProfitForecast}
 });

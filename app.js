@@ -663,15 +663,19 @@ function renderCashFlowForecast(profitForecast){
   document.querySelector(".cash-flow-forecast").dataset.tone=result.safety.tone;$("cashFlowComment").textContent=`🥷 ${result.comment}`;
 }
 
+function annualForecastSource(y=String(new Date().getFullYear())){
+  const rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`)),total=rows.reduce((a,r)=>({sales:a.sales+(Number(r.sales)||0),expense:a.expense+(Number(r.expense)||0)}),{sales:0,expense:0}),active=rows.filter(r=>r.sales>0||r.expense>0).length;
+  const latestIndex=rows.reduce((last,row,index)=>row.sales>0||row.expense>0?index:last,-1),latestMonth=latestIndex>=0?`${y}-${String(latestIndex+1).padStart(2,"0")}`:null;
+  const recentMonths=[...new Set([...Object.keys(data.historical||{}),...data.entries.map(entry=>entry.date.slice(0,7))])].filter(month=>!latestMonth||month<=latestMonth).sort().map(month=>monthSummary(month)).filter(row=>row.sales>0);
+  const recordedDays=latestMonth?new Set(data.entries.filter(entry=>entry.date.startsWith(latestMonth)).map(entry=>entry.date)).size:0,businessDays=latestMonth&&latestMonth<monthNow()?21:recordedDays;
+  return {yearSales:total.sales,yearExpense:total.expense,activeMonths:active,recentMonths,businessDays};
+}
 function year(){
   const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`));
   const total=rows.reduce((a,r)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=Number(r[k])||0);a.expense+=Number(r.expense)||0;return a},{sales:0,expense:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0});
   const activeRows=rows.filter(r=>r.sales>0||r.expense>0),active=activeRows.length,profit=total.sales-total.expense,rate=total.sales?profit/total.sales*100:0;
   const annualFactor=active?12/active:0,salesForecast=total.sales*annualFactor,profitForecast=profit*annualFactor;
-  const latestIndex=rows.reduce((last,row,index)=>row.sales>0||row.expense>0?index:last,-1),latestMonth=latestIndex>=0?`${y}-${String(latestIndex+1).padStart(2,"0")}`:null;
-  const availableMonths=[...new Set([...Object.keys(data.historical||{}),...data.entries.map(entry=>entry.date.slice(0,7))])].filter(month=>!latestMonth||month<=latestMonth).sort().map(month=>monthSummary(month)).filter(row=>row.sales>0);
-  const recordedDays=latestMonth?new Set(data.entries.filter(entry=>entry.date.startsWith(latestMonth)).map(entry=>entry.date)).size:0,confidenceDays=latestMonth&&latestMonth<monthNow()?21:recordedDays;
-  const forecastContext=AnnualProfitForecast.calculate({yearSales:total.sales,yearExpense:total.expense,activeMonths:active,recentMonths:availableMonths,businessDays:confidenceDays});
+  const forecastContext=AnnualProfitForecast.calculate(annualForecastSource(y));
   const best=activeRows.reduce((a,r)=>r.sales>a.sales?r:a,{sales:0});
   const incomeTarget=Number(data.finance.incomeTarget)||0;
   animateNumber($("yearSales"),total.sales,yen);animateNumber($("yearProfit"),profit,yen);animateNumber($("yearProfitRate"),rate,pct);animateNumber($("yearAvg"),active?total.sales/active:0,yen);
@@ -1038,7 +1042,7 @@ function switchPage(id){
 }
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
-function simulatorSource(){return {...data,monthlySummary:monthSummary(monthNow())}}
+function simulatorSource(){return {...data,monthlySummary:monthSummary(monthNow()),annualForecast:annualForecastSource()}}
 function setupBusinessSimulator(){
  if(typeof BusinessSimulator==="undefined"||!$("simControls"))return;
  const source=simulatorSource(),current=BusinessSimulator.baseline(source),limits=BusinessSimulator.improvementLimits(source);
@@ -1055,7 +1059,7 @@ function setupBusinessSimulator(){
 function renderBusinessSimulator(){
  if(typeof BusinessSimulator==="undefined"||!$("simRanking"))return;const goal=Number(data.goalPlanner?.annualProfit)||20000000,result=BusinessSimulator.simulate(simulatorSource(),data.businessSimulator?.changes||{},goal),formatMan=value=>`${Math.round(value/10000).toLocaleString("ja-JP")}万円`;
  Object.entries(BusinessSimulator.ITEMS).forEach(([key,item])=>{const input=$(`sim-${key}`),output=$(`sim-output-${key}`),value=Number(data.businessSimulator?.changes?.[key])||0;if(input)input.value=value;if(output)output.textContent=`+${value.toLocaleString("ja-JP")}${item.unit}`});
- $("simAnnualProfit").textContent=formatMan(result.annualProfit);$("simProbability").textContent=`${result.probability}%`;$("simDifficulty").textContent=`${"★".repeat(result.difficulty)}${"☆".repeat(5-result.difficulty)}`;$("simDataStatus").textContent=result.dataStatus;$("simComment").textContent=result.comment;
+ $("simBaseAnnualProfit").textContent=formatMan(result.current.annualProfit);$("simAnnualProfit").textContent=formatMan(result.annualProfit);$("simGoalProfit").textContent=formatMan(goal);const goalDifference=result.annualProfit-goal;$("simGoalDifference").textContent=`${goalDifference>=0?"+":"−"}${formatMan(Math.abs(goalDifference))}`;$("simGoalDifference").className=goalDifference>=0?"increase":"decrease";$("simProbability").textContent=`${result.probability}%`;$("simDifficulty").textContent=`${"★".repeat(result.difficulty)}${"☆".repeat(5-result.difficulty)}`;$("simDataStatus").textContent=result.dataStatus;$("simComment").textContent=result.comment;
  const delta=$("simProfitDelta");delta.textContent=result.delta?`年間 ${result.delta>0?"+":""}${formatMan(result.delta*12)}`:"変化なし";delta.className=result.delta>0?"increase":result.delta<0?"decrease":"neutral";
  $("simRanking").innerHTML=result.ranking.slice(0,5).map((item,index)=>`<li><b>${index+1}</b><span><strong>${item.label}</strong><small>成功率 ${item.success}% ・ 難易度 ${"★".repeat(item.difficulty)}${"☆".repeat(5-item.difficulty)}</small></span><em class="${item.profit>0?"increase":"neutral"}">${item.profit>0?"+":""}${Math.round(item.profit/10000)}万円</em></li>`).join("");
  const recommendation=$("simRecommendation"),status=data.businessSimulator?.reverseStatus;if(recommendation){recommendation.hidden=!status;if(status){const rows=result.ranking.filter(item=>item.change>0).map(item=>`<li>${item.label}　+${item.change.toLocaleString("ja-JP")}${item.unit}${item.unit==="件"?"/月":""}</li>`).join("");const message=status==="current"?"現在の予測で目標達成圏内です":status==="unreachable"?"現在設定している改善上限では目標利益に届きません":"目標達成見込み";recommendation.innerHTML=`<h3>目標${formatMan(goal)}への推奨改善案</h3>${rows?`<ul>${rows}</ul>`:""}<p>→ 年間予測利益 ${formatMan(result.annualProfit)}<br>→ ${message}</p>`}}

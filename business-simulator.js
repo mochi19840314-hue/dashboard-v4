@@ -1,8 +1,9 @@
 (function(root,factory){
-  const api=factory();
+  const annualForecast=typeof module==="object"&&module.exports?require("./annual-profit-forecast.js"):root.AnnualProfitForecast;
+  const api=factory(annualForecast);
   if(typeof module==="object"&&module.exports)module.exports=api;
   root.BusinessSimulator=api;
-})(typeof globalThis!=="undefined"?globalThis:this,function(){
+})(typeof globalThis!=="undefined"?globalThis:this,function(AnnualProfitForecast){
   "use strict";
   const ITEMS={
     unitPrice:{label:"客単価",unit:"円",step:100,max:5000,effect:30,difficulty:3},
@@ -20,8 +21,8 @@
   function baseline(source={}){
     const entries=Array.isArray(source.entries)?source.entries.slice(-90):[],patients=entries.reduce((s,e)=>s+number(e.patients),0),sales=entries.reduce((s,e)=>s+number(e.sales),0);
     const clinical=key=>entries.reduce((s,e)=>s+number(e.clinical?.[key]),0);
-    const expense=number(source.finance?.monthlyExpense),monthlySales=entries.length?average(entries,"sales")*26:0;
-    return {unitPrice:patients?sales/patients:10000,revisitRate:patients?clamp((patients-entries.reduce((s,e)=>s+number(e.newPatients),0))/patients*100,0,100):70,newPatients:average(entries,"newPatients"),imagingRate:patients?clamp((clinical("xrays")+clinical("ultrasounds"))/patients*100,0,100):15,checkups:average(entries,"checkups"),bloodTestRate:patients?clamp(clinical("bloodTests")/patients*100,0,100):20,surgeries:average(entries,"surgeries"),vaccines:patients?clinical("preventive")/Math.max(1,entries.length):2,annualProfit:Math.max(0,(monthlySales-expense)*12),sampleDays:entries.length};
+    const stableAnnualProfitForecast=AnnualProfitForecast?.getStableAnnualProfitForecast(source.annualForecast);
+    return {unitPrice:patients?sales/patients:10000,revisitRate:patients?clamp((patients-entries.reduce((s,e)=>s+number(e.newPatients),0))/patients*100,0,100):70,newPatients:average(entries,"newPatients"),imagingRate:patients?clamp((clinical("xrays")+clinical("ultrasounds"))/patients*100,0,100):15,checkups:average(entries,"checkups"),bloodTestRate:patients?clamp(clinical("bloodTests")/patients*100,0,100):20,surgeries:average(entries,"surgeries"),vaccines:patients?clinical("preventive")/Math.max(1,entries.length):2,annualProfit:number(stableAnnualProfitForecast),sampleDays:entries.length};
   }
   function modelFactor(key,source){const learned=number(source?.improvementModels?.[key]?.profitFactor);return learned>0?clamp(learned,.5,1.5):1}
   function improvementLimits(source={}){
@@ -33,7 +34,7 @@
     const current=baseline(source),limits=improvementLimits(source),sampleConfidence=clamp(55+current.sampleDays*1.1,55,94),libraryBoost=clamp((source.successLibrary?.length||0)*.8,0,5),forecastBoost=clamp((source.forecastHistory?.length||0)*.15,0,3);
     const ranking=Object.entries(ITEMS).map(([key,item])=>{const change=clamp(changes[key],0,limits[key]),normalized=change/(item.max||1),profit=Math.round(item.effect*10000*normalized*modelFactor(key,source)),success=Math.round(clamp(sampleConfidence+libraryBoost+forecastBoost-item.difficulty*2+normalized*3,50,97));return {key,...item,change,profit,success,score:profit*(success/100)*(6-item.difficulty)/5}}).sort((a,b)=>b.score-a.score);
     const delta=ranking.reduce((s,item)=>s+item.profit,0),annualProfit=current.annualProfit+delta*12,probability=Math.round(clamp(52+(annualProfit/Math.max(goal,1))*36+libraryBoost-(goal>annualProfit?5:0),35,96)),difficulty=Math.round(clamp(ranking.filter(x=>x.change>0).reduce((s,x)=>s+x.difficulty,0)/Math.max(1,ranking.filter(x=>x.change>0).length),1,5));
-    return {current,goal,annualProfit,delta,probability,difficulty,ranking,comment:ranking[0]?.profit>0?`この病院では、${ranking[0].label}の改善が最も高い利益改善効果を期待できます。`:"改善したい項目のスライダーを動かすと、Knowledge Coreが効果を即時計算します。",dataStatus:current.sampleDays<10?`学習データ蓄積中（${current.sampleDays}/10営業日）`: `${current.sampleDays}営業日の病院データで分析`};
+    return {current,goal,stableAnnualProfitForecast:current.annualProfit,simulatedAnnualProfit:annualProfit,annualProfit,goalDifference:annualProfit-goal,delta,probability,difficulty,ranking,comment:ranking[0]?.profit>0?`この病院では、${ranking[0].label}の改善が最も高い利益改善効果を期待できます。`:"改善したい項目のスライダーを動かすと、Knowledge Coreが効果を即時計算します。",dataStatus:current.sampleDays<10?`学習データ蓄積中（${current.sampleDays}/10営業日）`: `${current.sampleDays}営業日の病院データで分析`};
   }
   function reversePlan(source={},goal=20000000){
     const current=baseline(source),requiredProfit=goal-current.annualProfit,limits=improvementLimits(source),changes=Object.fromEntries(Object.keys(ITEMS).map(key=>[key,0]));
