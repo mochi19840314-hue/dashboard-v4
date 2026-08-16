@@ -1041,23 +1041,24 @@ function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer")
 function simulatorSource(){return {...data,monthlySummary:monthSummary(monthNow())}}
 function setupBusinessSimulator(){
  if(typeof BusinessSimulator==="undefined"||!$("simControls"))return;
- const current=BusinessSimulator.baseline(simulatorSource());
- $("simControls").innerHTML=Object.entries(BusinessSimulator.ITEMS).map(([key,item])=>`<label class="sim-control" for="sim-${key}"><span><b>${item.label}</b><small>現在 ${Math.round(current[key]).toLocaleString("ja-JP")}${item.unit}</small></span><output id="sim-output-${key}">+0${item.unit}</output><input id="sim-${key}" data-sim-key="${key}" type="range" min="0" max="${item.max}" step="${item.step}" value="${Number(data.businessSimulator?.changes?.[key])||0}"></label>`).join("");
+ const source=simulatorSource(),current=BusinessSimulator.baseline(source),limits=BusinessSimulator.improvementLimits(source);
+ $("simControls").innerHTML=Object.entries(BusinessSimulator.ITEMS).map(([key,item])=>`<label class="sim-control" for="sim-${key}"><span><b>${item.label}</b><small>現在 ${Math.round(current[key]).toLocaleString("ja-JP")}${item.unit}</small></span><output id="sim-output-${key}">+0${item.unit}</output><input id="sim-${key}" data-sim-key="${key}" type="range" min="0" max="${limits[key]}" step="${item.step}" value="${Number(data.businessSimulator?.changes?.[key])||0}"></label>`).join("");
  document.querySelectorAll("[data-sim-key]").forEach(input=>{
-  input.addEventListener("input",()=>{data.businessSimulator={...(data.businessSimulator||{}),changes:{...(data.businessSimulator?.changes||{}),[input.dataset.simKey]:Number(input.value)}};renderBusinessSimulator()});
+  input.addEventListener("input",()=>{data.businessSimulator={...(data.businessSimulator||{}),changes:{...(data.businessSimulator?.changes||{}),[input.dataset.simKey]:Number(input.value)},reverseStatus:null};renderBusinessSimulator()});
   input.addEventListener("change",save);
  });
- document.querySelectorAll('[name="simGoal"]').forEach(input=>{input.checked=Number(input.value)===Number(data.goalPlanner?.annualProfit||20000000);input.onchange=()=>{data.goalPlanner={...(data.goalPlanner||{}),annualProfit:Number(input.value)};renderBusinessSimulator();save()}});
+ document.querySelectorAll('[name="simGoal"]').forEach(input=>{input.checked=Number(input.value)===Number(data.goalPlanner?.annualProfit||20000000);input.onchange=()=>{data.goalPlanner={...(data.goalPlanner||{}),annualProfit:Number(input.value)};data.businessSimulator.reverseStatus=null;renderBusinessSimulator();save()}});
  $("simReset").onclick=()=>{data.businessSimulator={changes:{}};setupBusinessSimulator();renderBusinessSimulator();save()};
- $("simReverse").onclick=()=>{const plan=BusinessSimulator.reversePlan(simulatorSource(),Number(data.goalPlanner?.annualProfit)||20000000);data.businessSimulator={changes:plan.changes};setupBusinessSimulator();renderBusinessSimulator();save();toast("目標から必要改善量を逆算しました")};
+ $("simReverse").onclick=()=>{const plan=BusinessSimulator.reversePlan(simulatorSource(),Number(data.goalPlanner?.annualProfit)||20000000);data.businessSimulator={changes:plan.changes,reverseStatus:plan.status};setupBusinessSimulator();renderBusinessSimulator();save();toast(plan.status==="current"?"現在の予測で目標達成圏内です":"目標から必要改善量を逆算しました")};
  renderBusinessSimulator();
 }
 function renderBusinessSimulator(){
  if(typeof BusinessSimulator==="undefined"||!$("simRanking"))return;const goal=Number(data.goalPlanner?.annualProfit)||20000000,result=BusinessSimulator.simulate(simulatorSource(),data.businessSimulator?.changes||{},goal),formatMan=value=>`${Math.round(value/10000).toLocaleString("ja-JP")}万円`;
- Object.entries(BusinessSimulator.ITEMS).forEach(([key,item])=>{const input=$(`sim-${key}`),output=$(`sim-output-${key}`);if(input&&output)output.textContent=`+${Number(input.value).toLocaleString("ja-JP")}${item.unit}`});
+ Object.entries(BusinessSimulator.ITEMS).forEach(([key,item])=>{const input=$(`sim-${key}`),output=$(`sim-output-${key}`),value=Number(data.businessSimulator?.changes?.[key])||0;if(input)input.value=value;if(output)output.textContent=`+${value.toLocaleString("ja-JP")}${item.unit}`});
  $("simAnnualProfit").textContent=formatMan(result.annualProfit);$("simProbability").textContent=`${result.probability}%`;$("simDifficulty").textContent=`${"★".repeat(result.difficulty)}${"☆".repeat(5-result.difficulty)}`;$("simDataStatus").textContent=result.dataStatus;$("simComment").textContent=result.comment;
  const delta=$("simProfitDelta");delta.textContent=result.delta?`年間 ${result.delta>0?"+":""}${formatMan(result.delta*12)}`:"変化なし";delta.className=result.delta>0?"increase":result.delta<0?"decrease":"neutral";
  $("simRanking").innerHTML=result.ranking.slice(0,5).map((item,index)=>`<li><b>${index+1}</b><span><strong>${item.label}</strong><small>成功率 ${item.success}% ・ 難易度 ${"★".repeat(item.difficulty)}${"☆".repeat(5-item.difficulty)}</small></span><em class="${item.profit>0?"increase":"neutral"}">${item.profit>0?"+":""}${Math.round(item.profit/10000)}万円</em></li>`).join("");
+ const recommendation=$("simRecommendation"),status=data.businessSimulator?.reverseStatus;if(recommendation){recommendation.hidden=!status;if(status){const rows=result.ranking.filter(item=>item.change>0).map(item=>`<li>${item.label}　+${item.change.toLocaleString("ja-JP")}${item.unit}${item.unit==="件"?"/月":""}</li>`).join("");const message=status==="current"?"現在の予測で目標達成圏内です":status==="unreachable"?"現在設定している改善上限では目標利益に届きません":"目標達成見込み";recommendation.innerHTML=`<h3>目標${formatMan(goal)}への推奨改善案</h3>${rows?`<ul>${rows}</ul>`:""}<p>→ 年間予測利益 ${formatMan(result.annualProfit)}<br>→ ${message}</p>`}}
 }
 function updateSimulatorLearning(){if(typeof BusinessSimulator==="undefined")return;const learned=BusinessSimulator.updateAtNight(simulatorSource());if(learned.saved){data.simulationHistory=learned.simulationHistory;data.improvementModels=learned.improvementModels;save()}}
 function render(){
