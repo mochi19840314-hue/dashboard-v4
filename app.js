@@ -1043,7 +1043,10 @@ function setupBusinessSimulator(){
  if(typeof BusinessSimulator==="undefined"||!$("simControls"))return;
  const current=BusinessSimulator.baseline(simulatorSource());
  $("simControls").innerHTML=Object.entries(BusinessSimulator.ITEMS).map(([key,item])=>`<label class="sim-control" for="sim-${key}"><span><b>${item.label}</b><small>現在 ${Math.round(current[key]).toLocaleString("ja-JP")}${item.unit}</small></span><output id="sim-output-${key}">+0${item.unit}</output><input id="sim-${key}" data-sim-key="${key}" type="range" min="0" max="${item.max}" step="${item.step}" value="${Number(data.businessSimulator?.changes?.[key])||0}"></label>`).join("");
- document.querySelectorAll("[data-sim-key]").forEach(input=>input.oninput=()=>{data.businessSimulator={...(data.businessSimulator||{}),changes:{...(data.businessSimulator?.changes||{}),[input.dataset.simKey]:Number(input.value)}};renderBusinessSimulator();save()});
+ document.querySelectorAll("[data-sim-key]").forEach(input=>{
+  input.addEventListener("input",()=>{data.businessSimulator={...(data.businessSimulator||{}),changes:{...(data.businessSimulator?.changes||{}),[input.dataset.simKey]:Number(input.value)}};renderBusinessSimulator()});
+  input.addEventListener("change",save);
+ });
  document.querySelectorAll('[name="simGoal"]').forEach(input=>{input.checked=Number(input.value)===Number(data.goalPlanner?.annualProfit||20000000);input.onchange=()=>{data.goalPlanner={...(data.goalPlanner||{}),annualProfit:Number(input.value)};renderBusinessSimulator();save()}});
  $("simReset").onclick=()=>{data.businessSimulator={changes:{}};setupBusinessSimulator();renderBusinessSimulator();save()};
  $("simReverse").onclick=()=>{const plan=BusinessSimulator.reversePlan(simulatorSource(),Number(data.goalPlanner?.annualProfit)||20000000);data.businessSimulator={changes:plan.changes};setupBusinessSimulator();renderBusinessSimulator();save();toast("目標から必要改善量を逆算しました")};
