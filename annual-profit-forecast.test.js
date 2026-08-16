@@ -7,3 +7,4 @@ assert.equal(Forecast.stableRate([month(0,20)]).rate,0,"売上0で除算しな�
 assert.equal(Forecast.confidence(3).stars,"★☆☆☆☆","月初の信頼度");assert.equal(Forecast.confidence(21).stars,"★★★★★","月末の信頼度");
 const result=Forecast.calculate({yearSales:300,yearExpense:240,activeMonths:3,recentMonths:Array(3).fill(month(100,50)),businessDays:8});
 assert.equal(result.shortForecast,240,"短期予測");assert.equal(result.stableForecast,600,"安定予測");console.log("annual profit forecast tests passed");
+assert.equal(Forecast.getStableAnnualProfitForecast({yearSales:300,yearExpense:240,activeMonths:3,recentMonths:Array(3).fill(month(100,50))}),result.stableForecast,"年間ページとシミュレーター用の共通関数が同じ安定利益予測を返す");
