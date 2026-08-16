@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v6.0 — Business Simulator</title>
+<title>院長 Dashboard Pro v6.1 — Business Optimizer</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -46,6 +46,10 @@
     <section id="todayResult" class="compass-result" aria-labelledby="todayResultTitle" hidden><h3 id="todayResultTitle">今日の結果</h3><div id="todayResultItems"></div></section>
     <aside class="compass-shadow" aria-live="polite"><h3 id="compassShadowTitle">影武者｜今日の方針</h3><p id="compassShadowComment">今日のデータを確認しています。</p></aside>
   </section>
+  <article class="business-optimizer-card" id="businessOptimizerCard" aria-labelledby="businessOptimizerTitle" aria-live="polite">
+    <header><div><h2 id="businessOptimizerTitle">🎯 今日の経営最適化</h2><p>Business Optimizer</p></div><span id="businessOptimizerStatus">学習中</span></header>
+    <div id="businessOptimizerContent"><p class="optimizer-empty">現在学習中です。</p></div>
+  </article>
   <article class="season-forecast-card" id="seasonForecastCard" aria-labelledby="seasonForecastTitle" aria-live="polite">
     <header><div><h2 id="seasonForecastTitle">📅 AI季節予測</h2><p>Next 14 Days</p></div><span id="seasonForecastStatus">学習中</span></header>
     <div id="seasonForecastContent"><p class="season-forecast-empty">現在学習中です。</p></div>
@@ -488,6 +492,7 @@
 <script src="success-library.js?v=1093"></script>
 <script src="knowledge-core.js?v=5000"></script>
 <script src="management-compass.js?v=1094"></script>
+<script src="business-optimizer.js?v=6100"></script>
 <script src="season-forecast.js?v=5100"></script>
 <script src="clinical-data.js?v=1076"></script>
 <script src="clinical-efficiency.js?v=1077"></script>
