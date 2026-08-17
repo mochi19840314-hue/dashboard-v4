@@ -11,5 +11,6 @@
  function normalizeHistory(value){return (Array.isArray(value)?value:[]).filter(item=>item&&/^\d{4}-\d{2}-\d{2}$/.test(item.date)&&Number.isFinite(Number(item.score))).map(item=>({...item,score:clamp(Math.round(num(item.score)),0,100)})).sort((a,b)=>a.date.localeCompare(b.date)).slice(-HISTORY_LIMIT)}
  function updateHistory(history,result,date){const current=normalizeHistory(history).filter(item=>item.date!==date);return result?.ready?normalizeHistory([...current,{date,score:result.score,grade:result.grade.label}]):current}
  function summary(history,month){const rows=normalizeHistory(history).filter(item=>!month||item.date.startsWith(month)),scores=rows.map(item=>item.score);if(!scores.length)return {count:0,average:null,highest:null,lowest:null,improvement:null};return {count:scores.length,average:Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),highest:Math.max(...scores),lowest:Math.min(...scores),improvement:scores.at(-1)-scores[0]}}
- return {MIN_LEARNING_DAYS,MIN_START_DAYS,calculate,grade,normalizeHistory,updateHistory,summary};
+ function displayScore(result,history,date,isClosed){const current=Number(result?.score),previous=normalizeHistory(history).filter(item=>item.date<date).at(-1);if(isClosed&&previous)return {...result,score:previous.score,grade:grade(previous.score),asOf:previous.date};return {...result,score:Number.isFinite(current)?current:result?.score,asOf:null}}
+ return {MIN_LEARNING_DAYS,MIN_START_DAYS,calculate,grade,normalizeHistory,updateHistory,summary,displayScore};
 });
