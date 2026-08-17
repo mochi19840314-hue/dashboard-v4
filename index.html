@@ -36,7 +36,7 @@
 <main id="pageContainer">
 
 <section id="today" class="page active">
-  <article class="business-health-card" id="businessHealthCard" data-tone="learning" aria-labelledby="businessHealthTitle" aria-live="polite"><header><div><span class="eyebrow">BUSINESS HEALTH SCORE</span><h2 id="businessHealthTitle">🏥 AI経営指数</h2></div><span id="businessHealthGrade">学習中</span></header><div id="businessHealthContent"><p>経営データを学習しています。</p></div></article>
+  <article class="business-health-card" id="businessHealthCard" data-tone="learning" aria-labelledby="businessHealthTitle" aria-live="polite"><button class="business-health-summary" id="businessHealthToggle" type="button" aria-expanded="false" aria-controls="businessHealthDetail"><span class="health-title" id="businessHealthTitle">🏥 AI経営指数</span><span id="businessHealthContent">学習中</span><span class="health-toggle-label">詳細を見る</span></button><section class="business-health-detail" id="businessHealthDetail" hidden></section></article>
   <article class="card strategy-card ai-management-brief" aria-labelledby="aiManagementBriefTitle">
     <header><h2 id="aiManagementBriefTitle">🎯 AI経営ブリーフ</h2></header>
     <div id="aiManagementBrief" class="strategy-grid"><p>経営データを確認しています。</p></div>
