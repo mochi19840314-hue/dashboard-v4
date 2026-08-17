@@ -44,6 +44,7 @@
   <section class="management-compass" id="managementCompass" aria-labelledby="managementCompassTitle">
     <header><div><h2 id="managementCompassTitle">🧭 AI経営コンパス</h2><p>Today's Strategy</p></div><span id="managementCompassStatus">分析中</span></header>
     <div id="managementCompassContent" aria-live="polite"><p class="compass-empty">診療データを確認しています。</p></div>
+    <section id="recommendationOutcome" class="recommendation-outcome" hidden></section>
     <section id="todayResult" class="compass-result" aria-labelledby="todayResultTitle" hidden><h3 id="todayResultTitle">今日の結果</h3><div id="todayResultItems"></div></section>
     <aside class="compass-shadow" aria-live="polite"><h3 id="compassShadowTitle">影武者｜今日の方針</h3><p id="compassShadowComment">今日のデータを確認しています。</p></aside>
   </section>
@@ -253,6 +254,7 @@
   <div class="row report-header"><div><span class="eyebrow">MONTHLY MANAGEMENT REPORT</span><h2>AI月間経営レポート</h2><p class="lead">数字を経営判断につなげる月次レビューです。</p><p id="reportPeriod" class="clinical-trend-period"></p></div><div class="month-controls"><button id="reportPrevMonth" type="button" aria-label="前月">‹</button><input id="reportMonthPicker" type="month"><button id="reportNextMonth" type="button" aria-label="翌月">›</button></div></div>
   <article id="businessHealthMonthReport" class="card health-month-report"><span class="eyebrow">AI経営指数・月間レポート</span><div class="health-summary"><div><small>平均</small><strong>—</strong></div><div><small>最高</small><strong>—</strong></div><div><small>最低</small><strong>—</strong></div><div><small>今月改善</small><strong>—</strong></div></div></article>
   <div id="reportStatus" class="report-status">集計中です。</div>
+  <article class="card ai-success-rate"><h3>AI成功率</h3><div id="aiSuccessRates"><span>評価データを蓄積中</span></div></article>
   <div class="strategy-report-grid">
     <article class="card strategy-card"><h3>🏆 成功ランキング</h3><div id="successRanking" class="strategy-list"></div></article>
     <article class="card strategy-card"><h3>📈 成長診療</h3><div id="growthRanking" class="strategy-list"></div></article>
@@ -499,6 +501,7 @@
 <script src="clinical-learning-engine.ts?v=7000"></script>
 <script src="business-health-score.ts?v=7100"></script>
 <script src="management-compass.js?v=1094"></script>
+<script src="ai-recommendation-outcomes.js?v=7200"></script>
 <script src="business-optimizer.js?v=6100"></script>
 <script src="season-forecast.js?v=5100"></script>
 <script src="clinical-data.js?v=1076"></script>

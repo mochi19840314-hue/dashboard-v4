@@ -8,8 +8,8 @@
  function actionsFor(item){const title=titleOf(item);if(/画像/.test(title))return["画像検査の適応症例を確認","必要な画像評価の見逃しがないか確認","再診時の画像評価予定を確認"];if(/手術/.test(title))return["手術適応を確認","術前評価の必要性を確認","術後フォロー予定を確認"];return[`${title.replace(/確認$/,'')}を確認`,"診療上の必要性と見逃しがないか確認","必要なフォロー予定を確認"]}
  function weeklyItems(history){return list(history).slice().reverse().flatMap(record=>list(record?.insights))}
  function learningItems(history){return list(history).slice().reverse().filter(item=>item.key!=="learning"&&textOf(item))}
- function build({knowledgeCore,successLibrary,weeklyLearningHistory,learningHistory,clinicalIntelligence,entries=[],closedDates=[],hour=0}={}){
-  let core=[];try{core=list(knowledgeCore?.getTopThemes?.(successLibrary,{limit:2}))}catch{}
+ function build({knowledgeCore,successLibrary,weeklyLearningHistory,learningHistory,clinicalIntelligence,entries=[],closedDates=[],hour=0,successRateHistory=[]}={}){
+  let core=[];try{core=list(knowledgeCore?.getTopThemes?.(successLibrary,{limit:10}));if(typeof AIRecommendationOutcomes!=="undefined")core=AIRecommendationOutcomes.rank(core,successRateHistory);core=core.slice(0,2)}catch{}
   let clinical=[];try{clinical=list(clinicalIntelligence?.analyze?.(entries,{closedDates})?.insights)}catch{}
   const sources=[core,list(successLibrary),weeklyItems(weeklyLearningHistory),learningItems(learningHistory),clinical],selected=sources.find(items=>items.length)||[],primary=selected[0],next=selected[1];
   if(!primary)return{ready:false,sampleDays:list(entries).length,requiredDays:15,missions:[]};
