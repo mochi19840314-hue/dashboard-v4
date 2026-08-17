@@ -1,2 +1,1 @@
-Dashboard Version 7.1
-AI Business Health Score
+7.2.0
