@@ -1,3 +1,2 @@
-Dashboard Version 7.0
-Clinical & Business Learning Engine
-Knowledge Core Integration
+Dashboard Version 7.1
+AI Business Health Score
