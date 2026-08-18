@@ -34,5 +34,8 @@ const legacySevenClinical=normalizeBackup({entries:[{date:"2026-08-01",newPatien
 assert.equal(legacySevenClinical.data.entries[0].clinical.newPatients,3,"legacy seven-field clinical backup remains restorable");
 assert.equal(legacySevenClinical.data.entries[0].newPatients,3,"canonical entry field remains intact");
 assert.deepEqual(normalizeBackup({},defaults,KEY).data.finance,defaults.finance);
+const strategyBackup=normalizeBackup({strategyMap:{updated:"2026-08-18T18:00:00",themes:[{theme:"画像検査"}],priorities:[{theme:"画像検査"}],monthlyHistory:[{month:"2026-07"}]}},defaults,KEY);
+assert.equal(strategyBackup.data.strategyMap.monthlyHistory[0].month,"2026-07");
+assert.deepEqual(normalizeBackup({strategyMap:{strength:["legacy"]}},defaults,KEY).data.strategyMap,{updated:null,themes:[],priorities:[],monthlyHistory:[]});
 assert.throws(()=>normalizeBackup("bad",defaults,KEY));
-console.log("backup normalizer tests: 20 checks passed");
+console.log("backup normalizer tests: 22 checks passed");
