@@ -232,7 +232,12 @@ function getManagementScoreForDailyEntry(entry,month,calculate=calcManagementSco
  if(typeof result==="number")return result;
  return result&&Number.isFinite(result.score)?result.score:null;
 }
-function monthlyManagementScoreStats(month,monthlyEntries,calculate=calcManagementScore,rawEntriesCount=monthlyEntries.length){
+function getNormalizedMonthlyEntries(selectedMonth,rawEntries=data.entries){
+ const monthlyEntries=DateRanges.normalizedEntriesForCalendarMonth(rawEntries,selectedMonth);
+ console.log("[Monthly Data Debug]",{selectedMonth,rawCount:rawEntries.length,normalizedCount:monthlyEntries.length,rawDates:rawEntries.map(x=>x?.date),normalizedDates:monthlyEntries.map(x=>x.date)});
+ return monthlyEntries;
+}
+function monthlyManagementScoreStats(month,monthlyEntries,calculate=calcManagementScore){
  const entries=[...monthlyEntries].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  const scoredEntries=entries.map(entry=>{
   let score=null;
@@ -240,12 +245,12 @@ function monthlyManagementScoreStats(month,monthlyEntries,calculate=calcManageme
   if(!Number.isFinite(score)){console.warn("[Monthly AI Score Failed]",{date:entry.date,entry});return null}
   return {date:entry.date,score};
  }).filter(Boolean),scores=scoredEntries.map(item=>item.score);
- console.log("[Monthly AI Debug]",{selectedMonth:month,rawEntriesCount,normalizedEntriesCount:entries.length,sampleEntry:entries[0],scoredEntries,validScoresCount:scoredEntries.length});
+ console.log("[Monthly AI Debug]",{monthlyEntriesCount:entries.length,scoredEntriesCount:scoredEntries.length,scoredEntries});
  if(!scores.length)return {count:0,average:null,highest:null,lowest:null,improvement:null};
  return {count:scores.length,average:Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),highest:Math.max(...scores),lowest:Math.min(...scores),improvement:scores.length>=2?scores.at(-1)-scores[0]:null};
 }
 function renderMonthlyManagementScore(month,rawEntries){
- const monthlyEntries=operatingEntries(rawEntries),monthStats=monthlyManagementScoreStats(month,monthlyEntries,calcManagementScore,rawEntries.length),monthly=$("businessHealthMonthReport");
+ const monthlyEntries=getNormalizedMonthlyEntries(month,rawEntries),monthStats=monthlyManagementScoreStats(month,monthlyEntries),monthly=$("businessHealthMonthReport");
  if(!monthly)return monthlyEntries;
  const improvement=monthStats.improvement===null?"—":monthStats.improvement===0?"±0点":`${monthStats.improvement>0?"+":""}${monthStats.improvement}点`;
  monthly.innerHTML=`<span class="eyebrow">AI経営指数・月間レポート</span><div class="health-summary"><div><small>平均</small><strong>${monthStats.average??"—"}点</strong></div><div><small>最高</small><strong>${monthStats.highest??"—"}点</strong></div><div><small>最低</small><strong>${monthStats.lowest??"—"}点</strong></div><div><small>今月改善</small><strong>${improvement}</strong></div></div>`;
@@ -1004,7 +1009,7 @@ function renderReportMemoAnalysis(entries){
 function renderMonthlyReport(){
   if(!$("reportMonthPicker"))return;
   const m=reportMonth(),s=monthSummary(m),previousMonth=monthShift(m,-1),prev=monthSummary(previousMonth),selectedFinance=ReportMonth.selectedFinance(data.financeByMonth,m),previousFinance=ReportMonth.selectedFinance(data.financeByMonth,previousMonth),cfg=data.settings[m]||{},target=Number(cfg.target)||MONTHLY_TARGET,profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0,progress=target?s.sales/target*100:0;
-  const monthlyEntries=renderMonthlyManagementScore(m,s.entries),availability=ReportMonth.reportAvailability({...s,entries:monthlyEntries});
+  const monthlyEntries=renderMonthlyManagementScore(m,data.entries),availability=ReportMonth.reportAvailability({...s,entries:monthlyEntries});
   $("reportSales").textContent=yen(s.sales);$("reportProgress").textContent=pct(progress);$("reportProfit").textContent=yen(profit);$("reportProfitRate").textContent=pct(rate);$("reportPatients").textContent=`${s.patients}件`;$("reportUnit").textContent=yen(unit);$("reportNew").textContent=`${s.newPatients}件`;$("reportClinical").textContent=`${s.surgeries}件 / ${s.checkups}件`;
   const current=m===monthNow(),days=monthlyEntries.length,period=DateRanges.calendarMonthRange(m,iso());$("reportPeriod").textContent=`集計期間：${period.from}〜${period.to}`;$("reportStatus").textContent=availability.empty?`${monthLabel(m)}は集計途中です。入力データを待っています。`:current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
   const model=availability.empty?null:reportScoreModel(s,prev,target,current||availability.provisional);
