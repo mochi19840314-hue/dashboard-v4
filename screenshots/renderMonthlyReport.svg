@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="250" viewBox="0 0 760 250">
+<rect width="760" height="250" fill="#f4f7fb"/><rect x="20" y="20" width="720" height="210" rx="20" fill="#fff" stroke="#dce5ef"/>
+<g font-family="sans-serif"><text x="44" y="57" font-size="12" font-weight="700" fill="#53718f">AI経営指数・月間レポート</text>
+<g fill="#718096" font-size="12"><text x="52" y="110">平均</text><text x="226" y="110">最高</text><text x="400" y="110">最低</text><text x="574" y="110">今月改善</text></g>
+<g fill="#17243b" font-size="28" font-weight="700"><text x="52" y="151">82点</text><text x="226" y="151">88点</text><text x="400" y="151">76点</text><text x="574" y="151" fill="#137c67">+12点</text></g>
+<text x="44" y="202" font-size="12" fill="#357a65">Business Health Score の保存データを数値表示</text></g>
+</svg>
