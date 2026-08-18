@@ -320,6 +320,11 @@
 
 <section id="year" class="page">
   <div class="row"><div><h2>年間集計</h2></div><select id="yearPicker"></select></div>
+  <article id="aiStrategyMap" class="card ai-strategy-map" aria-labelledby="aiStrategyMapTitle">
+    <header><div><span class="eyebrow">1–3 MONTH STRATEGY</span><h2 id="aiStrategyMapTitle">🗺 AI戦略マップ</h2></div><span id="strategyMapUpdated">学習中</span></header>
+    <div class="strategy-map-grid"><section><h3>現在の重点戦略</h3><ul id="strategyMapThemes" class="strategy-map-themes"></ul></section><section><h3>今月の優先順位</h3><ol id="strategyMapPriorities" class="strategy-map-priorities"></ol></section></div>
+    <div class="strategy-map-notes"><section><h3>戦略コメント</h3><p id="strategyMapComment"></p></section><section><h3>改善提案</h3><ul id="strategyMapActions"></ul></section></div>
+  </article>
   <div class="director-card card">
     <div class="director-heading"><div><span class="eyebrow">DIRECTOR DASHBOARD</span><h3>院長ダッシュボード</h3></div><span class="estimate-badge">概算</span></div>
     <section class="month-end-forecast" aria-labelledby="monthEndForecastTitle">
@@ -504,6 +509,7 @@
 <script src="ai-recommendation-outcomes.js?v=7200"></script>
 <script src="business-optimizer.js?v=6100"></script>
 <script src="season-forecast.js?v=5100"></script>
+<script src="strategy-map.js?v=8000"></script>
 <script src="clinical-data.js?v=1076"></script>
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=6002"></script>
