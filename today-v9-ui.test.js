@@ -9,5 +9,5 @@ assert.match(app,/newPatients\/patients\*100/);assert.match(app,/todaySummaryNew
 for(const label of ["Business Optimizer","Knowledge Core","Success Pattern","Failure Pattern","Strategy Map","Season Forecast"])assert.match(today,new RegExp(label));
 assert.match(app,/uiState:\{analysisExpanded:false\}/);assert.match(app,/raw\.uiState\?\.analysisExpanded===true/);assert.match(app,/setupAIAnalysis/);
 assert.match(css,/transition:max-height 200ms ease,opacity 200ms ease,padding 200ms ease/);assert.match(css,/#today> :not\(\.today-primary-card\)\{display:none\}/);
-assert.match(sw,/keita-dashboard-v9400-today-entry/);
+assert.match(sw,/keita-dashboard-v9401-clinical-learning/);
 console.log("Today v9 UI: hierarchy, KPI set, analytics links, restore compatibility, animation, and PWA version passed");

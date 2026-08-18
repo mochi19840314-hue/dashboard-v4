@@ -15,6 +15,6 @@ assert.match(app,/insightScoreViewport\.target=value/,"off-screen updates retain
 assert.match(app,/deactivateInsightScore\(\).*if\(id==="today"\)activateInsightScore\(\)/,"page changes reset and reactivate the lifecycle");
 assert.match(app,/reducedMotion\(\)\){showInsightScoreImmediately\(\);return}/,"reduced motion renders the final value immediately");
 assert.match(app,/duration=800/,"the existing 800ms animation is preserved");
-assert.match(html,/app\.js\?v=9400/);assert.match(html,/style\.css\?v=9400/);
-assert.match(sw,/keita-dashboard-v9400-today-entry/);assert.match(sw,/app\.js\?v=9400/);assert.match(sw,/style\.css\?v=9400/);
+assert.match(html,/app\.js\?v=9401/);assert.match(html,/style\.css\?v=9401/);
+assert.match(sw,/keita-dashboard-v9401-clinical-learning/);assert.match(sw,/app\.js\?v=9401/);assert.match(sw,/style\.css\?v=9401/);
 console.log("score ring animation tests: 13 checks passed");
