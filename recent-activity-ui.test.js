@@ -1,0 +1,18 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
+const css=fs.readFileSync("style.css","utf8"),app=fs.readFileSync("app.js","utf8");
+
+test("Recent Activity card is an iPhone-compatible vertical scroll area",()=>{
+  const rule=css.match(/\.recent-activity-card\{([^}]*)\}/)?.[1]||"";
+  for(const declaration of ["max-height:260px","overflow-y:auto","overflow-x:hidden","-webkit-overflow-scrolling:touch","overscroll-behavior:contain","touch-action:auto"]){
+    assert.match(rule,new RegExp(declaration.replace("-","\\-")));
+  }
+  assert.doesNotMatch(rule,/position:(?:fixed|sticky)|overflow:hidden/);
+});
+
+test("page swipe handling yields to Recent Activity scrolling",()=>{
+  const setup=app.match(/function setupSwipe\(\)[\s\S]*?\nfunction setupBusinessSimulator/)?.[0]||"";
+  assert.match(setup,/closest\("[^"]*\.recent-activity-card/);
+  assert.doesNotMatch(setup,/preventDefault/);
+  assert.match(setup,/\{passive:true\}/);
+});
