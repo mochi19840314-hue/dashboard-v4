@@ -4,8 +4,8 @@ const test=require("node:test"),assert=require("node:assert/strict"),fs=require(
 const source=fs.readFileSync("app.js","utf8");
 const start=source.indexOf("function getManagementScoreForDailyEntry(");
 const end=source.indexOf("\nfunction renderBusinessHealthReports",start);
-const context={console:{log(){},warn(){}}};
-vm.runInNewContext(`${source.slice(start,end)};this.monthlyManagementScoreStats=monthlyManagementScoreStats`,context);
+const context={console:{log(){},warn(){}},DateRanges:require("./date-ranges.js"),data:{entries:[]}};
+vm.runInNewContext(`${source.slice(start,end)};this.monthlyManagementScoreStats=monthlyManagementScoreStats;this.getNormalizedMonthlyEntries=getNormalizedMonthlyEntries`,context);
 
 test("monthly management report recalculates every daily entry without a minimum-day threshold",()=>{
  const seen=[];
@@ -31,4 +31,20 @@ test("failed and non-numeric daily calculations are excluded",()=>{
   return summary.kind==="valid"?{score:81}:{score:NaN};
  });
  assert.deepEqual({...stats},{count:1,average:81,highest:81,lowest:81,improvement:null});
+});
+
+test("twelve saved August entries remain twelve instead of being inferred as closed days",()=>{
+ const entries=Array.from({length:12},(_,index)=>({date:`2026-08-${String(index+1).padStart(2,"0")}`,sales:index?0:100}));
+ assert.equal(context.getNormalizedMonthlyEntries("2026-08",entries).length,12);
+});
+
+test("monthly normalization keeps one and multiple saved entries during a partial month",()=>{
+ assert.equal(context.getNormalizedMonthlyEntries("2026-08",[{date:"2026-08-01",sales:0}]).length,1);
+ assert.equal(context.getNormalizedMonthlyEntries("2026-08",[{date:"2026-08-01"},{date:"2026-08-03"},{date:"2026-08-18"}]).length,3);
+});
+
+test("monthly normalization extracts and sorts mixed supported date representations",()=>{
+ const entries=[{createdAt:"2026-08-12T09:30:00Z"},{date:"2026/08/01"},{day:"2026-08-05"},{date:Date.UTC(2026,7,8)},{date:"2026-07-31"}];
+ const normalized=context.getNormalizedMonthlyEntries("2026-08",entries);
+ assert.deepEqual(Array.from(normalized,x=>x.date),["2026-08-01","2026-08-05","2026-08-08","2026-08-12"]);
 });
