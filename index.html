@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v9.1 — Today</title>
+<title>院長 Dashboard Pro v9.2 — Today</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9100">
+<link rel="stylesheet" href="style.css?v=9200">
 </head>
 <body>
 <header class="app-header">
@@ -39,6 +39,7 @@
   <article class="morning-brief-card today-primary-card" id="morningExecutiveBrief" aria-labelledby="morningExecutiveBriefTitle" aria-live="polite"><header><div><h2 id="morningExecutiveBriefTitle">🧑‍💼 AI経営会議</h2><p>Executive Meeting</p></div><time id="morningBriefDate"></time></header><div id="morningBriefContent"><p class="morning-brief-empty">経営データを確認しています。</p></div><nav id="morningBriefLinks" aria-label="AI経営会議の詳細" hidden><button type="button" data-brief-target="optimizer">Business Optimizer</button><button type="button" data-brief-target="strategy">Strategy Map</button><button type="button" data-brief-target="knowledge">Knowledge Core</button></nav><button id="morningBriefDetail" type="button" aria-expanded="false">詳細を見る</button></article>
   <article class="today-summary-card today-primary-card" id="todaySummaryCard" role="button" tabindex="0" aria-labelledby="todaySummaryTitle" aria-haspopup="dialog" aria-controls="todayEntryModal"><header><div><h2 id="todaySummaryTitle">今日の診療実績</h2><p>Today Summary</p></div><span id="todaySummaryStatus">✏ 入力</span></header><div class="today-summary-grid"><section><span>売上</span><strong id="todaySummarySales">0円</strong></section><section><span>患者数</span><strong id="todaySummaryPatients">0件</strong></section><section><span>客単価</span><strong id="todaySummaryUnit">0円</strong></section><section><span>利益率</span><strong id="todaySummaryProfit">—</strong></section><section><span>新患数</span><strong id="todaySummaryNew">0件</strong></section><section><span>再診率</span><strong id="todaySummaryRevisit">—</strong></section><section><span>画像検査件数</span><strong id="todaySummaryImaging">0件</strong></section></div></article>
   <article class="ai-analysis-card today-primary-card" id="aiAnalysisCard"><button id="aiAnalysisToggle" type="button" aria-expanded="false" aria-controls="aiAnalysisContent"><span><b>AI分析</b><small>Analytics</small></span><i aria-hidden="true">▼</i></button><div id="aiAnalysisContent" class="ai-analysis-content" aria-hidden="true"><section><h3>インサイト</h3><a href="#seasonForecastCard" data-analysis-target="season">AI季節予測 <span>Season Forecast</span></a><a href="#learningInsightCard" data-analysis-target="learning">AIが最近学習したこと</a></section><section><h3>経営知識</h3><a href="#businessOptimizerCard" data-analysis-target="optimizer">Business Optimizer</a><a href="#successLibraryItems" data-analysis-target="knowledge">Knowledge Core</a><a href="#successLibraryItems" data-analysis-target="success">Success Pattern</a><a href="#successLibraryItems" data-analysis-target="failure">Failure Pattern</a></section><section><h3>戦略</h3><a href="#aiStrategyMap" data-analysis-target="strategy">Strategy Map</a></section></div></article>
+  <article class="recent-activity-card today-primary-card" aria-labelledby="recentActivityTitle"><header><div><h2 id="recentActivityTitle">📈 最近10営業日の履歴</h2><p>Recent Activity</p></div></header><div id="recentActivityList" class="recent-activity-list" aria-live="polite"></div></article>
   <article class="business-health-card" id="businessHealthCard" data-tone="learning" aria-labelledby="businessHealthTitle" aria-live="polite"><button class="business-health-summary" id="businessHealthToggle" type="button" aria-expanded="false" aria-controls="businessHealthDetail"><span class="health-title" id="businessHealthTitle">🏥 AI経営指数</span><span id="businessHealthContent">学習中</span><span class="health-toggle-label">詳細を見る</span></button><section class="business-health-detail" id="businessHealthDetail" hidden></section></article>
   <article class="card strategy-card ai-management-brief" aria-labelledby="aiManagementBriefTitle">
     <header><h2 id="aiManagementBriefTitle">🎯 AI経営ブリーフ</h2></header>
@@ -507,10 +508,13 @@
   </div>
 </div>
 
+<div class="activity-summary-modal" id="activitySummaryModal" role="dialog" aria-modal="true" aria-labelledby="activitySummaryTitle" hidden><div class="activity-summary-dialog"><header><div><h2 id="activitySummaryTitle">Today Summary</h2><p id="activitySummaryDate"></p></div><button id="closeActivitySummary" class="modal-close" type="button" aria-label="履歴詳細を閉じる">×</button></header><div id="activitySummaryContent"></div></div></div>
+
 <div class="month-rollover-modal" id="monthRolloverModal" role="dialog" aria-modal="true" aria-labelledby="monthRolloverTitle" hidden><div class="month-rollover-dialog"><span class="eyebrow">MONTHLY UPDATE</span><h2 id="monthRolloverTitle">新しい月のデータ</h2><p id="monthRolloverMessage"></p><div class="month-rollover-actions"><button id="confirmMonthRollover" class="primary" type="button">はい</button><button id="deferMonthRollover" type="button">あとで</button></div></div></div>
 <div class="kagemusha-diary-modal" id="kagemushaDiaryModal" role="dialog" aria-modal="true" aria-labelledby="kagemushaDiaryModalTitle" hidden><div class="kagemusha-diary-dialog"><button id="closeKagemushaDiary" class="modal-close" type="button" aria-label="影武者日誌を閉じる">×</button><div id="kagemushaDiaryFull"></div></div></div>
 <div class="clinical-trend-modal" id="clinicalTrendModal" role="dialog" aria-modal="true" aria-labelledby="clinicalTrendModalTitle" hidden><div class="clinical-trend-dialog"><button id="closeClinicalTrends" class="modal-close" type="button" aria-label="診療傾向を閉じる">×</button><div id="clinicalTrendDetail"></div></div></div>
 <div class="success-library-modal" id="successLibraryModal" role="dialog" aria-modal="true" aria-labelledby="successLibraryModalTitle" hidden><div class="success-library-dialog"><button id="closeSuccessLibrary" class="modal-close" type="button" aria-label="AI経営ノートを閉じる">×</button><div id="successLibraryDetail"></div></div></div>
+<script src="recent-activity.js?v=9200"></script>
 <script src="date-ranges.js?v=1060"></script>
 <script src="clinical-trends.js?v=1060"></script>
 <script src="report-month.js?v=1061"></script>
@@ -541,7 +545,7 @@
 <script src="monthly-profit-forecast.js?v=1082"></script>
 <script src="cash-flow-forecast.js?v=1083"></script>
 <script src="business-simulator.js?v=6003"></script>
-<script src="app.js?v=9100"></script>
+<script src="app.js?v=9200"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
