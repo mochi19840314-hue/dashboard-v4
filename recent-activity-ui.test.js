@@ -7,6 +7,12 @@ test("Recent Activity uses the Business Health preview while learning",()=>{
   assert.match(activityRows,/health\?\.score\?\?health\?\.previewScore\?\?null/);
 });
 
+test("Recent Activity isolates a Business Health exception per entry",()=>{
+  const activityRows=app.match(/function recentActivityRows\(\)[^\n]*/)?.[0]||"";
+  assert.match(activityRows,/try\{const health=calculateBusinessHealth\(entry\.date,entries\)/);
+  assert.match(activityRows,/console\.warn\("\[Recent Activity Health Failed\]",\{date:entry\.date,error\}\);return null/);
+});
+
 test("Recent Activity card is an iPhone-compatible vertical scroll area",()=>{
   const rule=css.match(/\.recent-activity-card\{([^}]*)\}/)?.[1]||"";
   for(const declaration of ["max-height:260px","overflow-y:auto","overflow-x:hidden","-webkit-overflow-scrolling:touch","overscroll-behavior:contain","touch-action:auto"]){
