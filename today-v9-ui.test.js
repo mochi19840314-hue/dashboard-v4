@@ -2,11 +2,13 @@
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const html=fs.readFileSync("index.html","utf8"),app=fs.readFileSync("app.js","utf8"),css=fs.readFileSync("style.css","utf8"),sw=fs.readFileSync("sw.js","utf8");
 const today=html.match(/<section id="today"[\s\S]*?<\/section>\s*<section id="month"/)?.[0]||"";
+const analysis=today.match(/<article class="ai-analysis-card[\s\S]*?<\/article>/)?.[0]||"";
 assert.match(today,/AI経営会議[\s\S]*今日の診療実績[\s\S]*AI分析/);
 for(const label of ["売上","患者数","客単価","利益率","新患数","新患率","画像検査件数"])assert.match(today,new RegExp(label));
 assert.doesNotMatch(today,/再診率/);
 assert.match(app,/newPatients\/patients\*100/);assert.match(app,/todaySummaryNewRate/);
-for(const label of ["Business Optimizer","Knowledge Core","Success Pattern","Failure Pattern","Strategy Map","Season Forecast"])assert.match(today,new RegExp(label));
+for(const label of ["季節予測","経営改善","経営学習","成功パターン","注意パターン","改善戦略"])assert.match(analysis,new RegExp(label));
+for(const label of ["Analytics","Season Forecast","Business Optimizer","Knowledge Core","Success Pattern","Failure Pattern","Strategy Map"])assert.doesNotMatch(analysis,new RegExp(label));
 assert.match(app,/uiState:\{analysisExpanded:false\}/);assert.match(app,/raw\.uiState\?\.analysisExpanded===true/);assert.match(app,/setupAIAnalysis/);
 assert.match(css,/transition:max-height 200ms ease,opacity 200ms ease,padding 200ms ease/);assert.match(css,/#today> :not\(\.today-primary-card\)\{display:none\}/);
 assert.match(sw,/keita-dashboard-v9401-clinical-learning/);
