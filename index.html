@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#009f91">
-<title>院長 Dashboard Pro v7.1 — AI Business Health Score</title>
+<title>院長 Dashboard Pro v8.1 — Morning Executive Brief</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -36,6 +36,7 @@
 <main id="pageContainer">
 
 <section id="today" class="page active">
+  <article class="morning-brief-card" id="morningExecutiveBrief" aria-labelledby="morningExecutiveBriefTitle" aria-live="polite"><header><div><h2 id="morningExecutiveBriefTitle">🧑‍💼 AI経営会議</h2><p>Morning Executive Brief</p></div><time id="morningBriefDate"></time></header><div id="morningBriefContent"><p class="morning-brief-empty">経営データを確認しています。</p></div><nav id="morningBriefLinks" aria-label="AI経営会議の詳細" hidden><button type="button" data-brief-target="optimizer">Business Optimizer</button><button type="button" data-brief-target="strategy">Strategy Map</button><button type="button" data-brief-target="knowledge">Knowledge Core</button></nav><button id="morningBriefDetail" type="button" aria-expanded="false">詳細を見る</button></article>
   <article class="business-health-card" id="businessHealthCard" data-tone="learning" aria-labelledby="businessHealthTitle" aria-live="polite"><button class="business-health-summary" id="businessHealthToggle" type="button" aria-expanded="false" aria-controls="businessHealthDetail"><span class="health-title" id="businessHealthTitle">🏥 AI経営指数</span><span id="businessHealthContent">学習中</span><span class="health-toggle-label">詳細を見る</span></button><section class="business-health-detail" id="businessHealthDetail" hidden></section></article>
   <article class="card strategy-card ai-management-brief" aria-labelledby="aiManagementBriefTitle">
     <header><h2 id="aiManagementBriefTitle">🎯 AI経営ブリーフ</h2></header>
@@ -508,6 +509,7 @@
 <script src="management-compass.js?v=1094"></script>
 <script src="ai-recommendation-outcomes.js?v=7200"></script>
 <script src="business-optimizer.js?v=6100"></script>
+<script src="morning-executive-brief.js?v=8100"></script>
 <script src="season-forecast.js?v=5100"></script>
 <script src="strategy-map.js?v=8000"></script>
 <script src="clinical-data.js?v=1076"></script>
