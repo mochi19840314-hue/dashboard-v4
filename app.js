@@ -227,24 +227,35 @@ function renderBusinessHealth(){
  else{const previous=history.filter(item=>item.date<(result.asOf||iso())).at(-1)?.score??result.score,monthStats=BusinessHealthScore.summary(history,monthNow()),delta=result.score-previous,statusDot={excellent:"🟢",good:"🟢",stable:"🟡",attention:"🟠",action:"🔴"}[result.grade.tone];content.innerHTML=`<span class="health-score-line"><strong>${result.score}<small>点</small></strong><b>${statusDot} ${result.grade.label}</b></span><span class="health-meta"><span>前日比 <b>${delta>=0?"+":""}${delta}</b></span><span>今月平均 <b>${monthStats.average??"—"}</b></span>${closed?'<em>休診日・前営業日時点</em>':""}</span>`;const metrics=calculated.metrics;detail.innerHTML=`<h3>経営指標の詳細</h3><dl class="health-detail-metrics"><div><dt>利益率</dt><dd>${Number(metrics.profitRate).toFixed(1)}%</dd></div><div><dt>売上達成率</dt><dd>${Number(metrics.salesAchievement).toFixed(1)}%</dd></div><div><dt>客単価</dt><dd>${yen(metrics.unitPrice)}</dd></div><div><dt>再診率</dt><dd>${Number(metrics.revisitRate).toFixed(1)}%</dd></div><div><dt>診療負荷</dt><dd>${Math.round(Number(metrics.doctorWorkload))}</dd></div><div><dt>Success Pattern一致率</dt><dd>${Math.round(Number(metrics.successPatternMatch))}%</dd></div></dl><section class="health-opportunities"><h3>改善余地 TOP3</h3><ol>${calculated.opportunities.slice(0,3).map(item=>`<li>${escapeHtml(item.label)}</li>`).join("")}</ol></section>`}
  const hasToday=data.entries.some(entry=>entry.date===iso())&&!closed;if(hasToday){const next=BusinessHealthScore.updateHistory(data.businessHealthHistory,calculated,iso());if(JSON.stringify(next)!==JSON.stringify(data.businessHealthHistory)){data.businessHealthHistory=next;data.businessHealthScore=calculated.score;save()}}renderBusinessHealthReports(calculated)
 }
-function monthlyManagementScoreStats(month,monthlyEntries,calculate=calcManagementScore){
+function getManagementScoreForDailyEntry(entry,month,calculate=calcManagementScore){
+ const result=calculate({...entry,entries:[entry]},month);
+ if(typeof result==="number")return result;
+ return result&&Number.isFinite(result.score)?result.score:null;
+}
+function monthlyManagementScoreStats(month,monthlyEntries,calculate=calcManagementScore,rawEntriesCount=monthlyEntries.length){
  const entries=[...monthlyEntries].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
- const scores=entries.map(entry=>{
-  try{return calculate({...entry,entries:[entry]},month)}catch(e){console.warn("monthly management score calculation failed",entry,e);return null}
- }).map(result=>{
-  if(typeof result==="number")return result;
-  if(result&&Number.isFinite(result.score))return result.score;
-  return null;
- }).filter(Number.isFinite);
- console.log("[Monthly AI Score]",{month,entriesCount:monthlyEntries.length,scoresCount:scores.length,scores});
+ const scoredEntries=entries.map(entry=>{
+  let score=null;
+  try{score=getManagementScoreForDailyEntry(entry,month,calculate)}catch(error){console.warn("[Monthly AI Score Failed]",{date:entry.date,entry,error});return null}
+  if(!Number.isFinite(score)){console.warn("[Monthly AI Score Failed]",{date:entry.date,entry});return null}
+  return {date:entry.date,score};
+ }).filter(Boolean),scores=scoredEntries.map(item=>item.score);
+ console.log("[Monthly AI Debug]",{selectedMonth:month,rawEntriesCount,normalizedEntriesCount:entries.length,sampleEntry:entries[0],scoredEntries,validScoresCount:scoredEntries.length});
  if(!scores.length)return {count:0,average:null,highest:null,lowest:null,improvement:null};
  return {count:scores.length,average:Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),highest:Math.max(...scores),lowest:Math.min(...scores),improvement:scores.length>=2?scores.at(-1)-scores[0]:null};
+}
+function renderMonthlyManagementScore(month,rawEntries){
+ const monthlyEntries=operatingEntries(rawEntries),monthStats=monthlyManagementScoreStats(month,monthlyEntries,calcManagementScore,rawEntries.length),monthly=$("businessHealthMonthReport");
+ if(!monthly)return monthlyEntries;
+ const improvement=monthStats.improvement===null?"—":monthStats.improvement===0?"±0点":`${monthStats.improvement>0?"+":""}${monthStats.improvement}点`;
+ monthly.innerHTML=`<span class="eyebrow">AI経営指数・月間レポート</span><div class="health-summary"><div><small>平均</small><strong>${monthStats.average??"—"}点</strong></div><div><small>最高</small><strong>${monthStats.highest??"—"}点</strong></div><div><small>最低</small><strong>${monthStats.lowest??"—"}点</strong></div><div><small>今月改善</small><strong>${improvement}</strong></div></div>`;
+ return monthlyEntries;
 }
 function renderBusinessHealthReports(){
  const yearValue=$("yearPicker")?.value||String(new Date().getFullYear()),rows=BusinessHealthScore.normalizeHistory(data.businessHealthHistory).filter(item=>item.date.startsWith(yearValue)),stats=BusinessHealthScore.summary(rows),statsEl=$("businessHealthYearStats"),chart=$("businessHealthYearChart");if(!statsEl||!chart)return;
  statsEl.innerHTML=`<div><small>平均</small><strong>${stats.average??"—"}点</strong></div><div><small>最高</small><strong>${stats.highest??"—"}点</strong></div><div><small>最低</small><strong>${stats.lowest??"—"}点</strong></div>`;
  if(!rows.length){chart.innerHTML='<p class="chart-empty">指数データを学習中です。</p>';return}const w=700,h=230,p=30,x=index=>p+index*Math.max(1,(w-p*2)/Math.max(1,rows.length-1)),y=score=>h-p-score*(h-p*2)/100,points=rows.map((item,index)=>`${x(index)},${y(item.score)}`).join(" ");chart.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="${p}" y1="${y(stats.average)}" x2="${w-p}" y2="${y(stats.average)}" class="health-average"/><polyline points="${points}" class="health-line"/>${rows.map((item,index)=>`<circle cx="${x(index)}" cy="${y(item.score)}" r="4"><title>${item.date} ${item.score}点</title></circle>`).join("")}</svg>`;
- const report=document.querySelector("#report .report-header")||document.querySelector("#report");if(report){let monthly=$("businessHealthMonthReport");if(!monthly){monthly=document.createElement("article");monthly.id="businessHealthMonthReport";monthly.className="card health-month-report";report.insertAdjacentElement("afterend",monthly)}const month=reportMonth(),monthlyEntries=operatingEntries(monthSummary(month).entries),monthStats=monthlyManagementScoreStats(month,monthlyEntries),improvement=monthStats.improvement===null?"—":monthStats.improvement===0?"±0点":`${monthStats.improvement>0?"+":""}${monthStats.improvement}点`;monthly.innerHTML=`<span class="eyebrow">AI経営指数・月間レポート</span><div class="health-summary"><div><small>平均</small><strong>${monthStats.average??"—"}点</strong></div><div><small>最高</small><strong>${monthStats.highest??"—"}点</strong></div><div><small>最低</small><strong>${monthStats.lowest??"—"}点</strong></div><div><small>今月改善</small><strong>${improvement}</strong></div></div>`}}
+}
 function renderClinicalLearning(){
  const root=$("clinicalLearningContent");if(!root||typeof ClinicalLearningEngine==="undefined")return;const today=iso(),entry=data.entries.find(item=>item.date===today);if(entry&&new Date().getHours()>=18){const alreadyTransferred=KnowledgeCore.find(data.successLibrary,`clinical-day:${today}`);learnClinicalEntry(entry,!alreadyTransferred);save()}
  const snapshot=(data.clinicalSnapshots||[]).find(item=>item.date===today)||[...(data.clinicalSnapshots||[])].sort((a,b)=>b.date.localeCompare(a.date))[0],learning=data.dailyLearning||{};if(!snapshot){root.innerHTML='<p class="clinical-learning-empty">診療実績を保存すると、病院専用AIが学習を始めます。</p>';return}
@@ -992,9 +1003,10 @@ function renderReportMemoAnalysis(entries){
 
 function renderMonthlyReport(){
   if(!$("reportMonthPicker"))return;
-  const m=reportMonth(),s=monthSummary(m),previousMonth=monthShift(m,-1),prev=monthSummary(previousMonth),selectedFinance=ReportMonth.selectedFinance(data.financeByMonth,m),previousFinance=ReportMonth.selectedFinance(data.financeByMonth,previousMonth),availability=ReportMonth.reportAvailability(s),cfg=data.settings[m]||{},target=Number(cfg.target)||MONTHLY_TARGET,profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0,progress=target?s.sales/target*100:0;
+  const m=reportMonth(),s=monthSummary(m),previousMonth=monthShift(m,-1),prev=monthSummary(previousMonth),selectedFinance=ReportMonth.selectedFinance(data.financeByMonth,m),previousFinance=ReportMonth.selectedFinance(data.financeByMonth,previousMonth),cfg=data.settings[m]||{},target=Number(cfg.target)||MONTHLY_TARGET,profit=s.sales-s.expense,rate=s.sales?profit/s.sales*100:0,unit=s.patients?s.sales/s.patients:0,progress=target?s.sales/target*100:0;
+  const monthlyEntries=renderMonthlyManagementScore(m,s.entries),availability=ReportMonth.reportAvailability({...s,entries:monthlyEntries});
   $("reportSales").textContent=yen(s.sales);$("reportProgress").textContent=pct(progress);$("reportProfit").textContent=yen(profit);$("reportProfitRate").textContent=pct(rate);$("reportPatients").textContent=`${s.patients}件`;$("reportUnit").textContent=yen(unit);$("reportNew").textContent=`${s.newPatients}件`;$("reportClinical").textContent=`${s.surgeries}件 / ${s.checkups}件`;
-  const current=m===monthNow(),days=s.entries.length,period=DateRanges.calendarMonthRange(m,iso());$("reportPeriod").textContent=`集計期間：${period.from}〜${period.to}`;$("reportStatus").textContent=availability.empty?`${monthLabel(m)}は集計途中です。入力データを待っています。`:current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
+  const current=m===monthNow(),days=monthlyEntries.length,period=DateRanges.calendarMonthRange(m,iso());$("reportPeriod").textContent=`集計期間：${period.from}〜${period.to}`;$("reportStatus").textContent=availability.empty?`${monthLabel(m)}は集計途中です。入力データを待っています。`:current?`${monthLabel(m)}は集計途中です。${days}日分の入力データをもとに表示しています。`:`${monthLabel(m)}の月間レポート`;
   const model=availability.empty?null:reportScoreModel(s,prev,target,current||availability.provisional);
   const memoAnalysis=renderReportMemoAnalysis(s.entries);
   const advisor=availability.empty?{discovery:`${monthLabel(m)}は集計途中です。入力後に分析を表示します。`,good:"データ入力後に良かった点を表示します",caution:"データ入力後に改善点を表示します",action:"入力データを待っています。"}:advisorModel(s,prev,target,memoAnalysis);$("advisorDiscovery").textContent=advisor.discovery;$("advisorGood").textContent=advisor.good;$("advisorCaution").textContent=advisor.caution;$("advisorAction").textContent=advisor.action;

@@ -2,7 +2,7 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 
 const source=fs.readFileSync("app.js","utf8");
-const start=source.indexOf("function monthlyManagementScoreStats(");
+const start=source.indexOf("function getManagementScoreForDailyEntry(");
 const end=source.indexOf("\nfunction renderBusinessHealthReports",start);
 const context={console:{log(){},warn(){}}};
 vm.runInNewContext(`${source.slice(start,end)};this.monthlyManagementScoreStats=monthlyManagementScoreStats`,context);
