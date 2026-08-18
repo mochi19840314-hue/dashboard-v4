@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v9.3.0 — 2026-08-18
+
+### Added
+- Today診療入力モーダルに500文字の「今日のメモ（AI学習）」を追加
+- 18時以降のメモ学習、Knowledge Core TOP10、AI経営会議の最近傾向を追加
+- メモをBusiness OptimizerとAI季節予測の判断材料へ追加
+- 最近10営業日の履歴詳細と月間レポートで今日のメモを表示
+
+### Compatibility
+- 旧JSONの `note` を `entry.memo` に補完し、未入力時は空文字として復元
+
+
 ## v9.2.1 — 2026-08-18
 
 ### Fixed

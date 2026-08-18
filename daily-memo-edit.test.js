@@ -4,12 +4,12 @@ const app=fs.readFileSync("app.js","utf8"),html=fs.readFileSync("index.html","ut
 assert.match(html,/id="noteStatus"[^>]*aria-live="polite"/);
 assert.match(css,/\.note-status\{[^}]*保存済みメモを編集中|\.note-status\{/);
 assert.match(app,/function setNoteStatus/);
-assert.match(app,/\$\("note"\)\.value=e\.note\?\?e\.memo\?\?""/,"legacy memo text is loaded into the daily note field");
+assert.match(app,/\$\("note"\)\.value=e\.memo\?\?e\.note\?\?""/,"legacy memo text is loaded into the daily note field");
 assert.match(app,/const i=data\.entries\.findIndex\(x=>x\.date===date\),existing=i>=0\?data\.entries\[i\]:null,e=buildEntry\(date,existing\)/,"same-day saves update the existing entry");
 assert.match(app,/merged=\{\.\.\.\(existing\|\|\{\}\),date\}/,"existing daily fields are merged before saving");
 assert.match(app,/raw===""&&existing\?Number\(existing\[id\]\)\|\|0:num\(id\)/,"blank numeric fields preserve existing values during memo-only edits");
 assert.match(app,/clinicalFromFormMerged\(existing\.clinical\?\?\{\}\)/,"blank clinical fields preserve existing clinical data during memo-only edits");
-assert.match(app,/merged\.note=\$\("note"\)\.value;merged\.memo=merged\.note/,"empty memos and multiline memos are saved without trimming");
+assert.match(app,/merged\.memo=DailyMemoLearning\.clean\(\$\("note"\)\.value\);merged\.note=merged\.memo/,"memos are normalized and mirrored for legacy readers");
 assert.match(app,/if\(e\)edit\(e\.date\);else clearForm\(date\)/,"date changes load existing notes or clear the field");
-assert.match(sw,/v9201-recent-activity-scroll/);assert.match(html,/app\.js\?v=9201/);
+assert.match(sw,/v9300-daily-memo-learning/);assert.match(html,/app\.js\?v=9300/);
 console.log("daily memo edit/append safety tests passed");
