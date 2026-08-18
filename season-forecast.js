@@ -11,15 +11,16 @@
   {key:"healthCheck",label:"健康診断",fields:["healthCheck","checkups"],preparation:["健診資材を確認","LINE配信を準備","健診枠を確保"]},
   {key:"bloodTest",label:"血液検査",fields:["bloodTest","bloodTests"],preparation:["検査試薬を確認","採血資材を確認","検査枠を確保"]},
   {key:"imaging",label:"画像検査",fields:["imaging","xrays","ultrasounds"],preparation:["画像機器を点検","検査枠を確認","説明資料を準備"]},
-  {key:"surgery",label:"手術",fields:["surgery","surgeries"],preparation:["手術物品を確認","麻酔薬を確認","手術枠を確保"]}
+  {key:"surgery",label:"手術",fields:["surgery","surgeries"],preparation:["手術物品を確認","麻酔薬を確認","手術枠を確保"]},
+  {key:"memoDermatology",label:"皮膚",memoWords:["皮膚","外耳炎"],preparation:["皮膚科資材を確認","予約枠を確認","季節案内を準備"]},{key:"memoHeatstroke",label:"熱中症",memoWords:["熱中症"],preparation:["注意喚起を準備","点滴資材を確認","涼しい時間の受診を案内"]}
  ];
- function value(entry,fields){const clinical=entry?.clinical||{};return fields.reduce((sum,key)=>sum+num(entry?.[key]??clinical[key]),0)}
+ function value(entry,fields,memoWords=[]){const clinical=entry?.clinical||{},numeric=(fields||[]).reduce((sum,key)=>sum+num(entry?.[key]??clinical[key]),0),memo=String(entry?.memo??entry?.note??"");return numeric+memoWords.reduce((sum,word)=>sum+(memo.split(word).length-1),0)}
  function normalizeLearning(value){if(Array.isArray(value))return {patterns:[...value],features:[],sampleCount:0,updatedAt:null};return value&&typeof value==="object"?{...value}:{features:[],sampleCount:0,updatedAt:null}}
  function normalizeForecast(value){return value&&typeof value==="object"&&!Array.isArray(value)?{...value,items:Array.isArray(value.items)?value.items.slice(0,MAX_FORECASTS):[]}:{date:null,items:[]}}
  function normalizeHistory(value){return (Array.isArray(value)?value:[]).filter(x=>x&&validDate(x.date)).map(x=>({...x,items:Array.isArray(x.items)?x.items.slice(0,MAX_FORECASTS):[]})).sort((a,b)=>a.date.localeCompare(b.date)).slice(-HISTORY_LIMIT)}
- function clean(rows,definition){const values=rows.map(row=>value(row,definition.fields)),sorted=[...values].sort((a,b)=>a-b);if(sorted.length<4)return rows;const q=p=>sorted[Math.floor((sorted.length-1)*p)],q1=q(.25),q3=q(.75),iqr=q3-q1,low=Math.max(0,q1-1.5*iqr),high=q3+1.5*iqr;return rows.filter(row=>{const v=value(row,definition.fields);return v>=low&&v<=high})}
+ function clean(rows,definition){const values=rows.map(row=>value(row,definition.fields,definition.memoWords)),sorted=[...values].sort((a,b)=>a-b);if(sorted.length<4)return rows;const q=p=>sorted[Math.floor((sorted.length-1)*p)],q1=q(.25),q3=q(.75),iqr=q3-q1,low=Math.max(0,q1-1.5*iqr),high=q3+1.5*iqr;return rows.filter(row=>{const v=value(row,definition.fields,definition.memoWords);return v>=low&&v<=high})}
  function inWindow(date,target){const md=date.slice(5),start=target.slice(5),end=new Date(`${target}T00:00:00Z`);end.setUTCDate(end.getUTCDate()+13);const endMd=end.toISOString().slice(5,10);return start<=endMd?md>=start&&md<=endMd:md>=start||md<=endMd}
- function average(rows,definition){return rows.length?rows.reduce((s,row)=>s+value(row,definition.fields),0)/rows.length:0}
+ function average(rows,definition){return rows.length?rows.reduce((s,row)=>s+value(row,definition.fields,definition.memoWords),0)/rows.length:0}
  function build({entries=[],today=new Date().toISOString().slice(0,10),weather=null,seasonLearning={},strategyMap={},successLibrary=[],learningHistory=[],weeklyLearningHistory=[],clinic={}}={}){
   const valid=(Array.isArray(entries)?entries:[]).filter(row=>validDate(row?.date)&&row.date<today).sort((a,b)=>a.date.localeCompare(b.date));
   const learning={...normalizeLearning(seasonLearning),updatedAt:today,sampleCount:valid.length,features:["month","weekday","temperature","weather","rain","patients","sales","unitPrice","newPatients","vaccines","healthCheck","bloodTest","imaging","surgery","dogRatio","catRatio"],sources:{strategyMap:Boolean(Object.keys(strategyMap||{}).length),successLibrary:(successLibrary||[]).length,learningHistory:(learningHistory||[]).length,weeklyLearningHistory:(weeklyLearningHistory||[]).length,clinic:Boolean(Object.keys(clinic||{}).length)}};

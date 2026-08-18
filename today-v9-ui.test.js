@@ -7,5 +7,5 @@ for(const label of ["売上","患者数","客単価","利益率","新患数","�
 for(const label of ["Business Optimizer","Knowledge Core","Success Pattern","Failure Pattern","Strategy Map","Season Forecast"])assert.match(today,new RegExp(label));
 assert.match(app,/uiState:\{analysisExpanded:false\}/);assert.match(app,/raw\.uiState\?\.analysisExpanded===true/);assert.match(app,/setupAIAnalysis/);
 assert.match(css,/transition:max-height 200ms ease,opacity 200ms ease,padding 200ms ease/);assert.match(css,/#today> :not\(\.today-primary-card\)\{display:none\}/);
-assert.match(sw,/keita-dashboard-v9201-recent-activity-scroll/);
+assert.match(sw,/keita-dashboard-v9300-daily-memo-learning/);
 console.log("Today v9 UI: hierarchy, KPI set, analytics links, restore compatibility, animation, and PWA version passed");
