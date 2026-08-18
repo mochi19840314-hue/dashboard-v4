@@ -11,5 +11,5 @@ assert.match(app,/raw===""&&existing\?Number\(existing\[id\]\)\|\|0:num\(id\)/,"
 assert.match(app,/clinicalFromFormMerged\(existing\.clinical\?\?\{\}\)/,"blank clinical fields preserve existing clinical data during memo-only edits");
 assert.match(app,/merged\.note=\$\("note"\)\.value;merged\.memo=merged\.note/,"empty memos and multiline memos are saved without trimming");
 assert.match(app,/if\(e\)edit\(e\.date\);else clearForm\(date\)/,"date changes load existing notes or clear the field");
-assert.match(sw,/v9000-today-renewal/);assert.match(html,/app\.js\?v=9000/);
+assert.match(sw,/v9100-today-entry/);assert.match(html,/app\.js\?v=9100/);
 console.log("daily memo edit/append safety tests passed");
