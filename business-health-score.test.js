@@ -1,4 +1,4 @@
-const test=require("node:test"),assert=require("node:assert/strict"),Score=require("./business-health-score.ts");
+const test=require("node:test"),assert=require("node:assert/strict"),Score=require("./business-health-score.js");
 test("Business Health Score uses the specified 100 point weights",()=>{const result=Score.calculate({businessDays:50,profitRate:40,salesAchievement:100,unitPrice:11000,normalUnitPrice:10000,revisitRate:70,doctorWorkload:50,successPatternMatch:90});assert.equal(result.score,100);assert.deepEqual(result.components,{profitRate:25,salesAchievement:20,unitPrice:20,revisitRate:10,doctorWorkload:15,successPattern:10})});
 test("score remains in learning mode until 50 business days",()=>{assert.equal(Score.calculate({businessDays:19}).status,"学習中");const result=Score.calculate({businessDays:49});assert.equal(result.ready,false);assert.equal(result.score,null)});
 test("learning ends at 50/50 business days",()=>{const result=Score.calculate({businessDays:50});assert.equal(result.ready,true);assert.notEqual(result.score,null)});

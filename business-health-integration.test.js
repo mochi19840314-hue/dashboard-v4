@@ -1,5 +1,5 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
-const DateRanges=require("./date-ranges.js"),BusinessHealthScore=require("./business-health-score.ts");
+const DateRanges=require("./date-ranges.js"),BusinessHealthScore=require("./business-health-score.js");
 
 const source=fs.readFileSync("app.js","utf8"),start=source.indexOf("function calculateBusinessHealth("),end=source.indexOf("function renderBusinessHealth(",start);
 function calculator(overrides={}){
