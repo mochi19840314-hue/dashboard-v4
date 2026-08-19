@@ -1,0 +1,6 @@
+const test=require("node:test"),assert=require("node:assert/strict"),RecentThreeMonthSales=require("./recent-three-month-sales");
+const source=values=>month=>Object.hasOwn(values,month)?{sales:values[month],hasData:true}:{sales:0,hasData:false};
+test("当月を除外し、直前の確定3ヶ月だけを平均する",()=>{const result=RecentThreeMonthSales.calculate("2026-08",source({"2026-05":300,"2026-06":600,"2026-07":900,"2026-08":99999}));assert.equal(result.average,600);assert.deepEqual(result.recentMonths,["2026-05","2026-06","2026-07"])});
+test("月が変わると対象月が自動的に移動する",()=>{const get=source({"2026-05":300,"2026-06":600,"2026-07":900,"2026-08":1200});assert.equal(RecentThreeMonthSales.calculate("2026-09",get).average,900)});
+test("前3ヶ月比と方向を計算し、±2%は横ばいにする",()=>{const up=RecentThreeMonthSales.calculate("2026-08",source({"2026-02":100,"2026-03":100,"2026-04":100,"2026-05":104,"2026-06":105,"2026-07":106}));assert.equal(up.change,5);assert.equal(up.direction,"up");const flat=RecentThreeMonthSales.calculate("2026-08",source({"2026-02":100,"2026-03":100,"2026-04":100,"2026-05":101,"2026-06":101,"2026-07":101}));assert.equal(flat.direction,"flat")});
+test("保存月が3ヶ月未満ならデータ不足とし、未保存の0円を数えない",()=>{const result=RecentThreeMonthSales.calculate("2026-08",source({"2026-06":0,"2026-07":500}));assert.equal(result.average,null);assert.equal(result.direction,"insufficient")});
