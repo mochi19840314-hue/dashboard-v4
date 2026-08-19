@@ -430,6 +430,15 @@
     <article><span>利益率</span><strong id="profitRate">0%</strong><small id="rateDelta">前月比 —</small></article>
     <article><span>実質純資産</span><strong id="netAssets">0円</strong><small id="assetDelta">口座残高 − 借入残高</small></article>
   </div>
+  <article class="card hospital-balance-card" aria-labelledby="hospitalBalanceTitle">
+    <header><span class="eyebrow">HOSPITAL CASH BALANCE</span><h3 id="hospitalBalanceTitle">病院収支</h3></header>
+    <div class="hospital-household-summary"><div><span>診療売上</span><strong id="hospitalClinicalSales">0円</strong></div><div><span>病院実支出</span><strong id="hospitalActualExpense">0円</strong></div></div>
+    <div class="hospital-household-difference"><span>差分</span><strong id="hospitalDifference">＋0円</strong></div>
+    <div class="hospital-balance-status"><small>支出率 <b id="hospitalExpenseRate">—</b></small><small id="hospitalBreakEven">損益分岐点をクリアしています</small><small id="hospitalMonthStatus" class="month-in-progress" hidden>月途中・支出先行</small></div>
+    <details class="hospital-expense-details"><summary>支出内訳を見る <b aria-hidden="true">›</b></summary><dl>
+      <div><dt>人件費</dt><dd id="hospitalPersonnelExpense">—</dd></div><div><dt>薬品・医療材料費</dt><dd id="hospitalMedicalExpense">—</dd></div><div><dt>家賃</dt><dd>—</dd></div><div><dt>借入返済</dt><dd id="hospitalRepayment">—</dd></div><div><dt>リース・保守</dt><dd>—</dd></div><div><dt>カード・決済関連</dt><dd id="hospitalCardExpense">—</dd></div><div><dt>その他</dt><dd id="hospitalOtherExpense">—</dd></div>
+    </dl></details>
+  </article>
   <article class="card hospital-household-card" aria-labelledby="hospitalHouseholdTitle">
     <header><span class="eyebrow">MONTHLY CASH BALANCE</span><h3 id="hospitalHouseholdTitle">病院＋家計 収支</h3></header>
     <div class="hospital-household-summary">

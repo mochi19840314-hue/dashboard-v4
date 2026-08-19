@@ -13,5 +13,14 @@
   const saved=financeByMonth?.[month]||{};
   return calculate({clinicalSales,hospitalCashExpense:saved.hospitalCashExpense,householdExpense:saved.householdExpense});
  }
- return {calculate,forMonth};
+ function calculateHospital({clinicalSales=0,hospitalCashExpense=0}={}){
+  const sales=amount(clinicalSales),expense=amount(hospitalCashExpense),difference=sales-expense;
+  return {clinicalSales:sales,hospitalCashExpense:expense,difference,expenseRate:sales?expense/sales*100:null,breakEvenRemaining:Math.max(0,-difference)};
+ }
+ function isMonthInProgress(month,today=new Date()){
+  if(!/^\d{4}-\d{2}$/.test(String(month)))return false;
+  const current=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}`,lastDay=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+  return month===current&&today.getDate()<lastDay;
+ }
+ return {calculate,forMonth,calculateHospital,isMonthInProgress};
 });
