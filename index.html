@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9404">
+<link rel="stylesheet" href="style.css?v=9401">
 </head>
 <body>
 <header class="app-header">
@@ -37,7 +37,7 @@
 
 <section id="today" class="page active">
   <article class="morning-brief-card today-primary-card" id="morningExecutiveBrief" aria-labelledby="morningExecutiveBriefTitle" aria-live="polite"><header><div><h2 id="morningExecutiveBriefTitle">🧑‍💼 AI経営会議</h2><p>Executive Meeting</p></div><time id="morningBriefDate"></time></header><div id="morningBriefContent"><p class="morning-brief-empty">経営データを確認しています。</p></div><nav id="morningBriefLinks" aria-label="AI経営会議の詳細" hidden><button type="button" data-brief-target="optimizer">Business Optimizer</button><button type="button" data-brief-target="strategy">Strategy Map</button><button type="button" data-brief-target="knowledge">Knowledge Core</button></nav><button id="morningBriefDetail" type="button" aria-expanded="false">詳細を見る</button></article>
-  <article class="today-summary-card today-primary-card" id="todaySummaryCard" role="button" tabindex="0" aria-labelledby="todaySummaryTitle" aria-haspopup="dialog" aria-controls="todayEntryModal"><header><div><h2 id="todaySummaryTitle">今日の診療実績</h2><p>Today Summary</p></div><span id="todaySummaryStatus">✏ 入力</span></header><div class="today-summary-grid"><section><span>売上</span><strong id="todaySummarySales">0円</strong></section><section><span>患者数</span><strong id="todaySummaryPatients">0件</strong></section><section><span>客単価</span><strong id="todaySummaryUnit">0円</strong></section><section><span>利益率</span><strong id="todaySummaryProfit">—</strong></section><section><span>新患数</span><strong id="todaySummaryNew">0件</strong></section><section><span>新患率</span><strong id="todaySummaryNewRate">0%</strong></section><section><span>画像検査件数</span><strong id="todaySummaryImaging">0件</strong></section></div></article>
+  <article class="today-summary-card today-primary-card" id="todaySummaryCard" role="button" tabindex="0" aria-labelledby="todaySummaryTitle" aria-haspopup="dialog" aria-controls="todayEntryModal"><header><div><h2 id="todaySummaryTitle">今日の診療実績</h2><p>Today Summary</p></div><span id="todaySummaryStatus">✏ 入力</span></header><div class="today-summary-grid"><section><span>売上</span><strong id="todaySummarySales">0円</strong></section><section><span>患者数</span><strong id="todaySummaryPatients">0件</strong></section><section><span>客単価</span><strong id="todaySummaryUnit">0円</strong></section><section><span>利益率</span><strong id="todaySummaryProfit">—</strong></section><section><span>新患数</span><strong id="todaySummaryNew">0件</strong></section><section><span>新患率</span><strong id="todaySummaryNewRate">0%</strong></section></div><div class="today-clinical-counts" aria-label="診療件数のクイック入力"><section><span>予防件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="preventive" aria-label="予防件数を1減らす">−</button><output id="todaySummaryPreventive" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="preventive" aria-label="予防件数を1増やす">＋</button></div></section><section><span>画像検査件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="imaging" aria-label="画像検査件数を1減らす">−</button><output id="todaySummaryImaging" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="imaging" aria-label="画像検査件数を1増やす">＋</button></div></section><section><span>血液検査件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="bloodTests" aria-label="血液検査件数を1減らす">−</button><output id="todaySummaryBloodTests" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="bloodTests" aria-label="血液検査件数を1増やす">＋</button></div></section></div></article>
   <article class="annual-management-card today-primary-card" id="annualManagementCard" aria-labelledby="annualManagementTitle" aria-live="polite">
     <header><h2 id="annualManagementTitle">📊 年間経営状況</h2><strong id="annualManagementBadge">— データ不足</strong></header>
     <div class="annual-management-periods" aria-label="今日、今月、年間の経営状況"><span>今日 <b id="annualTodayStatus">—</b></span><i aria-hidden="true">→</i><span>今月 <b id="annualMonthStatus">—</b></span><i aria-hidden="true">→</i><span>年間 <b id="annualYearStatus">—</b></span></div>
@@ -562,7 +562,8 @@
 <script src="business-simulator.js?v=6003"></script>
 <script src="annual-management-status.js?v=9402"></script>
 <script src="expense-year-over-year.js?v=1001"></script>
-<script src="app.js?v=9404"></script>
+<script src="today-clinical-counts.js?v=9500"></script>
+<script src="app.js?v=9401"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
