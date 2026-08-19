@@ -2,7 +2,7 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
 const Counts=require("./today-clinical-counts");
 const html=fs.readFileSync("index.html","utf8"),app=fs.readFileSync("app.js","utf8"),css=fs.readFileSync("style.css","utf8");
-for(const [metric,label] of [["preventive","予防"],["imaging","画像検査"],["bloodTests","血液検査"]]){
+for(const [metric,label] of [["preventive","予防"],["imaging","画像検査"],["bloodTests","血液検査"],["surgeries","手術"],["trimming","トリミング"]]){
  test(`${label} + / - changes the existing clinical fields by one and never goes negative`,()=>{
   const entries=[{date:"2026-08-19",sales:100,clinical:{preventive:0,xrays:0,ultrasounds:0,bloodTests:0}}];
   assert.equal(Counts.update(entries,"2026-08-19",metric,1).value,1);
@@ -25,8 +25,8 @@ test("only the selected past date changes and its monthly total follows it",()=>
  assert.equal(total(),8); Counts.update(entries,"2026-08-18","bloodTests",1);
  assert.equal(entries[0].clinical.bloodTests,4); assert.equal(entries[1].clinical.bloodTests,5); assert.equal(total(),9);
 });
-test("summary has three uniform accessible steppers and autosaves the selected date",()=>{
- for(const metric of ["preventive","imaging","bloodTests"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`TodayClinicalCounts\\.value\\(e,"${metric}"\\)`))}
+test("summary has five uniform accessible steppers and autosaves the selected date",()=>{
+ for(const metric of ["preventive","imaging","bloodTests","surgeries","trimming"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`TodayClinicalCounts\\.value\\(e,"${metric}"\\)`))}
  assert.match(app,/const date=summaryTargetDate\(\),result=TodayClinicalCounts\.update/);
  assert.match(app,/if\(!result\)return;save\(\)/);
  assert.match(app,/fillClinicalForm\(result\.entry\.clinical\)/);
@@ -35,4 +35,10 @@ test("iPhone layout uses 48px controls, one-column rows, and no horizontal overf
  assert.match(css,/today-clinical-counts button\{min-width:48px;min-height:48px/);
  assert.match(css,/@media\(max-width:520px\)\{\.today-clinical-counts\{grid-template-columns:1fr\}/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(190px,1\.25fr\)/);
+});
+
+test("top-level surgery and trimming fields stay compatible with existing aggregates",()=>{
+ const entries=[{date:"2026-08-19",surgeries:2,trimming:4,checkups:9,clinical:{preventive:3}}];
+ Counts.update(entries,"2026-08-19","surgeries",1); Counts.update(entries,"2026-08-19","trimming",-1);
+ assert.deepEqual(entries[0],{date:"2026-08-19",surgeries:3,trimming:3,checkups:9,clinical:{preventive:3}});
 });
