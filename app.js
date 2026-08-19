@@ -532,6 +532,15 @@ function expectedBusinessDays(month){
   for(let d=1;d<=last;d++){const date=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;if(clinicDayInfo(date).type!=="closed")n++}
   return n;
 }
+function annualBusinessDayProgress(date){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date)))return null;
+  const year=Number(date.slice(0,4)),lastDate=`${year}-12-31`;let elapsed=0,total=0;
+  for(let cursor=new Date(`${year}-01-01T12:00:00`),last=new Date(`${lastDate}T12:00:00`);cursor<=last;cursor.setDate(cursor.getDate()+1)){
+    const value=`${year}-${String(cursor.getMonth()+1).padStart(2,"0")}-${String(cursor.getDate()).padStart(2,"0")}`;
+    if(clinicDayInfo(value).type!=="closed"){total++;if(value<=date)elapsed++}
+  }
+  return total>0?elapsed/total*100:null;
+}
 function isRainy(e){const w=e.weather||{},code=Number(w.code??w.dailyCode),condition=w.condition||w.dailyCondition||"";return [51,53,55,61,63,65,80,81,82,95,96,99].includes(code)||/雨|雷/.test(condition)}
 function isSunny(e){const w=e.weather||{},code=Number(w.code??w.dailyCode),condition=w.condition||w.dailyCondition||"";return [0,1].includes(code)||/快晴|晴れ/.test(condition)}
 function analysisFor(entries){
@@ -806,11 +815,11 @@ function renderAnnualManagementStatus(){
   const previousYear=String(Number(yearValue)-1),priorCompleted=Array.from({length:monthIndex-1},(_,index)=>`${previousYear}-${String(index+1).padStart(2,"0")}`),hasStoredMonth=value=>Object.prototype.hasOwnProperty.call(data.historical||{},value)||data.entries.some(entry=>entry.date.startsWith(`${value}-`));
   const comparableDate=`${previousYear}${today.slice(4)}`,priorCurrentEntries=data.entries.filter(entry=>entry.date.startsWith(`${previousYear}-${today.slice(5,7)}-`)&&entry.date<=comparableDate),previousComparable=priorCompleted.every(hasStoredMonth)&&priorCurrentEntries.length>0;
   const previousSales=previousComparable?priorCompleted.reduce((value,period)=>value+monthSummary(period).sales,0)+sum(priorCurrentEntries).sales:0,currentComparableSales=rows.slice(0,monthIndex-1).reduce((value,row)=>value+row.sales,0)+sum(current.entries.filter(entry=>entry.date<=today)).sales;
-  const result=AnnualManagementStatus.build({annualSales:total.sales,annualExpense:total.expense,currentComparableSales,activeMonths,annualTarget,monthTarget,hasAnnualData:activeMonths>0,todayHasData:Boolean(todayEntry&&(Number(todayEntry.sales)>0||Number(todayEntry.patients)>0)),todaySales:Number(todayEntry?.sales)||0,todayTarget:clinicDayInfo(today).target,monthHasData:done>0||current.sales>0,monthForecast,previousComparable,previousSales});
+  const result=AnnualManagementStatus.build({annualSales:total.sales,annualExpense:total.expense,currentComparableSales,activeMonths,annualTarget,monthTarget,timeProgressRate:annualBusinessDayProgress(today),hasAnnualData:activeMonths>0,todayHasData:Boolean(todayEntry&&(Number(todayEntry.sales)>0||Number(todayEntry.patients)>0)),todaySales:Number(todayEntry?.sales)||0,todayTarget:clinicDayInfo(today).target,monthHasData:done>0||current.sales>0,monthForecast,previousComparable,previousSales});
   const shortLabel=key=>result.status[key]==="insufficient"?"—":result.labels[key].split(" ")[0],formatMan=value=>`${Math.round(value/10000).toLocaleString("ja-JP")}万円`;
   $("annualTodayStatus").textContent=shortLabel("today");$("annualMonthStatus").textContent=shortLabel("month");$("annualYearStatus").textContent=shortLabel("annual");$("annualManagementBadge").textContent=result.labels.annual;
   $("annualManagementCard").dataset.tone=result.status.annual;$("annualManagementSales").textContent=activeMonths?formatMan(result.sales):"—";$("annualManagementProfit").textContent=activeMonths?formatMan(result.profit):"—";
-  $("annualManagementYoY").textContent=result.yoy==null?"—":`${result.yoy>=0?"＋":"−"}${Math.abs(result.yoy).toFixed(1)}%`;$("annualManagementProgress").textContent=result.progress==null?"—":`${result.progress.toFixed(1)}%`;$("annualManagementComment").textContent=result.comment;
+  $("annualManagementYoY").textContent=result.yoy==null?"—":`${result.yoy>=0?"＋":"−"}${Math.abs(result.yoy).toFixed(1)}%`;$("annualManagementProgress").textContent=result.progress==null?"—":`${result.progress.toFixed(1)}%`;$("annualManagementPaceRatio").textContent=result.annualPaceRatio==null?"—":`${Math.round(result.annualPaceRatio)}%`;$("annualManagementComment").textContent=result.comment;
 }
 function year(){
   const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`));
