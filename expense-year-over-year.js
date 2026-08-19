@@ -11,6 +11,15 @@
  const MEDICAL_CONTROL_TOTALS=Object.freeze({8:5598608,12:8437553});
  const ITEMS=Object.freeze([{key:"personnelExpense",label:"人件費",comparable:true,source:"給与総合"},{key:"medicalExpense",label:"薬品・医療材料費",comparable:true,source:"薬品合計"},{key:"cardFee",label:"カード決済手数料",comparable:false,source:null}]);
  const amount=value=>Math.max(0,Number(value)||0);
+ const own=(object,key)=>Object.prototype.hasOwnProperty.call(object||{},key);
+ // Older backups have no `entered` map, so field presence remains their saved-data signal.
+ function savedValue(record,key){
+  if(!record||typeof record!=="object")return {entered:false,value:null};
+  const entered=record.entered&&own(record.entered,key)?record.entered[key]===true:own(record,key);
+  if(!entered||record[key]===undefined||record[key]===null||record[key]==="")return {entered:false,value:null};
+  const value=Number(record[key]);
+  return Number.isFinite(value)&&value>=0?{entered:true,value}:{entered:false,value:null};
+ }
  const difference=(current,previous)=>({current:amount(current),previous:amount(previous),difference:amount(current)-amount(previous),rate:amount(previous)>0?(amount(current)-amount(previous))/amount(previous)*100:null});
  const baselineTotal=()=>Object.values(BASELINE_2025).reduce((sum,row)=>sum+row.total,0);
  const itemBaselineTotal=(key,endMonth=12)=>key==="medicalExpense"&&MEDICAL_CONTROL_TOTALS[endMonth]!=null?MEDICAL_CONTROL_TOTALS[endMonth]:ITEM_BASELINE_2025[key]?.slice(0,endMonth).reduce((sum,value)=>sum+value,0)??null;
@@ -20,11 +29,17 @@
   const currentTotal=included.reduce((sum,index)=>sum+amount((financeByMonth[`2026-${String(index).padStart(2,"0")}`]||(index===month?currentFinance:{})).monthlyExpense),0),previousTotal=included.reduce((sum,index)=>sum+(BASELINE_2025[`2025-${String(index).padStart(2,"0")}`]?.total||0),0);
   const items=ITEMS.map(item=>{
    if(!item.comparable)return {...item,status:"前年データなし",monthly:null,cumulative:null};
-   const baseline=ITEM_BASELINE_2025[item.key],currentCumulative=Array.from({length:month},(_,i)=>{const key=`2026-${String(i+1).padStart(2,"0")}`;return amount((financeByMonth[key]||(key===selectedMonth?currentFinance:{} )||{})[item.key])}).reduce((sum,value)=>sum+value,0);
-   return {...item,status:"比較可能",monthly:difference(record[item.key],baseline[month-1]),cumulative:difference(currentCumulative,itemBaselineTotal(item.key,month))};
+   const baseline=ITEM_BASELINE_2025[item.key],months=[];
+   for(let index=1;index<=month;index++){
+    const key=`2026-${String(index).padStart(2,"0")}`,row=financeByMonth[key]||(key===selectedMonth?currentFinance:null),saved=savedValue(row,item.key);
+    if(saved.entered)months.push({month:index,value:saved.value});
+   }
+   const currentCumulative=months.reduce((sum,row)=>sum+row.value,0),monthNumbers=months.map(row=>row.month),complete=months.length===month;
+   const previousCumulative=complete?itemBaselineTotal(item.key,month):monthNumbers.reduce((sum,index)=>sum+baseline[index-1],0);
+   return {...item,status:complete?"比較可能":"今年データ不足",monthly:difference(record[item.key],baseline[month-1]),cumulative:{...difference(currentCumulative,previousCumulative),months:monthNumbers,missingMonths:Array.from({length:month},(_,i)=>i+1).filter(index=>!monthNumbers.includes(index)),enteredCount:months.length,expectedCount:month,complete}};
   });
   const compared=items.filter(item=>item.comparable).map(item=>({...item,difference:item.monthly.difference}));
   return {available:year===2026&&Boolean(baselineMonth),monthly:difference(record.monthlyExpense,baselineMonth?.total),cumulative:difference(currentTotal,previousTotal),includedMonths:included,items,increases:compared.filter(item=>item.difference>0).sort((a,b)=>b.difference-a.difference),decreases:compared.filter(item=>item.difference<0).sort((a,b)=>a.difference-b.difference)};
  }
- return {BASELINE_2025,ITEM_BASELINE_2025,MEDICAL_CONTROL_TOTALS,ITEMS,baselineTotal,itemBaselineTotal,difference,analyze};
+ return {BASELINE_2025,ITEM_BASELINE_2025,MEDICAL_CONTROL_TOTALS,ITEMS,baselineTotal,itemBaselineTotal,difference,savedValue,analyze};
 });
