@@ -38,7 +38,9 @@
    const previousCumulative=complete?itemBaselineTotal(item.key,month):monthNumbers.reduce((sum,index)=>sum+baseline[index-1],0);
    return {...item,status:complete?"比較可能":"今年データ不足",monthly:difference(record[item.key],baseline[month-1]),cumulative:{...difference(currentCumulative,previousCumulative),months:monthNumbers,missingMonths:Array.from({length:month},(_,i)=>i+1).filter(index=>!monthNumbers.includes(index)),enteredCount:months.length,expectedCount:month,complete}};
   });
-  const compared=items.filter(item=>item.comparable).map(item=>({...item,difference:item.monthly.difference}));
+  // 内訳は、今年保存された月と前年の同じ月だけを累計比較する。
+  // 未入力項目や前年基準のない項目を、0円の減少として扱わない。
+  const compared=items.filter(item=>item.comparable&&item.cumulative.enteredCount>0).map(item=>({...item,difference:item.cumulative.difference}));
   return {available:year===2026&&Boolean(baselineMonth),monthly:difference(record.monthlyExpense,baselineMonth?.total),cumulative:difference(currentTotal,previousTotal),includedMonths:included,items,increases:compared.filter(item=>item.difference>0).sort((a,b)=>b.difference-a.difference),decreases:compared.filter(item=>item.difference<0).sort((a,b)=>a.difference-b.difference)};
  }
  return {BASELINE_2025,ITEM_BASELINE_2025,MEDICAL_CONTROL_TOTALS,ITEMS,baselineTotal,itemBaselineTotal,difference,savedValue,analyze};
