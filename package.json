@@ -3,7 +3,7 @@
   "version": "9.4.0",
   "private": true,
   "scripts": {
-    "lint": "node --check app.js && node --check morning-executive-brief.js && node --check strategy-map.js && node --check ai-recommendation-outcomes.js && node --check business-health-score.js && node --check clinical-learning-engine.js && node --check business-simulator.js && node --check management-compass.js && node --check business-optimizer.js && node --check knowledge-core.js && node --check season-forecast.js && node --check learning-insights.js && node --check weekly-insights.js && node --check success-library.js && node --check daily-review.js && node --check monthly-profit-forecast.js && node --check annual-profit-forecast.js && node --check cash-flow-forecast.js && node --check today-mission.js && node --check today-winning-strategy.js && node --check today-result.js",
+    "lint": "node --check app.js && node --check annual-management-status.js && node --check morning-executive-brief.js && node --check strategy-map.js && node --check ai-recommendation-outcomes.js && node --check business-health-score.js && node --check clinical-learning-engine.js && node --check business-simulator.js && node --check management-compass.js && node --check business-optimizer.js && node --check knowledge-core.js && node --check season-forecast.js && node --check learning-insights.js && node --check weekly-insights.js && node --check success-library.js && node --check daily-review.js && node --check monthly-profit-forecast.js && node --check annual-profit-forecast.js && node --check cash-flow-forecast.js && node --check today-mission.js && node --check today-winning-strategy.js && node --check today-result.js",
     "build": "node --test *.test.js"
   }
 }
