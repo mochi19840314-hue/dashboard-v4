@@ -430,9 +430,20 @@
     <article><span>利益率</span><strong id="profitRate">0%</strong><small id="rateDelta">前月比 —</small></article>
     <article><span>実質純資産</span><strong id="netAssets">0円</strong><small id="assetDelta">口座残高 − 借入残高</small></article>
   </div>
+  <article class="card hospital-household-card" aria-labelledby="hospitalHouseholdTitle">
+    <header><span class="eyebrow">MONTHLY CASH BALANCE</span><h3 id="hospitalHouseholdTitle">病院＋家計 収支</h3></header>
+    <div class="hospital-household-summary">
+      <div><span>診療売上</span><strong id="householdClinicalSales">0円</strong></div>
+      <div><span>家計込み総支出</span><strong id="householdTotalExpense">0円</strong></div>
+    </div>
+    <div class="hospital-household-difference"><span>差分</span><strong id="householdDifference">＋0円</strong></div>
+    <footer><small>病院実支出 <b id="householdHospitalBreakdown">0円</b></small><small>家計支出 <b id="householdExpenseBreakdown">0円</b></small></footer>
+  </article>
   <div class="card form">
     <label>口座残高（円）<input id="balance" type="number" min="0"></label>
     <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
+    <label>病院実支出（減価償却費を除く）<input id="hospitalCashExpense" type="number" min="0" inputmode="numeric"></label>
+    <label>家計支出（円）<input id="householdExpense" type="number" min="0" inputmode="numeric"></label>
     <label>人件費（円）<input id="personnelExpense" type="number" min="0" inputmode="numeric"></label>
     <label>薬品・医療材料費（円）<input id="medicalExpense" type="number" min="0" inputmode="numeric"></label>
     <label>カード決済手数料（円）<input id="cardFee" type="number" min="0" inputmode="numeric"></label>
@@ -566,6 +577,7 @@
 <script src="recent-three-month-sales.js?v=9501"></script>
 <script src="expense-year-over-year.js?v=1001"></script>
 <script src="today-clinical-counts.js?v=9500"></script>
+<script src="hospital-household-balance.js?v=1"></script>
 <script src="app.js?v=9402"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
