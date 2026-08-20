@@ -1223,14 +1223,25 @@ function switchPage(id){
  clearTimeout(pageTransitionTimer);if(!current||reducedMotion()){reveal();return}pageScrollPositions.set(current.id,window.scrollY);current.classList.add("page-leaving");pageTransitionTimer=setTimeout(reveal,120);
 }
 function viewportDiagnosticText(){
- const main=document.querySelector("main"),simulator=$("simulator");
+ const main=document.querySelector("main"),simulator=$("simulator"),clientWidth=document.documentElement.clientWidth;
+ const overflows=[...document.querySelectorAll("*")].map(element=>{
+  const rect=element.getBoundingClientRect();
+  return {element,rect,scrollWidth:element.scrollWidth};
+ }).filter(({rect,scrollWidth})=>rect.right>clientWidth||rect.left<0||scrollWidth>clientWidth)
+  .sort((a,b)=>b.rect.right-a.rect.right);
+ const describe=({element,rect,scrollWidth})=>{
+  const name=element.tagName.toLowerCase(),id=element.id?`#${element.id}`:"",classes=element.classList.length?`.${[...element.classList].join(".")}`:"";
+  return `${name}${id}${classes} | left=${rect.left.toFixed(1)}, right=${rect.right.toFixed(1)}, width=${rect.width.toFixed(1)}, scrollWidth=${scrollWidth}`;
+ };
  return [
   `window.innerWidth: ${window.innerWidth}`,
-  `document.documentElement.clientWidth: ${document.documentElement.clientWidth}`,
+  `document.documentElement.clientWidth: ${clientWidth}`,
   `document.body.clientWidth: ${document.body.clientWidth}`,
   `document.body.scrollWidth: ${document.body.scrollWidth}`,
   `main.getBoundingClientRect().width: ${main?.getBoundingClientRect().width??"取得不可"}`,
-  `#simulator.getBoundingClientRect().width: ${simulator?.getBoundingClientRect().width??"取得不可"}`
+  `#simulator.getBoundingClientRect().width: ${simulator?.getBoundingClientRect().width??"取得不可"}`,
+  "",`横はみ出し要素 (${overflows.length}件 / right降順):`,
+  ...(overflows.length?overflows.map(describe):["なし"])
  ].join("\n");
 }
 function setupViewportDiagnostics(){
