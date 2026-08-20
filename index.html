@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9407">
+<link rel="stylesheet" href="style.css?v=9500">
 </head>
 <body>
 <header class="app-header">
@@ -391,6 +391,12 @@
     <article><span>年間利益率</span><strong id="yearProfitRate">0%</strong><small id="yearProfitRateSub">概算</small></article>
     <article><span>平均月商</span><strong id="yearAvg">0円</strong><small id="yearAvgSub">データ月平均</small></article>
   </div>
+  <article class="card holiday-analysis-card" aria-labelledby="holidayAnalysisTitle">
+    <header><div><span class="eyebrow">HOLIDAY ANALYSIS</span><h3 id="holidayAnalysisTitle">連休・季節分析</h3><p>保存済みの日次診療データから、連休中の営業価値を通常営業日と比較します。</p></div><strong id="holidayValueBadge">比較データ不足</strong></header>
+    <div class="holiday-controls"><label>分析期間<select id="holidayPreset"><option value="goldenWeek">ゴールデンウィーク</option><option value="obon" selected>お盆</option><option value="silverWeek">シルバーウィーク</option><option value="newYear">年末年始</option><option value="custom">期間指定</option></select></label><div class="holiday-dates"><label>開始日<input id="holidayStart" type="date"></label><label>終了日<input id="holidayEnd" type="date"></label></div></div>
+    <p id="holidayPeriod" class="holiday-period"></p><div id="holidayComparison" class="holiday-comparison" aria-live="polite"></div><div id="holidayOptional" class="holiday-optional"></div>
+    <section class="holiday-decision"><span>来年度の休診判断</span><h4 id="holidayDecisionTitle">比較データ不足</h4><p id="holidayDecisionText">対象期間の前後に営業データが5日以上あると判定できます。</p></section>
+  </article>
   <div class="card chart-card apple-chart-card">
     <div class="chart-heading"><div><span class="eyebrow">ANNUAL PERFORMANCE</span><h3>月別売上推移</h3><p>各年の月別売上を直線で比較できます。</p></div><div id="yearChartLegend" class="chart-legend" aria-label="表示年の凡例"></div></div>
     <p id="yearChartSummary" class="chart-summary">年間データを集計しています。</p>
@@ -576,11 +582,12 @@
 <script src="cash-flow-forecast.js?v=1085"></script>
 <script src="business-simulator.js?v=6003"></script>
 <script src="annual-management-status.js?v=9402"></script>
+<script src="holiday-analysis.js?v=9500"></script>
 <script src="recent-three-month-sales.js?v=9501"></script>
 <script src="expense-year-over-year.js?v=1001"></script>
 <script src="today-clinical-counts.js?v=9501"></script>
 <script src="hospital-household-balance.js?v=1"></script>
-<script src="app.js?v=9407"></script>
+<script src="app.js?v=9500"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
