@@ -461,6 +461,7 @@
     <label>ピュリナ 入金額（円）<input id="purina" type="number" inputmode="numeric" min="0" placeholder="0"></label>
     <label>借入残高（円）<input id="loan" type="number" min="0"></label>
     <label>月間返済額（円）<input id="repayment" type="number" min="0"></label>
+    <fieldset class="payment-day-settings wide"><legend>支払日</legend><p>既存の支出金額を日別予測に割り当てます（金額は追加されません）。</p><div id="paymentDayFields"></div><small>1〜31日。存在しない日はその月の月末として扱います。未設定の項目は最低予想残高を概算表示します。</small></fieldset>
     <label>目標年収（円・任意）<input id="incomeTarget" type="number" min="0" placeholder="例：12000000"></label>
     <button id="saveFinance" class="primary wide">保存する</button>
   </div>
