@@ -1,0 +1,5 @@
+const test=require("node:test"),assert=require("node:assert/strict"),Diagnostics=require("./viewport-diagnostics");
+function item(overrides={}){return {rect:{left:0,right:390,width:390},scrollWidth:390,clientWidth:390,styles:{transform:"none",zoom:"1","max-width":"none","min-width":"0px"},...overrides}}
+test("flags a parent narrower than 80% of the viewport",()=>{assert.ok(Diagnostics.warnings(item({rect:{left:0,right:234,width:234}}),390,null).some(message=>message.includes("幅縮小候補")))});
+test("flags horizontal overflow, transformations, zoom, and suspicious constraints",()=>{const messages=Diagnostics.warnings(item({rect:{left:-2,right:401,width:403},scrollWidth:500,clientWidth:390,styles:{transform:"matrix(0.6, 0, 0, 0.6, 0, 0)",zoom:"0.6","max-width":"234px","min-width":"500px"}}),390,null);for(const expected of ["右側","左側","scrollWidth","transform","zoom","max-width","min-width"])assert.ok(messages.some(message=>message.includes(expected)),expected)});
+test("flags a child that is substantially narrower than its parent",()=>{assert.ok(Diagnostics.warnings(item({rect:{left:0,right:250,width:250}}),390,390).some(message=>message.includes("親より幅")))});
