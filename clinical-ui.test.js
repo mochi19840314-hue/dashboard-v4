@@ -8,5 +8,5 @@ for(const id of ["clinicalBloodTests","clinicalXrays","clinicalUltrasounds","cli
 assert.equal((html.match(/data-clinical-step="1"/g)||[]).length,4);assert.equal((html.match(/data-clinical-step="-1"/g)||[]).length,4);
 assert.match(app,/function stepClinicalInput[\s\S]*?Math\.min\(99,Math\.max\(0/);assert.match(app,/raw===""\?0/);
 assert.match(app,/"newPatients","surgeries"/);
-assert.match(sw,/v9404-clinical-steppers/);assert.match(sw,/app\.js\?v=9404/);assert.match(html,/app\.js\?v=9404/);assert.match(html,/AI MANAGEMENT INSIGHTS/);assert.match(html,/診療データが蓄積されると/);assert.match(app,/management-insight/);
+assert.match(sw,/v9405-cash-flow-minimum/);assert.match(sw,/app\.js\?v=9405/);assert.match(html,/app\.js\?v=9405/);assert.match(html,/AI MANAGEMENT INSIGHTS/);assert.match(html,/診療データが蓄積されると/);assert.match(app,/management-insight/);
 console.log("clinical four-item stepper UI, save wiring, limits, and PWA cache tests passed");
