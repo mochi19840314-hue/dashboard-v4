@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9405">
+<link rel="stylesheet" href="style.css?v=9406">
 </head>
 <body>
 <header class="app-header">
@@ -345,10 +345,10 @@
     <section class="cash-flow-forecast" aria-labelledby="cashFlowForecastTitle">
       <div class="month-end-forecast-heading"><div><span class="eyebrow">CASH FLOW FORECAST</span><h4 id="cashFlowForecastTitle">月末キャッシュフロー予測</h4></div><span id="cashFlowSafetyBadge" class="cash-flow-badge">安全度</span></div>
       <div class="cash-flow-steps">
-        <div><span>現在口座残高</span><strong id="cashFlowBalance">0円</strong></div><i aria-hidden="true">↓</i>
+        <div class="cash-flow-current"><span>現在口座残高</span><strong id="cashFlowBalance">0円</strong><small>予測の基準</small></div><i aria-hidden="true">↓</i>
         <details class="cash-flow-receipts"><summary><span>今後入金予定</span><strong id="cashFlowIncoming">0円</strong><small>カード入金・未回収予定・その他収入</small></summary><div class="cash-flow-card-inputs" aria-label="カード入金予定額の設定"><label>SMBC 15日<input id="cashFlowSmbc15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>SMBC 月末<input id="cashFlowSmbcEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 15日<input id="cashFlowJcb15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 月末<input id="cashFlowJcbEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label></div></details><i aria-hidden="true">↓</i>
         <div><span>今後支払予定</span><strong id="cashFlowOutgoing">0円</strong><small id="cashFlowOutgoingDetail">給与・家賃・薬品・カード・リース・税金・その他</small></div>
-        <i aria-hidden="true">↓</i><div class="cash-flow-minimum"><span>今月最低予想残高</span><strong id="cashFlowMinimumBalance">0円</strong><small>資金繰り上の最低地点</small></div><i aria-hidden="true">↓</i>
+        <i aria-hidden="true">↓</i>
         <div class="cash-flow-total"><span>月末予想残高</span><strong id="cashFlowForecastBalance">0円</strong><small id="cashFlowComparison">前月比 比較データなし</small></div>
         <div class="cash-flow-safety"><span>安全度</span><strong id="cashFlowStars" aria-label="5段階中1">★☆☆☆☆</strong></div>
         <div class="cash-flow-confidence"><span>予測データの信頼度</span><strong id="cashFlowConfidence">低</strong><small id="cashFlowConfidenceDetail">カード入金予定額が未入力です</small></div>
@@ -461,7 +461,6 @@
     <label>ピュリナ 入金額（円）<input id="purina" type="number" inputmode="numeric" min="0" placeholder="0"></label>
     <label>借入残高（円）<input id="loan" type="number" min="0"></label>
     <label>月間返済額（円）<input id="repayment" type="number" min="0"></label>
-    <fieldset class="payment-day-settings wide"><legend>支払日</legend><p>既存の支出金額を日別予測に割り当てます（金額は追加されません）。</p><div id="paymentDayFields"></div><small>1〜31日。存在しない日はその月の月末として扱います。未設定の項目は最低予想残高を概算表示します。</small></fieldset>
     <label>目標年収（円・任意）<input id="incomeTarget" type="number" min="0" placeholder="例：12000000"></label>
     <button id="saveFinance" class="primary wide">保存する</button>
   </div>
@@ -574,14 +573,14 @@
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=6002"></script>
 <script src="monthly-profit-forecast.js?v=1082"></script>
-<script src="cash-flow-forecast.js?v=1084"></script>
+<script src="cash-flow-forecast.js?v=1085"></script>
 <script src="business-simulator.js?v=6003"></script>
 <script src="annual-management-status.js?v=9402"></script>
 <script src="recent-three-month-sales.js?v=9501"></script>
 <script src="expense-year-over-year.js?v=1001"></script>
 <script src="today-clinical-counts.js?v=9501"></script>
 <script src="hospital-household-balance.js?v=1"></script>
-<script src="app.js?v=9405"></script>
+<script src="app.js?v=9406"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
