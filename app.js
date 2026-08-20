@@ -1218,9 +1218,35 @@ function playChartEntrance(page){
  charts.forEach(chart=>{chart.classList.add("chart-awaiting");chartObserver.observe(chart)});
 }
 function switchPage(id){
- const current=document.querySelector(".page.active");if(current?.id===id&&!current.classList.contains("page-leaving"))return;
- const reveal=()=>{disconnectChartObserver(true);deactivateInsightScore();document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving")});document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});if(id==="today")renderDailyShadowBrief();if(id==="today")activateInsightScore();playChartEntrance($(id))};
+ const current=document.querySelector(".page.active");if(current?.id===id&&!current.classList.contains("page-leaving")){updateViewportDiagnostics();return}
+ const reveal=()=>{disconnectChartObserver(true);deactivateInsightScore();document.querySelectorAll(".page").forEach(p=>{p.classList.toggle("active",p.id===id);p.classList.remove("page-leaving")});updateViewportDiagnostics();document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===id));updateIndicator(id);document.querySelector(`.tab[data-page="${id}"]`)?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",inline:"center",block:"nearest"});if(id==="month")month();if(id==="report")renderMonthlyReport();if(id==="year"){years();year()}if(id==="finance")finance();if(id==="settings")renderClinicSettings();window.scrollTo({top:pageScrollPositions.get(id)||0,behavior:"auto"});if(id==="today")renderDailyShadowBrief();if(id==="today")activateInsightScore();playChartEntrance($(id))};
  clearTimeout(pageTransitionTimer);if(!current||reducedMotion()){reveal();return}pageScrollPositions.set(current.id,window.scrollY);current.classList.add("page-leaving");pageTransitionTimer=setTimeout(reveal,120);
+}
+function viewportDiagnosticText(){
+ const main=document.querySelector("main"),simulator=$("simulator");
+ return [
+  `window.innerWidth: ${window.innerWidth}`,
+  `document.documentElement.clientWidth: ${document.documentElement.clientWidth}`,
+  `document.body.clientWidth: ${document.body.clientWidth}`,
+  `document.body.scrollWidth: ${document.body.scrollWidth}`,
+  `main.getBoundingClientRect().width: ${main?.getBoundingClientRect().width??"取得不可"}`,
+  `#simulator.getBoundingClientRect().width: ${simulator?.getBoundingClientRect().width??"取得不可"}`
+ ].join("\n");
+}
+function setupViewportDiagnostics(){
+ if($("viewportDiagnosticButton"))return;
+ const button=document.createElement("button");button.id="viewportDiagnosticButton";button.type="button";button.textContent="🔍 画面診断";button.hidden=true;button.style.cssText="position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:10px;z-index:2147483647;padding:10px 14px;border:1px solid #006f67;border-radius:10px;background:#fff;color:#006f67;font:700 14px system-ui,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25);";
+ const panel=document.createElement("section");panel.id="viewportDiagnosticPanel";panel.hidden=true;panel.setAttribute("aria-label","画面診断結果");panel.style.cssText="position:fixed;left:10px;right:10px;top:80px;bottom:20px;z-index:2147483647;overflow-y:auto;box-sizing:border-box;padding:18px;border:1px solid #006f67;border-radius:12px;background:#fff;color:#172b2a;font:14px/1.6 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3);";
+ const heading=document.createElement("h2");heading.textContent="画面診断結果";heading.style.cssText="margin:0 0 12px;font-size:18px;";
+ const result=document.createElement("pre");result.id="viewportDiagnosticResult";result.style.cssText="margin:0 0 16px;white-space:pre-wrap;overflow-wrap:anywhere;";
+ const copy=document.createElement("button");copy.id="copyViewportDiagnostic";copy.type="button";copy.textContent="診断結果をコピー";copy.style.cssText="padding:10px 14px;border:0;border-radius:8px;background:#006f67;color:#fff;font:700 14px system-ui,sans-serif;";
+ const close=document.createElement("button");close.type="button";close.textContent="閉じる";close.style.cssText="margin-left:8px;padding:10px 14px;border:1px solid #64748b;border-radius:8px;background:#fff;color:#334155;font:700 14px system-ui,sans-serif;";
+ panel.append(heading,result,copy,close);document.body.append(button,panel);
+ button.onclick=()=>{result.textContent=viewportDiagnosticText();panel.hidden=false};
+ copy.onclick=()=>navigator.clipboard?.writeText(result.textContent);close.onclick=()=>{panel.hidden=true};
+}
+function updateViewportDiagnostics(){
+ setupViewportDiagnostics();const active=Boolean($("simulator")?.matches(".page.active")),button=$("viewportDiagnosticButton"),panel=$("viewportDiagnosticPanel");button.hidden=!active;if(!active)panel.hidden=true;
 }
 function moveMonth(delta){const [y,m]=($("monthPicker").value||monthNow()).split("-").map(Number),d=new Date(y,m-1+delta,1);$("monthPicker").value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;month();finance()}
 function setupSwipe(){let sx=0,sy=0,tracking=false;const root=$("pageContainer");root.addEventListener("touchstart",e=>{const t=e.target;if(t.closest("input,textarea,select,button,.table,nav,.recent-activity-card"))return;const p=e.touches[0];sx=p.clientX;sy=p.clientY;tracking=true},{passive:true});root.addEventListener("touchend",e=>{if(!tracking)return;tracking=false;const p=e.changedTouches[0],dx=p.clientX-sx,dy=p.clientY-sy;if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.25)return;const current=document.querySelector(".page.active")?.id,index=PAGE_IDS.indexOf(current),next=dx<0?index+1:index-1;if(next>=0&&next<PAGE_IDS.length)switchPage(PAGE_IDS[next])},{passive:true})}
