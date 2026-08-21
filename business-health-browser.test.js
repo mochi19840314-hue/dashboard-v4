@@ -39,5 +39,6 @@ test("Safari/PWA-equivalent August 18 activity has a finite recalculated health"
  const RecentActivity=require("./recent-activity.js");
  const row=RecentActivity.rows(entries,{calculateHealth:()=>selectedHealth})[0];
  assert.ok(Number.isFinite(row.health));
- assert.deepEqual({previewScore:health.previewScore,rowHealth:row.health},{previewScore:25,rowHealth:25});
+ assert.deepEqual({previewScore:health.previewScore,rowHealth:row.health},{previewScore:59,rowHealth:59});
+ assert.notEqual(row.health,25);
 });

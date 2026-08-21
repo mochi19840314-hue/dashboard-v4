@@ -22,7 +22,15 @@ test("saved August activity produces finite as-of preview scores and excludes la
  assert.equal(health18.score,null);
  assert.ok(Number.isFinite(health18.score??health18.previewScore));
  assert.ok(Number.isFinite(health16.score??health16.previewScore));
- assert.deepEqual({health18:health18.previewScore,health16:health16.previewScore},{health18:50,health16:50});
+ assert.deepEqual({health18:health18.previewScore,health16:health16.previewScore},{health18:79,health16:92});
+ assert.notEqual(health18.previewScore,health16.previewScore);
+});
+
+test("past-day calculation uses that day's saved KPIs without mutating entries",()=>{
+ const calculate=calculator(),entries=[...priorEntries,{date:"2026-08-19",sales:134090,patients:15},{date:"2026-08-20",sales:83450,patients:9},{date:"2026-08-21",sales:230030,patients:14}],before=JSON.stringify(entries);
+ const scores=["2026-08-19","2026-08-20","2026-08-21"].map(date=>calculate(date,entries).previewScore);
+ assert.deepEqual(scores,[33,24,96]);
+ assert.equal(JSON.stringify(entries),before);
 });
 
 test("50 operating days produce a finite confirmed score",()=>{
