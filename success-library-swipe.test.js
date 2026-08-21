@@ -8,6 +8,8 @@ test("AI経営ノート is an iPhone-compatible horizontal scroll area",()=>{
     assert.match(rule,new RegExp(declaration.replaceAll("-","\\-")));
   }
   assert.doesNotMatch(rule,/(?:^|;)overflow:hidden/);
+  assert.match(css,/\.success-library-items \*\{touch-action:pan-x\}/);
+  assert.match(css,/\.success-pattern:active\{transform:none\}/);
 });
 
 test("AI経営ノート cards keep their horizontal size",()=>{
@@ -22,4 +24,19 @@ test("page swipe handling yields to AI経営ノート native scrolling",()=>{
   assert.match(setup,/closest\("[^"]*\.success-library-items/);
   assert.doesNotMatch(setup,/preventDefault/);
   assert.match(setup,/\{passive:true\}/);
+  assert.match(setup,/touchcancel/);
+  assert.match(setup,/touchend[^]*ownsHorizontalScroll\(e\)/);
+});
+
+
+test("runtime scroll probe measures overflow and verifies scrollLeft mutation",()=>{
+  const probe=app.match(/function inspectSuccessLibraryScroll\(probe=false\)[\s\S]*?\n}/)?.[0]||"";
+  assert.match(probe,/clientWidth:element\.clientWidth/);
+  assert.match(probe,/scrollWidth:element\.scrollWidth/);
+  assert.match(probe,/scrollLeft:element\.scrollLeft/);
+  assert.match(probe,/overflowX:style\.overflowX/);
+  assert.match(probe,/touchAction:style\.touchAction/);
+  assert.match(probe,/element\.scrollWidth>element\.clientWidth/);
+  assert.match(probe,/element\.scrollLeft=Math\.min\(100/);
+  assert.match(probe,/element\.scrollLeft!==before/);
 });
