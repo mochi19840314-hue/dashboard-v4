@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9500">
+<link rel="stylesheet" href="style.css?v=9501">
 </head>
 <body>
 <header class="app-header">
@@ -346,8 +346,10 @@
       <div class="month-end-forecast-heading"><div><span class="eyebrow">CASH FLOW FORECAST</span><h4 id="cashFlowForecastTitle">月末キャッシュフロー予測</h4></div><span id="cashFlowSafetyBadge" class="cash-flow-badge">安全度</span></div>
       <div class="cash-flow-steps">
         <div class="cash-flow-current"><span>現在口座残高</span><strong id="cashFlowBalance">0円</strong><small>予測の基準</small></div><i aria-hidden="true">↓</i>
-        <details class="cash-flow-receipts"><summary><span>今後入金予定</span><strong id="cashFlowIncoming">0円</strong><small>カード入金・未回収予定・その他収入</small></summary><div class="cash-flow-card-inputs" aria-label="カード入金予定額の設定"><label>SMBC 15日<input id="cashFlowSmbc15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>SMBC 月末<input id="cashFlowSmbcEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 15日<input id="cashFlowJcb15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 月末<input id="cashFlowJcbEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label></div></details><i aria-hidden="true">↓</i>
-        <div><span>今後支払予定</span><strong id="cashFlowOutgoing">0円</strong><small id="cashFlowOutgoingDetail">給与・家賃・薬品・カード・リース・税金・その他</small></div>
+        <details class="cash-flow-receipts"><summary><span>今月入金見込</span><strong id="cashFlowIncoming">0円</strong><small>SMBC・JCB・その他入金</small></summary><div class="cash-flow-card-inputs" aria-label="入金見込の設定"><label>SMBC 15日<input id="cashFlowSmbc15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>SMBC 月末<input id="cashFlowSmbcEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 15日<input id="cashFlowJcb15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 月末<input id="cashFlowJcbEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>その他入金<input id="cashFlowOtherIncome" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label></div></details><i aria-hidden="true">↓</i>
+        <div class="cash-flow-expense"><span>今月支出合計</span><strong id="cashFlowOutgoing">0円</strong><label>今月口座から出ていく支出総額（非資金支出を除く）<span class="cash-flow-amount-input"><input id="cashFlowTotalExpense" inputmode="numeric" type="number" min="0" step="1" placeholder="金額を入力"><em>円</em></span></label></div>
+        <i aria-hidden="true">↓</i>
+        <div class="cash-flow-difference"><span>月間資金差額</span><strong id="cashFlowDifference">＋0円</strong></div>
         <i aria-hidden="true">↓</i>
         <div class="cash-flow-total"><span>月末予想残高</span><strong id="cashFlowForecastBalance">0円</strong><small id="cashFlowComparison">前月比 比較データなし</small></div>
         <div class="cash-flow-safety"><span>安全度</span><strong id="cashFlowStars" aria-label="5段階中1">★☆☆☆☆</strong></div>
@@ -579,7 +581,7 @@
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=6002"></script>
 <script src="monthly-profit-forecast.js?v=1082"></script>
-<script src="cash-flow-forecast.js?v=1085"></script>
+<script src="cash-flow-forecast.js?v=1086"></script>
 <script src="business-simulator.js?v=6003"></script>
 <script src="annual-management-status.js?v=9402"></script>
 <script src="examination-rates.js?v=9500"></script>
@@ -588,7 +590,7 @@
 <script src="expense-year-over-year.js?v=1001"></script>
 <script src="today-clinical-counts.js?v=9501"></script>
 <script src="hospital-household-balance.js?v=1"></script>
-<script src="app.js?v=9500"></script>
+<script src="app.js?v=9501"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
