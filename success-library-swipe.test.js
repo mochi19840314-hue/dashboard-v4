@@ -1,42 +1,60 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
-const css=fs.readFileSync("style.css","utf8"),app=fs.readFileSync("app.js","utf8");
+const TouchScroll=require("./success-library-touch-scroll");
+const css=fs.readFileSync("style.css","utf8"),app=fs.readFileSync("app.js","utf8"),html=fs.readFileSync("index.html","utf8");
 
-test("AI経営ノート is an iPhone-compatible horizontal scroll area",()=>{
-  const rule=css.match(/\.success-library-items\{([^}]*)\}/)?.[1]||"";
-  for(const declaration of ["display:flex","overflow-x:auto","overflow-y:hidden","-webkit-overflow-scrolling:touch","touch-action:pan-x","scroll-snap-type:x proximity"]){
-    assert.match(rule,new RegExp(declaration.replaceAll("-","\\-")));
-  }
-  assert.doesNotMatch(rule,/(?:^|;)overflow:hidden/);
-  assert.match(css,/\.success-library-items \*\{touch-action:pan-x\}/);
-  assert.match(css,/\.success-pattern:active\{transform:none\}/);
+function fixture({scrollLeft=100,scrollWidth=500,clientWidth=200}={}){
+ const listeners=new Map(),options=new Map();let pageSwipeEvents=0;
+ const element={scrollLeft,scrollWidth,clientWidth,
+  addEventListener(type,listener,option){listeners.set(type,listener);options.set(type,option)},
+  removeEventListener(type){listeners.delete(type)}
+ };
+ const dispatch=(type,x=0,y=0)=>{
+  const event={touches:type.startsWith("touch")&&type!=="touchend"&&type!=="touchcancel"?[{clientX:x,clientY:y}]:[],defaultPrevented:false,propagationStopped:false,
+   preventDefault(){this.defaultPrevented=true},stopPropagation(){this.propagationStopped=true}};
+  listeners.get(type)(event);if(!event.propagationStopped)pageSwipeEvents++;return event;
+ };
+ const controller=TouchScroll.setup(element);
+ return {element,dispatch,controller,options,pageSwipes:()=>pageSwipeEvents};
+}
+
+test("AI経営ノートだけに専用touch処理を設定する",()=>{
+ assert.match(html,/success-library-touch-scroll\.js\?v=1/);
+ assert.match(app,/SuccessLibraryTouchScroll\.setup\(\$\("successLibraryItems"\)\)/);
+ assert.equal((app.match(/SuccessLibraryTouchScroll\.setup/g)||[]).length,1);
 });
 
-test("AI経営ノート cards keep their horizontal size",()=>{
-  const rule=css.match(/\.success-pattern\{([^}]*)\}/)?.[1]||"";
-  assert.match(rule,/flex:0 0 min\(270px,82vw\)/);
-  assert.match(rule,/flex-shrink:0/);
-  assert.match(rule,/scroll-snap-align:start/);
+test("左へ50pxドラッグするとscrollLeftが50px増加する",()=>{
+ const f=fixture();f.dispatch("touchstart",150,40);const move=f.dispatch("touchmove",100,42);
+ assert.equal(f.element.scrollLeft,150);assert.equal(move.defaultPrevented,true);assert.equal(f.options.get("touchmove").passive,false);
 });
 
-test("page swipe handling yields to AI経営ノート native scrolling",()=>{
-  const setup=app.match(/function setupSwipe\(\)[\s\S]*?\nfunction setupBusinessSimulator/)?.[0]||"";
-  assert.match(setup,/closest\("[^"]*\.success-library-items/);
-  assert.doesNotMatch(setup,/preventDefault/);
-  assert.match(setup,/\{passive:true\}/);
-  assert.match(setup,/touchcancel/);
-  assert.match(setup,/touchend[^]*ownsHorizontalScroll\(e\)/);
+test("右へ50pxドラッグするとscrollLeftが50px減少する",()=>{
+ const f=fixture();f.dispatch("touchstart",100,40);f.dispatch("touchmove",150,42);
+ assert.equal(f.element.scrollLeft,50);
 });
 
+test("scrollLeftを0から最大値の範囲に制限する",()=>{
+ const left=fixture({scrollLeft:280});left.dispatch("touchstart",100,0);left.dispatch("touchmove",0,0);assert.equal(left.element.scrollLeft,300);
+ const right=fixture({scrollLeft:20});right.dispatch("touchstart",100,0);right.dispatch("touchmove",200,0);assert.equal(right.element.scrollLeft,0);
+});
 
-test("runtime scroll probe measures overflow and verifies scrollLeft mutation",()=>{
-  const probe=app.match(/function inspectSuccessLibraryScroll\(probe=false\)[\s\S]*?\n}/)?.[0]||"";
-  assert.match(probe,/clientWidth:element\.clientWidth/);
-  assert.match(probe,/scrollWidth:element\.scrollWidth/);
-  assert.match(probe,/scrollLeft:element\.scrollLeft/);
-  assert.match(probe,/overflowX:style\.overflowX/);
-  assert.match(probe,/touchAction:style\.touchAction/);
-  assert.match(probe,/element\.scrollWidth>element\.clientWidth/);
-  assert.match(probe,/element\.scrollLeft=Math\.min\(100/);
-  assert.match(probe,/element\.scrollLeft!==before/);
+test("縦ドラッグはpreventDefaultせずページ縦スクロールを維持する",()=>{
+ const f=fixture();f.dispatch("touchstart",100,100);const move=f.dispatch("touchmove",103,150);
+ assert.equal(f.element.scrollLeft,100);assert.equal(move.defaultPrevented,false);
+});
+
+test("touchcancelでドラッグ状態を解除する",()=>{
+ const f=fixture();f.dispatch("touchstart",100,20);assert.equal(f.controller.isTracking(),true);f.dispatch("touchcancel");assert.equal(f.controller.isTracking(),false);
+ f.dispatch("touchmove",50,20);assert.equal(f.element.scrollLeft,100);
+});
+
+test("AI経営ノートの全touch操作をDashboardページ切替へ伝播しない",()=>{
+ const f=fixture();f.dispatch("touchstart",100,20);f.dispatch("touchmove",40,22);f.dispatch("touchend");assert.equal(f.pageSwipes(),0);
+});
+
+test("overflow-x:autoとPC向け通常スクロールを維持する",()=>{
+ const rule=css.match(/\.success-library-items\{([^}]*)\}/)?.[1]||"";
+ assert.match(rule,/overflow-x:auto/);assert.match(rule,/overflow-y:hidden/);assert.match(rule,/touch-action:pan-y/);
+ assert.match(css,/\.success-pattern\{[^}]*flex:0 0 min\(270px,82vw\)/);
 });
