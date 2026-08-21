@@ -11,5 +11,5 @@ for(const label of ["季節予測","経営改善","経営学習","成功パタ�
 for(const label of ["Analytics","Season Forecast","Business Optimizer","Knowledge Core","Success Pattern","Failure Pattern","Strategy Map"])assert.doesNotMatch(analysis,new RegExp(label));
 assert.match(app,/uiState:\{analysisExpanded:false\}/);assert.match(app,/raw\.uiState\?\.analysisExpanded===true/);assert.match(app,/setupAIAnalysis/);
 assert.match(css,/transition:max-height 200ms ease,opacity 200ms ease,padding 200ms ease/);assert.match(css,/#today> :not\(\.today-primary-card\)\{display:none\}/);
-assert.match(sw,/keita-dashboard-v9500-holiday-analysis/);
+assert.match(sw,/keita-dashboard-v9501-cash-flow/);
 console.log("Today v9 UI: hierarchy, KPI set, analytics links, restore compatibility, animation, and PWA version passed");

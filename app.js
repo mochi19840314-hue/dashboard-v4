@@ -789,20 +789,20 @@ function renderMonthlyProfitForecast(){
 }
 
 function renderCashFlowForecast(profitForecast){
-  const m=monthNow(),mf=data.financeByMonth[m]||{},f=data.finance||{},s=monthSummary(m),prev=financeSnapshot(monthShift(m,-1)),cardReceipts=data.cardReceiptsByMonth?.[m]||{};
-  const value=key=>Number(mf[key]??f[key])||0,salary=value("personnelExpense"),medical=value("medicalExpense"),card=value("cardFee"),lease=value("leaseExpense")||value("repayment"),rent=value("rentExpense"),tax=value("taxExpense");
-  const itemized=salary+medical+card+lease+rent+tax,other=value("otherExpense")||Math.max(0,value("monthlyExpense")-itemized),today=new Date();
-  const result=CashFlowForecast.calculate({balance:value("balance"),currentSales:s.sales,projectedSales:profitForecast.projectedSales,uncollected:value("uncollectedIncome"),otherIncome:value("otherIncome"),cardReceipts,today,payments:{salary,rent,medical,card,lease,tax,other},previousBalance:(prev.balance||Object.prototype.hasOwnProperty.call(data.financeByMonth,monthShift(m,-1)))?prev.balance:null,currentProfit:profitForecast.currentProfit,previousMedicalExpense:Number(data.financeByMonth[monthShift(m,-1)]?.medicalExpense)||0});
+  const m=monthNow(),mf=data.financeByMonth[m]||{},f=data.finance||{},prev=financeSnapshot(monthShift(m,-1)),cardReceipts=data.cardReceiptsByMonth?.[m]||{},value=key=>Number(mf[key]??f[key])||0;
+  const result=CashFlowForecast.calculate({balance:value("balance"),otherIncome:value("otherIncome"),cardReceipts,totalExpense:Number(mf.cashFlowTotalExpense)||0,previousBalance:(prev.balance||Object.prototype.hasOwnProperty.call(data.financeByMonth,monthShift(m,-1)))?prev.balance:null});
   $("cashFlowBalance").textContent=yen(result.balance);$("cashFlowIncoming").textContent=yen(result.incoming);$("cashFlowOutgoing").textContent=yen(result.outgoing);$("cashFlowForecastBalance").textContent=yen(result.forecastBalance);
   const inputs={smbc15:"cashFlowSmbc15",smbcEnd:"cashFlowSmbcEnd",jcb15:"cashFlowJcb15",jcbEnd:"cashFlowJcbEnd"};Object.entries(inputs).forEach(([key,id])=>{if(document.activeElement!==$(id))$(id).value=cardReceipts[key]??""});
+  if(document.activeElement!==$("cashFlowOtherIncome"))$("cashFlowOtherIncome").value=mf.otherIncome??f.otherIncome??"";if(document.activeElement!==$("cashFlowTotalExpense"))$("cashFlowTotalExpense").value=mf.cashFlowTotalExpense??"";
   $("cashFlowConfidence").textContent=result.confidence.label;$("cashFlowConfidenceDetail").textContent=result.cards.missing.length?`未入力 ${result.cards.missing.length}件`:"今後のカード入金予定額はすべて入力済み";
-  $("cashFlowOutgoingDetail").textContent=`給与 ${yen(salary)}・家賃 ${yen(rent)}・薬品 ${yen(medical)}・カード ${yen(card)}・リース ${yen(lease)}・税金 ${yen(tax)}・その他 ${yen(other)}`;
+  $("cashFlowDifference").textContent=`${result.cashDifference>=0?"＋":"−"}${yen(Math.abs(result.cashDifference))}`;$("cashFlowDifference").parentElement.classList.toggle("is-negative",result.cashDifference<0);
   const comparison=result.monthOverMonth===null?"前月比 比較データなし":`前月比 ${result.monthOverMonth>=0?"＋":"−"}${Math.round(Math.abs(result.monthOverMonth)/10000).toLocaleString("ja-JP")}万円`;
   $("cashFlowComparison").textContent=comparison;$("cashFlowStars").textContent=result.safety.stars;$("cashFlowStars").setAttribute("aria-label",`5段階中${result.safety.level}`);$("cashFlowSafetyBadge").textContent=`安全度 ${result.safety.level}/5`;
   document.querySelector(".cash-flow-forecast").dataset.tone=result.safety.tone;$("cashFlowComment").textContent=`🥷 ${result.comment}`;
 }
 function setupCashFlowReceipts(){
  const inputs={smbc15:"cashFlowSmbc15",smbcEnd:"cashFlowSmbcEnd",jcb15:"cashFlowJcb15",jcbEnd:"cashFlowJcbEnd"};Object.entries(inputs).forEach(([key,id])=>$(id).addEventListener("change",event=>{const raw=event.target.value.trim();data.cardReceiptsByMonth={...(data.cardReceiptsByMonth||{}),[monthNow()]:{...(data.cardReceiptsByMonth?.[monthNow()]||{}),[key]:raw===""?null:Math.max(0,Number(raw)||0)}};save();year();toast("カード入金予定を保存しました")}));
+ const saveMonthlyAmount=(id,key,label)=>$(id).addEventListener("change",event=>{const raw=event.target.value.trim(),m=monthNow();data.financeByMonth[m]={...(data.financeByMonth[m]||{}),[key]:raw===""?null:Math.max(0,Number(raw)||0)};save();year();toast(`${label}を保存しました`)});saveMonthlyAmount("cashFlowOtherIncome","otherIncome","その他入金");saveMonthlyAmount("cashFlowTotalExpense","cashFlowTotalExpense","今月支出合計");
 }
 
 function annualForecastSource(y=String(new Date().getFullYear())){
