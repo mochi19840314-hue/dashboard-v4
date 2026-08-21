@@ -3,3 +3,25 @@ const entry=(date,overrides={})=>({date,patients:20,newPatients:4,sales:240000,e
 test("Daily Clinical Snapshot・診療負荷・成功/改善スコアを0〜100で保存",()=>{const snapshot=Engine.createSnapshot(entry("2026-08-16",{afterHours:1,emergency:1,surgeries:1,consultationMinutes:120}),{benchmarks:{sales:180000,unitPrice:10000}});assert.equal(snapshot.repeatPatients,16);assert.equal(snapshot.imaging,6);assert.ok(snapshot.doctorWorkload>=0&&snapshot.doctorWorkload<=100);assert.ok(snapshot.successScore>=0&&snapshot.successScore<=100);assert.ok(snapshot.improvementScore>=0&&snapshot.improvementScore<=100);for(const key of ["weather","temperature","profitRate","unitPrice","season","staffCount"])assert.ok(key in snapshot)});
 test("50営業日からSuccess/Failure Pattern、100営業日から最大3項目の組み合わせを学習",()=>{let state={};for(let i=0;i<100;i++){const d=new Date(Date.UTC(2026,0,1+i)).toISOString().slice(0,10);state=Engine.learnDaily(state,entry(d),{benchmarks:{sales:180000,unitPrice:10000}})}assert.ok(state.successPatterns.length);assert.equal(state.dailyLearning.status,"組み合わせ学習開始");assert.ok(state.successPatterns.at(-1).combinations.every(items=>items.length<=3));const failed=Engine.learnDaily(state,entry("2026-05-01",{sales:20000,expense:30000,patients:20,newPatients:15,clinical:{}}));assert.ok(failed.failurePatterns.length)});
 test("JSON往復と成功パターン一致率",()=>{let state={};for(let i=0;i<50;i++)state=Engine.learnDaily(state,entry(new Date(Date.UTC(2026,0,1+i)).toISOString().slice(0,10)),{benchmarks:{sales:180000,unitPrice:10000}});const restored=JSON.parse(JSON.stringify(state));assert.equal(restored.clinicalSnapshots.length,50);assert.ok(Engine.patternMatch(restored.snapshot,restored.successPatterns)>0);assert.ok(restored.knowledgeCandidates.length)});
+
+test("AI診療学習は診療経営スコアを総合点として保持し、既存成功条件も維持する",()=>{
+ const snapshot=Engine.createSnapshot(entry("2026-08-21"),{businessHealthScore:82,benchmarks:{sales:180000,unitPrice:10000}});
+ assert.equal(snapshot.businessHealthScore,82);
+ assert.equal(snapshot.successScore,82);
+ assert.ok(Number.isFinite(snapshot.clinicalQualityScore));
+ assert.equal(Engine.managementScore(snapshot),82);
+ assert.equal(Engine.evaluateSuccessDay({...snapshot,clinicalQualityScore:54},82),false);
+ assert.equal(Engine.evaluateSuccessDay({...snapshot,clinicalQualityScore:80},82),true);
+});
+
+test("患者数0の日は経営スコアが高くても成功日にしない",()=>{
+ const snapshot=Engine.createSnapshot(entry("2026-08-21",{patients:0,newPatients:0}),{businessHealthScore:100});
+ assert.equal(Engine.evaluateSuccessDay({...snapshot,clinicalQualityScore:100},100),false);
+});
+
+test("保存済みsnapshotは変更せず表示時の診療経営スコアを解決できる",()=>{
+ const legacy={date:"2026-08-21",patients:14,successScore:54},before=JSON.stringify(legacy);
+ assert.equal(Engine.managementScore(legacy,82),82);
+ assert.equal(Engine.evaluateSuccessDay(legacy,82),false);
+ assert.equal(JSON.stringify(legacy),before);
+});
