@@ -12,3 +12,12 @@ test("missing profit rate still calculates from available KPIs",()=>{const resul
 test("a missing KPI is excluded while an explicitly saved zero receives zero points",()=>{const missing=Score.calculate({businessDays:50,salesAchievement:100}),zero=Score.calculate({businessDays:50,salesAchievement:100,preventiveRate:0});assert.equal(missing.score,100);assert.equal(zero.score,67);assert.equal(missing.components.preventiveRate,null);assert.equal(zero.components.preventiveRate,0)});
 test("different daily sales, patients, and unit prices do not stick at 25",()=>{const score=(salesAchievement,patientAchievement,unitPrice)=>Score.calculate({businessDays:10,salesAchievement,patientAchievement,unitPrice,normalUnitPrice:10000}).previewScore;assert.deepEqual([score(67,100,8939),score(42,60,9272),score(115,93,16431)],[36,25,98])});
 test("NaN and Infinity are missing and never appear as scores",()=>{for(const value of [NaN,Infinity,-Infinity]){const result=Score.calculate({businessDays:50,profitRate:value});assert.equal(result.score,null);assert.equal(result.previewScore,null)}});
+test("2026/8/21の82点を実際の構成要素から説明する",()=>{
+ const result=Score.calculate({businessDays:50,salesAchievement:100,patientAchievement:100,unitPrice:10000,normalUnitPrice:10000,newPatientRate:14,revisitRate:70,preventiveRate:20,imagingRate:0,bloodTestRate:9}),reason=Score.explain(result);
+ assert.equal(result.score,82);
+ assert.deepEqual(reason.positive.map(item=>item.key),["salesAchievement","patientAchievement","unitPriceChange"]);
+ assert.deepEqual(reason.negative.map(item=>item.key),["imagingRate"]);
+ assert.equal(reason.text,"好調な診療日でした。\n売上達成率、患者数、客単価がスコアにプラス寄与し、82点の主なプラス要因です。\n一方、画像検査率には改善余地があります。\n明日は、必要な症例で検査提案が不足していなかったか確認してください。");
+});
+test("低スコアでは実際のマイナス要因と安全な検査確認だけを示す",()=>{const reason=Score.explain(Score.calculate({businessDays:50,imagingRate:0,bloodTestRate:0,revisitRate:20}));assert.match(reason.text,/改善余地のある診療日/);assert.deepEqual(reason.negative.map(item=>item.key),["imagingRate","bloodTestRate"]);assert.match(reason.text,/必要な症例で検査提案が不足していなかったか確認/);assert.doesNotMatch(reason.text,/検査を増や/)});
+test("欠損値は理由に使わず、入力済みの0は改善要因として評価する",()=>{const reason=Score.explain(Score.calculate({businessDays:50,salesAchievement:100,preventiveRate:0}));assert.equal(reason.positive[0].key,"salesAchievement");assert.equal(reason.negative[0].key,"preventiveRate");assert.doesNotMatch(reason.text,/利益率/);assert.equal(Score.explain(Score.calculate({businessDays:50,salesAchievement:100})).text,"評価できるデータがまだ十分ではありません。");});
