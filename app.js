@@ -246,42 +246,39 @@ function calculateBusinessHealth(asOf=iso(),rawEntries=data.entries){
  return BusinessHealthScore.calculate({businessDays:new Set(entries.map(item=>item.date)).size,profitRate:value(entry,"profitRate"),salesAchievement:sales===null?null:sales/dailyTarget*100,patientAchievement:patients===null?null:patients/normalPatients*100,unitPrice:sales!==null&&patients>0?sales/patients:null,normalUnitPrice,newPatientRate:rate(newPatients),revisitRate:patients!==null&&patients>0&&newPatients!==null?(patients-newPatients)/patients*100:null,preventiveRate:rate(clinical&&has(clinical,"preventive")?Number(clinical.preventive):null),imagingRate:rate(imaging),bloodTestRate:rate(clinical&&has(clinical,"bloodTests")?Number(clinical.bloodTests):null)});
 }
 function renderBusinessHealth(){
- const calculated=calculateBusinessHealth(),card=$("businessHealthCard"),content=$("businessHealthContent"),detail=$("businessHealthDetail"),closed=clinicDayInfo(iso()).type==="closed",history=BusinessHealthScore.normalizeHistory(data.businessHealthHistory),result=BusinessHealthScore.displayScore(calculated,history,iso(),closed);card.dataset.tone=result.ready?result.grade.tone:"learning";
+ const calculated=calculateBusinessHealth(),card=$("businessHealthCard"),content=$("businessHealthContent"),detail=$("businessHealthDetail"),closed=clinicDayInfo(iso()).type==="closed",history=officialBusinessHealthHistory(data.entries),result=BusinessHealthScore.displayScore(calculated,history,iso(),closed);card.dataset.tone=result.ready?result.grade.tone:"learning";
  if(!result.ready){content.innerHTML=`<span class="health-learning-status"><b>学習中</b><strong>${result.businessDays} / ${result.requiredDays}営業日</strong><small>あと${result.remainingDays}営業日</small></span>`;detail.innerHTML='<p>必要営業日のデータが揃うと、経営指標の詳細を表示します。</p>'}
  else{const previous=history.filter(item=>item.date<(result.asOf||iso())).at(-1)?.score??result.score,monthStats=BusinessHealthScore.summary(history,monthNow()),delta=result.score-previous,display=businessHealthDisplay(result.score);content.innerHTML=`<span class="health-score-line"><strong>${display.score??"—"}<small>${display.score==null?"":"点"}</small></strong>${display.label?`<b>${display.label}</b>`:""}</span><span class="health-meta"><span>前日比 <b>${delta>=0?"+":""}${delta}</b></span><span>今月平均 <b>${monthStats.average??"—"}</b></span>${closed?'<em>休診日・前営業日時点</em>':""}</span>`;const metrics=calculated.metrics,metric=(value,suffix="")=>value!==null&&value!==undefined&&Number.isFinite(Number(value))?`${Number(value).toFixed(1)}${suffix}`:"—";detail.innerHTML=`<h3>経営指標の詳細</h3><dl class="health-detail-metrics"><div><dt>利益率</dt><dd>${metric(metrics.profitRate,"%")}</dd></div><div><dt>売上達成率</dt><dd>${metric(metrics.salesAchievement,"%")}</dd></div><div><dt>客単価</dt><dd>${metrics.unitPrice==null?"—":yen(metrics.unitPrice)}</dd></div><div><dt>再診率</dt><dd>${metric(metrics.revisitRate,"%")}</dd></div><div><dt>診療負荷</dt><dd>${metric(metrics.doctorWorkload)}</dd></div><div><dt>Success Pattern一致率</dt><dd>${metric(metrics.successPatternMatch,"%")}</dd></div></dl><section class="health-opportunities"><h3>改善余地 TOP3</h3><ol>${calculated.opportunities.slice(0,3).map(item=>`<li>${escapeHtml(item.label)}</li>`).join("")}</ol></section>`}
  const hasToday=data.entries.some(entry=>entry.date===iso())&&!closed;if(hasToday){const next=BusinessHealthScore.updateHistory(data.businessHealthHistory,calculated,iso());if(JSON.stringify(next)!==JSON.stringify(data.businessHealthHistory)){data.businessHealthHistory=next;data.businessHealthScore=calculated.score;save()}}renderBusinessHealthReports(calculated)
-}
-function getManagementScoreForDailyEntry(entry,month,calculate=calcManagementScore){
- const result=calculate({...entry,entries:[entry]},month);
- if(typeof result==="number")return result;
- return result&&Number.isFinite(result.score)?result.score:null;
 }
 function getNormalizedMonthlyEntries(selectedMonth,rawEntries=data.entries){
  const monthlyEntries=DateRanges.normalizedEntriesForCalendarMonth(rawEntries,selectedMonth);
  console.log("[Monthly Data Debug]",{selectedMonth,rawCount:rawEntries.length,normalizedCount:monthlyEntries.length,rawDates:rawEntries.map(x=>x?.date),normalizedDates:monthlyEntries.map(x=>x.date)});
  return monthlyEntries;
 }
-function monthlyManagementScoreStats(month,monthlyEntries,calculate=calcManagementScore){
- const entries=[...monthlyEntries].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
- const scoredEntries=entries.map(entry=>{
-  let score=null;
-  try{score=getManagementScoreForDailyEntry(entry,month,calculate)}catch(error){console.warn("[Monthly AI Score Failed]",{date:entry.date,entry,error});return null}
-  if(!Number.isFinite(score)){console.warn("[Monthly AI Score Failed]",{date:entry.date,entry});return null}
-  return {date:entry.date,score};
- }).filter(Boolean),scores=scoredEntries.map(item=>item.score);
+function officialBusinessHealthHistory(rawEntries=data.entries,calculate=calculateBusinessHealth){
+ const entries=(Array.isArray(rawEntries)?rawEntries:[]).map(entry=>{const date=DateRanges.normalizeEntryDate(entry);return date?{...entry,date}:null}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date));
+ return entries.map(entry=>{
+  try{const result=calculate(entry.date,entries),score=result?.score??result?.previewScore??null;return Number.isFinite(Number(score))?{date:entry.date,score:Math.round(Number(score))}:null}
+  catch(error){console.warn("[Business Health Recalculation Failed]",{date:entry.date,error});return null}
+ }).filter(Boolean);
+}
+function monthlyManagementScoreStats(month,rawEntries,calculate=calculateBusinessHealth){
+ const entries=getNormalizedMonthlyEntries(month,rawEntries),scoredEntries=officialBusinessHealthHistory(rawEntries,calculate).filter(item=>item.date.startsWith(month));
+ const scores=scoredEntries.map(item=>item.score);
  console.log("[Monthly AI Debug]",{monthlyEntriesCount:entries.length,scoredEntriesCount:scoredEntries.length,scoredEntries});
  if(!scores.length)return {count:0,average:null,highest:null,lowest:null,improvement:null};
  return {count:scores.length,average:Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),highest:Math.max(...scores),lowest:Math.min(...scores),improvement:scores.length>=2?scores.at(-1)-scores[0]:null};
 }
 function renderMonthlyManagementScore(month,rawEntries){
- const monthlyEntries=getNormalizedMonthlyEntries(month,rawEntries),monthStats=monthlyManagementScoreStats(month,monthlyEntries),monthly=$("businessHealthMonthReport");
+ const monthlyEntries=getNormalizedMonthlyEntries(month,rawEntries),monthStats=monthlyManagementScoreStats(month,rawEntries),monthly=$("businessHealthMonthReport");
  if(!monthly)return monthlyEntries;
  const improvement=monthStats.improvement===null?"—":monthStats.improvement===0?"±0点":`${monthStats.improvement>0?"+":""}${monthStats.improvement}点`;
  monthly.innerHTML=`<span class="eyebrow">診療経営スコア・月間レポート</span><div class="health-summary"><div><small>平均</small><strong>${monthStats.average??"—"}点</strong></div><div><small>最高</small><strong>${monthStats.highest??"—"}点</strong></div><div><small>最低</small><strong>${monthStats.lowest??"—"}点</strong></div><div><small>今月改善</small><strong>${improvement}</strong></div></div>`;
  return monthlyEntries;
 }
 function renderBusinessHealthReports(){
- const yearValue=$("yearPicker")?.value||String(new Date().getFullYear()),rows=BusinessHealthScore.normalizeHistory(data.businessHealthHistory).filter(item=>item.date.startsWith(yearValue)),stats=BusinessHealthScore.summary(rows),statsEl=$("businessHealthYearStats"),chart=$("businessHealthYearChart");if(!statsEl||!chart)return;
+ const yearValue=$("yearPicker")?.value||String(new Date().getFullYear()),rows=officialBusinessHealthHistory(data.entries).filter(item=>item.date.startsWith(yearValue)),stats=BusinessHealthScore.summary(rows),statsEl=$("businessHealthYearStats"),chart=$("businessHealthYearChart");if(!statsEl||!chart)return;
  statsEl.innerHTML=`<div><small>平均</small><strong>${stats.average??"—"}点</strong></div><div><small>最高</small><strong>${stats.highest??"—"}点</strong></div><div><small>最低</small><strong>${stats.lowest??"—"}点</strong></div>`;
  if(!rows.length){chart.innerHTML='<p class="chart-empty">指数データを学習中です。</p>';return}const w=700,h=230,p=30,x=index=>p+index*Math.max(1,(w-p*2)/Math.max(1,rows.length-1)),y=score=>h-p-score*(h-p*2)/100,points=rows.map((item,index)=>`${x(index)},${y(item.score)}`).join(" ");chart.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><line x1="${p}" y1="${y(stats.average)}" x2="${w-p}" y2="${y(stats.average)}" class="health-average"/><polyline points="${points}" class="health-line"/>${rows.map((item,index)=>`<circle cx="${x(index)}" cy="${y(item.score)}" r="4"><title>${item.date} ${item.score}点</title></circle>`).join("")}</svg>`;
 }
@@ -309,7 +306,7 @@ function renderSuccessLibrary(){
 }
 function strategyDashboard(month=monthNow()){
  const summary=monthSummary(month),settings=data.settings?.[month]||{};
- return KnowledgeCore.buildStrategyDashboard({entries:data.entries,successLibrary:data.successLibrary,scoreHistory:data.businessHealthHistory,today:month===monthNow()?iso():`${month}-${String(new Date(Number(month.slice(0,4)),Number(month.slice(5)),0).getDate()).padStart(2,"0")}`,target:Number(settings.target)||MONTHLY_TARGET,expense:summary.expense,businessDays:Number(settings.businessDays)||expectedBusinessDays(month)});
+ return KnowledgeCore.buildStrategyDashboard({entries:data.entries,successLibrary:data.successLibrary,scoreHistory:officialBusinessHealthHistory(data.entries),today:month===monthNow()?iso():`${month}-${String(new Date(Number(month.slice(0,4)),Number(month.slice(5)),0).getDate()).padStart(2,"0")}`,target:Number(settings.target)||MONTHLY_TARGET,expense:summary.expense,businessDays:Number(settings.businessDays)||expectedBusinessDays(month)});
 }
 function renderStrategyIntelligence(){
  if(typeof KnowledgeCore==="undefined"||!$("aiManagementBrief"))return;const result=strategyDashboard(),brief=result.brief;
