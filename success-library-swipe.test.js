@@ -10,7 +10,7 @@ function fixture({scrollLeft=100,scrollWidth=500,clientWidth=200}={}){
   removeEventListener(type){listeners.delete(type)}
  };
  const dispatch=(type,x=0,y=0)=>{
-  const event={touches:type.startsWith("touch")&&type!=="touchend"&&type!=="touchcancel"?[{clientX:x,clientY:y}]:[],defaultPrevented:false,propagationStopped:false,
+  const event={touches:type.startsWith("touch")&&type!=="touchend"&&type!=="touchcancel"?[{identifier:7,clientX:x,clientY:y}]:[],defaultPrevented:false,propagationStopped:false,
    preventDefault(){this.defaultPrevented=true},stopPropagation(){this.propagationStopped=true}};
   listeners.get(type)(event);if(!event.propagationStopped)pageSwipeEvents++;return event;
  };
@@ -19,7 +19,7 @@ function fixture({scrollLeft=100,scrollWidth=500,clientWidth=200}={}){
 }
 
 test("AI経営ノートだけに専用touch処理を設定する",()=>{
- assert.match(html,/success-library-touch-scroll\.js\?v=1/);
+ assert.match(html,/success-library-touch-scroll\.js\?v=2/);
  assert.match(app,/SuccessLibraryTouchScroll\.setup\(\$\("successLibraryItems"\)\)/);
  assert.equal((app.match(/SuccessLibraryTouchScroll\.setup/g)||[]).length,1);
 });
@@ -49,8 +49,15 @@ test("touchcancelでドラッグ状態を解除する",()=>{
  f.dispatch("touchmove",50,20);assert.equal(f.element.scrollLeft,100);
 });
 
+test("touchendでドラッグ状態を解除する",()=>{
+ const f=fixture();f.dispatch("touchstart",100,20);f.dispatch("touchend");assert.equal(f.controller.isTracking(),false);
+ f.dispatch("touchmove",50,20);assert.equal(f.element.scrollLeft,100);
+});
+
 test("AI経営ノートの全touch操作をDashboardページ切替へ伝播しない",()=>{
- const f=fixture();f.dispatch("touchstart",100,20);f.dispatch("touchmove",40,22);f.dispatch("touchend");assert.equal(f.pageSwipes(),0);
+ const horizontal=fixture();horizontal.dispatch("touchstart",100,20);horizontal.dispatch("touchmove",40,22);horizontal.dispatch("touchend");assert.equal(horizontal.pageSwipes(),0);
+ const vertical=fixture();vertical.dispatch("touchstart",100,20);const move=vertical.dispatch("touchmove",98,80);vertical.dispatch("touchend");
+ assert.equal(vertical.pageSwipes(),0);assert.equal(move.defaultPrevented,false);
 });
 
 test("overflow-x:autoとPC向け通常スクロールを維持する",()=>{
