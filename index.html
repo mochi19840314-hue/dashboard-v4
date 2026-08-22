@@ -342,21 +342,6 @@
       <div class="month-end-forecast-stats"><div><span>現在利益</span><strong id="monthEndCurrentProfit">0円</strong></div><div class="forecast-primary"><span>月末利益予測</span><strong id="monthEndForecastProfit">約0万円</strong></div><div><span>利益目標</span><strong id="monthEndTargetProfit">0円</strong></div><div><span>達成率</span><strong id="monthEndAchievement">0%</strong></div><div><span>信頼度</span><strong id="monthEndConfidence" class="forecast-stars" aria-label="5段階中0">☆☆☆☆☆</strong><small id="monthEndConfidenceSub">営業日 0日</small></div><div><span>予測モデル</span><strong id="monthEndModel">データ待ち</strong></div><div><span>昨日との差</span><strong id="monthEndDifference">比較データなし</strong><small id="monthEndPreviousForecast"></small></div></div>
       <p id="monthEndKagemushaComment" class="month-end-kagemusha">🥷 営業データを記録すると、月末利益を予測します。</p>
     </section>
-    <section class="cash-flow-forecast" aria-labelledby="cashFlowForecastTitle">
-      <div class="month-end-forecast-heading"><div><span class="eyebrow">CASH FLOW FORECAST</span><h4 id="cashFlowForecastTitle">月末キャッシュフロー予測</h4></div><span id="cashFlowSafetyBadge" class="cash-flow-badge">安全度</span></div>
-      <div class="cash-flow-steps">
-        <div class="cash-flow-current"><span>現在口座残高</span><strong id="cashFlowBalance">0円</strong><small>予測の基準</small></div><i aria-hidden="true">↓</i>
-        <details class="cash-flow-receipts"><summary><span>今月入金見込</span><strong id="cashFlowIncoming">0円</strong><small>SMBC・JCB・その他入金</small></summary><div class="cash-flow-card-inputs" aria-label="入金見込の設定"><label>SMBC 15日<input id="cashFlowSmbc15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>SMBC 月末<input id="cashFlowSmbcEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 15日<input id="cashFlowJcb15" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>JCB 月末<input id="cashFlowJcbEnd" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label><label>その他入金<input id="cashFlowOtherIncome" inputmode="numeric" type="number" min="0" step="1" placeholder="未入力"><em>円</em></label></div></details><i aria-hidden="true">↓</i>
-        <div class="cash-flow-expense"><span>今月支出合計</span><strong id="cashFlowOutgoing">0円</strong><label>今月口座から出ていく支出総額（非資金支出を除く）<span class="cash-flow-amount-input"><input id="cashFlowTotalExpense" inputmode="numeric" type="number" min="0" step="1" placeholder="金額を入力"><em>円</em></span></label></div>
-        <i aria-hidden="true">↓</i>
-        <div class="cash-flow-difference"><span>月間資金差額</span><strong id="cashFlowDifference">＋0円</strong></div>
-        <i aria-hidden="true">↓</i>
-        <div class="cash-flow-total"><span>月末予想残高</span><strong id="cashFlowForecastBalance">0円</strong><small id="cashFlowComparison">前月比 比較データなし</small></div>
-        <div class="cash-flow-safety"><span>安全度</span><strong id="cashFlowStars" aria-label="5段階中1">★☆☆☆☆</strong></div>
-        <div class="cash-flow-confidence"><span>予測データの信頼度</span><strong id="cashFlowConfidence">低</strong><small id="cashFlowConfidenceDetail">カード入金予定額が未入力です</small></div>
-      </div>
-      <p id="cashFlowComment" class="month-end-kagemusha">🥷 財務データを入力すると、月末の口座残高を予測します。</p>
-    </section>
     <div class="director-main"><div><span>推定年収（事業所得目安）</span><strong id="estimatedIncome">0円</strong><small id="estimatedIncomeSub">年間利益をもとに算出</small></div><div class="income-progress"><span id="incomeProgressText">目標年収は未設定</span><div class="progress"><i id="incomeProgressBar"></i></div></div></div>
     <div class="director-stats"><div><span>年末売上予測</span><strong id="yearSalesForecast">0円</strong></div><div><span>短期利益予測</span><strong id="yearProfitForecast">0円</strong><small>現在の利益率から予測</small></div><div><span>安定利益予測</span><strong id="yearStableProfitForecast">0円</strong><small id="yearStableProfitSub">直近6か月平均利益率から予測</small></div><div><span>予測信頼度</span><strong id="yearForecastConfidence" class="forecast-stars" aria-label="5段階中0">☆☆☆☆☆</strong><small id="yearForecastConfidenceSub">営業日 0日</small></div><div><span>過去最高月商</span><strong id="bestMonthSales">0円</strong></div></div>
     <p class="profit-forecast-note">月初は固定費や仕入れの影響で<br>短期利益予測は変動しやすくなります。<br><br>経営判断には<br>安定利益予測も参考にしてください。</p>
@@ -582,7 +567,6 @@
 <script src="clinical-efficiency.js?v=1077"></script>
 <script src="annual-profit-forecast.js?v=6002"></script>
 <script src="monthly-profit-forecast.js?v=1082"></script>
-<script src="cash-flow-forecast.js?v=1086"></script>
 <script src="business-simulator.js?v=6003"></script>
 <script src="annual-management-status.js?v=9402"></script>
 <script src="examination-rates.js?v=9500"></script>
