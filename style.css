@@ -495,3 +495,12 @@ body.today-entry-open{overflow:hidden}
 .health-score-line>b{color:#53706d;font-size:13px}
 .recent-activity-row .activity-health-score{color:#087d70;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
 @media(max-width:650px){.recent-activity-row .activity-health-score{grid-column:2/-1;font-size:12px}.recent-activity-row .activity-date{grid-row:auto}.recent-activity-row{grid-template-columns:minmax(74px,.8fr) 1fr 1fr}}
+
+/* High-score-day comparison: compact enough to scan on a portrait phone. */
+.high-score-patterns .strategy-list{gap:0}
+.high-score-pattern{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:5px 2px;border-bottom:1px solid #e5eeec}
+.high-score-pattern span{color:#264f49;font-size:15px;font-weight:700}
+.high-score-pattern strong{flex:none;color:#087d70;font-size:18px}
+.high-score-patterns-note,.high-score-patterns-empty{color:#71817e;font-size:11px;line-height:1.55}
+.high-score-patterns-note{margin:13px 2px 0}
+.high-score-patterns-empty{margin:6px 2px}
