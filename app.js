@@ -471,10 +471,10 @@ function renderPhase1Director(){
   const today=iso(),todayEntry=s.entries.find(e=>e.date===today)||{},todaySales=Number(todayEntry.sales)||0,todayPatients=Number(todayEntry.patients)||0,unit=todayPatients?todaySales/todayPatients:0;
   const elapsed=operatingEntries(s.entries.filter(e=>e.date<=today)).length,totalDays=Number(set.businessDays)||expectedBusinessDays(m),left=Math.max(0,totalDays-elapsed),need=Math.max(0,target-s.sales)/Math.max(1,left);
   const progress=target?s.sales/target*100:0,profit=s.sales-s.expense,margin=s.sales?profit/s.sales*100:0,pace=elapsed?s.sales/elapsed:0;
-  const status=getAIDirectorStatus({sales:s.sales,progress,left,need,pace});
-  const comment=generateAIDirectorComment({date:today,sales:s.sales,target,progress,margin,left,need,pace,todaySales,todayPatients,unit});
+  const summary=DailyAISummary.build({date:today,entry:todayEntry,entries:data.entries,snapshots:data.clinicalSnapshots,successPatterns:data.successPatterns,failurePatterns:data.failurePatterns}),status=summary.status;
   $("phase1DirectorStatus").textContent=status;$("phase1DirectorStatus").dataset.status=status;
-  $("phase1DirectorComment").innerHTML=comment.map(line=>`<p>${line}</p>`).join("");
+  const section=(title,lines)=>`<section><h4>［${title}］</h4>${lines.map(line=>`<p>${escapeHtml(line)}</p>`).join("")}</section>`;
+  $("phase1DirectorComment").innerHTML=section("今日の評価",[summary.evaluation])+section("なぜ？",summary.reasons)+section("AIの判断",summary.judgment)+section("次にすること",summary.actions);
   $("phase1MonthSales").textContent=yen(s.sales);$("phase1NeedDaily").textContent=yen(left?need:0);$("phase1DaysLeft").textContent=`${left}日`;
 }
 function renderManagementInsight(){
