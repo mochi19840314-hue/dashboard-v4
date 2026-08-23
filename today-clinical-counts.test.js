@@ -2,7 +2,7 @@
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs");
 const Counts=require("./today-clinical-counts");
 const html=fs.readFileSync("index.html","utf8"),app=fs.readFileSync("app.js","utf8"),css=fs.readFileSync("style.css","utf8");
-for(const [metric,label] of [["preventive","予防"],["imaging","画像検査"],["bloodTests","血液検査"],["surgeries","手術"],["trimming","トリミング"]]){
+for(const [metric,label] of [["preventive","予防"],["checkups","健康診断"],["imaging","画像検査"],["bloodTests","血液検査"],["surgeries","手術"],["trimming","トリミング"]]){
  test(`${label} + / - changes the existing clinical fields by one and never goes negative`,()=>{
   const entries=[{date:"2026-08-19",sales:100,clinical:{preventive:0,xrays:0,ultrasounds:0,bloodTests:0}}];
   assert.equal(Counts.update(entries,"2026-08-19",metric,1).value,1);
@@ -25,14 +25,14 @@ test("only the selected past date changes and its monthly total follows it",()=>
  assert.equal(total(),8); Counts.update(entries,"2026-08-18","bloodTests",1);
  assert.equal(entries[0].clinical.bloodTests,4); assert.equal(entries[1].clinical.bloodTests,5); assert.equal(total(),9);
 });
-test("all five increments survive storage serialization and can return to zero",()=>{
+test("all six increments survive storage serialization and can return to zero",()=>{
  const date="2026-08-19",entries=[];
- for(const metric of ["preventive","imaging","bloodTests","surgeries","trimming"])Counts.update(entries,date,metric,1);
+ for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"])Counts.update(entries,date,metric,1);
  const restored=JSON.parse(JSON.stringify(entries));
- for(const metric of ["preventive","imaging","bloodTests","surgeries","trimming"]){assert.equal(Counts.value(restored[0],metric),1);assert.equal(Counts.update(restored,date,metric,-1).value,0);assert.equal(Counts.update(restored,date,metric,-1).value,0)}
+ for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"]){assert.equal(Counts.value(restored[0],metric),1);assert.equal(Counts.update(restored,date,metric,-1).value,0);assert.equal(Counts.update(restored,date,metric,-1).value,0)}
 });
-test("summary has five uniform accessible steppers and autosaves the selected date",()=>{
- for(const metric of ["preventive","imaging","bloodTests","surgeries","trimming"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`TodayClinicalCounts\\.value\\(e,"${metric}"\\)`))}
+test("summary has six uniform accessible steppers and autosaves the selected date",()=>{
+ for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`TodayClinicalCounts\\.value\\(e,"${metric}"\\)`))}
  assert.match(app,/const date=summaryTargetDate\(\),result=TodayClinicalCounts\.update/);
  assert.match(app,/if\(!result\)return;save\(\)/);
  assert.match(app,/fillClinicalForm\(result\.entry\.clinical\)/);
