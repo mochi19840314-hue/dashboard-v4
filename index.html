@@ -109,7 +109,8 @@
       </div>
       <p id="clinicalConsistencyWarning" class="clinical-warning" role="status" aria-live="polite" hidden>新患数が来院件数を超えています。再診数は集計されません。</p>
     </fieldset>
-    <label class="wide">今日のメモ
+    <section class="clinical-tag-entry wide" id="dailyClinicalTags" aria-labelledby="dailyClinicalTagsTitle"><strong id="dailyClinicalTagsTitle">今日の特徴（任意）</strong><div class="clinical-tag-groups"></div></section>
+    <label class="wide">補足メモ（任意）
       <textarea id="note" class="daily-note" maxlength="500" rows="4" placeholder="例：手術2件／熱中症1件／Google広告から初診／高額診療あり／看護師実習初日"></textarea>
       <small id="noteStatus" class="note-status" aria-live="polite"></small>
       <small class="note-guide">数字だけでは分からない出来事を一言。AI月間レポートの分析に使います。</small>
@@ -320,7 +321,7 @@
   </article>
   <article class="card report-section"><div class="report-section-title"><span>📚</span><div><h3>今月の学び</h3><small>自動案を自由に編集できます</small></div></div><textarea id="reportLearning" class="report-learning" maxlength="500" placeholder="今月の学びを記録"></textarea><div class="report-save-row"><small id="reportLearningStatus">未保存</small><button id="saveReportLearning" class="primary" type="button">保存する</button></div></article>
   <article class="card report-section"><div class="report-section-title"><span>🎯</span><div><h3>来月の重点目標</h3><small>自動提案</small></div></div><ul id="reportNextGoals" class="report-list"></ul></article>
-  <article class="card report-summary"><span class="eyebrow">AI MONTHLY SUMMARY</span><h3>AI総評</h3><p id="reportSummary">データを集計しています。</p></article>
+  <article class="card report-summary"><span class="eyebrow">AI MONTHLY SUMMARY</span><h3>AI総評</h3><p id="reportSummary">データを集計しています。</p><div id="reportTagInsight" class="report-tag-insight" hidden></div><div class="ai-feedback"><strong>この分析は合っていますか？</strong><div class="ai-feedback-ratings" role="group" aria-label="AI総評の評価"><button type="button" data-ai-rating="valid">👍 妥当</button><button type="button" data-ai-rating="partial">△ 一部違う</button><button type="button" data-ai-rating="wrong">👎 違う</button></div><div id="aiFeedbackDetail" hidden><span>理由を追加（任意）</span><div class="ai-feedback-reasons"></div><textarea id="aiFeedbackComment" maxlength="300" placeholder="自由記載（任意）"></textarea></div><small id="aiFeedbackStatus"></small></div></article>
   <article class="card success-library" aria-labelledby="successLibraryTitle"><header><div><span class="eyebrow">SUCCESS LIBRARY</span><h3 id="successLibraryTitle">📚 AI経営ノート</h3></div><small>病院固有の成功パターン</small></header><div id="successLibraryItems" class="success-library-items"></div></article>
   <article class="card clinical-learning-card" aria-labelledby="clinicalLearningTitle"><header><div><span class="eyebrow">CLINICAL LEARNING ENGINE</span><h3 id="clinicalLearningTitle">📚 AI診療学習</h3></div><small>毎日の診療から病院専用AIが学習</small></header><div id="clinicalLearningContent" aria-live="polite"></div></article>
 </section>
@@ -519,6 +520,7 @@
         <label>新患数<input id="todayEntryNewPatients" name="newPatients" type="number" inputmode="numeric" min="0"></label>
         <label>再診数<input id="todayEntryRevisits" name="revisits" type="number" inputmode="numeric" min="0"></label>
         <label>利益率<input id="todayEntryProfitRate" name="profitRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" aria-describedby="todayEntryProfitHint"><small id="todayEntryProfitHint">0〜100%で入力</small></label>
+        <section class="clinical-tag-entry today-entry-tags" id="todayModalClinicalTags" aria-labelledby="todayModalClinicalTagsTitle"><strong id="todayModalClinicalTagsTitle">今日の特徴（任意）</strong><div class="clinical-tag-groups"></div></section>
         <section class="today-entry-memo" aria-labelledby="todayEntryMemoTitle"><strong id="todayEntryMemoTitle">📝 今日のメモ（AI学習）</strong><button id="todayEntryMemoToggle" type="button" aria-expanded="false" aria-controls="todayEntryMemoPanel"><span aria-hidden="true">▼</span> メモを書く</button><div id="todayEntryMemoPanel" hidden><textarea id="todayEntryMemo" name="memo" maxlength="500" rows="6" aria-label="今日のメモ" placeholder="例）&#10;今日は皮膚科が多かった&#10;猫の腎臓病が多かった&#10;紹介患者2件&#10;画像検査が多かった"></textarea><span id="todayEntryMemoCount">0 / 500</span></div></section>
       </div>
       <p id="todayEntryError" class="today-entry-error" role="alert" hidden></p>
@@ -535,6 +537,7 @@
 <div class="success-library-modal" id="successLibraryModal" role="dialog" aria-modal="true" aria-labelledby="successLibraryModalTitle" hidden><div class="success-library-dialog"><button id="closeSuccessLibrary" class="modal-close" type="button" aria-label="AI経営ノートを閉じる">×</button><div id="successLibraryDetail"></div></div></div>
 <script src="recent-activity.js?v=9202"></script>
 <script src="daily-memo-learning.js?v=9300"></script>
+<script src="clinical-tags.js?v=1"></script>
 <script src="date-ranges.js?v=1060"></script>
 <script src="clinical-trends.js?v=1060"></script>
 <script src="report-month.js?v=1061"></script>
