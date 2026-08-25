@@ -41,3 +41,17 @@ test("効率パターンは複数営業日で再現するまで確定しない",
  const today=row("2026-08-13",248890,14),once=Summary.build({date:today.date,entry:today,entries:[...history(),today],snapshots:[{date:today.date,doctorWorkload:50}]});
  assert.equal(once.meta.efficiency.reproducible,false);const repeated=Summary.build({date:today.date,entry:today,entries:[...history(),today],snapshots:[{date:today.date,doctorWorkload:50}],efficiencyHistory:[{pattern:"high_sales_low_load"},{pattern:"high_sales_low_load"}]});assert.equal(repeated.meta.efficiency.reproducible,true);
 });
+
+test("来院数が通常で客単価が高い日は診療内容との関連を説明する",()=>{
+ const past=[row("2026-08-10",143013,14),row("2026-08-11",143013,14),row("2026-08-12",143013,14)],today=row("2026-08-13",248890,14,{clinical:{bloodTests:4,xrays:1,ultrasounds:0,preventive:0},checkups:1,surgeries:1,trimming:2,secondOpinions:1});
+ const result=Summary.build({date:today.date,entry:today,entries:[...past,today]});
+ assert.equal(result.evaluation,"好調");assert.match(result.reasons.join(" "),/来院数は14件.*通常と同程度/);assert.match(result.reasons.join(" "),/客単価17,778円.*約74%上回/);assert.match(result.judgment.join(" "),/来院数の増加ではなく/);for(const label of ["血液検査4件","画像検査1件","健康診断1件","手術1件","トリミング2件","セカンドオピニオン1件"])assert.match(result.judgment.join(" "),new RegExp(label));
+});
+
+test("高売上日の共通診療はサンプル数に応じて慎重な表現にする",()=>{
+ const makeHistory=n=>Array.from({length:n},(_,i)=>row(`2026-07-${String(i+1).padStart(2,"0")}`,i%2?200000:100000,10,{clinical:{bloodTests:i%2?4:1,imaging:0,preventive:0}}));
+ const today=row("2026-08-20",220000,10,{clinical:{bloodTests:4,imaging:0,preventive:0}}),small=Summary.build({date:today.date,entry:today,entries:[...makeHistory(6),today]}),large=Summary.build({date:today.date,entry:today,entries:[...makeHistory(12),today]});
+ assert.match(small.judgment.join(" "),/高売上日でも血液検査が多い可能性があります/);assert.match(large.judgment.join(" "),/高売上日でも血液検査が多い傾向があります/);
+});
+
+test("診療負荷を裏づけられない場合は評価不能を明示する",()=>{const today=row("2026-08-13",143000,17),result=Summary.build({date:today.date,entry:today,entries:[...history(),today]});assert.match(result.judgment.join(" "),/診療負荷は.*正確に評価できません/)});
