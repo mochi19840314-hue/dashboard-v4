@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9502">
+<link rel="stylesheet" href="style.css?v=9503">
 </head>
 <body>
 <header class="app-header">
@@ -56,7 +56,7 @@
     <button class="today-detail-toggle" id="todayDetailToggle" type="button" aria-expanded="false">診療詳細を見る ＞</button>
   </section>
   <article class="morning-brief-card today-primary-card" id="morningExecutiveBrief" aria-labelledby="morningExecutiveBriefTitle" aria-live="polite"><header><div><h2 id="morningExecutiveBriefTitle">🧑‍💼 AI経営会議</h2><p>Executive Meeting</p></div><time id="morningBriefDate"></time></header><div id="morningBriefContent"><p class="morning-brief-empty">経営データを確認しています。</p></div><nav id="morningBriefLinks" aria-label="AI経営会議の詳細" hidden><button type="button" data-brief-target="optimizer">Business Optimizer</button><button type="button" data-brief-target="strategy">Strategy Map</button><button type="button" data-brief-target="knowledge">Knowledge Core</button></nav><button id="morningBriefDetail" type="button" aria-expanded="false">詳細を見る</button></article>
-  <article class="today-summary-card today-primary-card" id="todaySummaryCard" role="button" tabindex="0" aria-labelledby="todaySummaryTitle" aria-haspopup="dialog" aria-controls="todayEntryModal"><header><div><h2 id="todaySummaryTitle">今日の診療実績</h2><p>Today Summary</p></div><span id="todaySummaryStatus">✏ 入力</span></header><div class="today-summary-grid"><section><span>売上</span><strong id="todaySummarySales">0円</strong></section><section><span>患者数</span><strong id="todaySummaryPatients">0件</strong></section><section><span>客単価</span><strong id="todaySummaryUnit">0円</strong></section><section><span>利益率</span><strong id="todaySummaryProfit">—</strong></section><section><span>新患数</span><strong id="todaySummaryNew">0件</strong></section><section><span>新患率</span><strong id="todaySummaryNewRate">0%</strong></section></div><div class="today-clinical-counts" aria-label="診療件数のクイック入力"><section><span>予防件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="preventive" aria-label="予防件数を1減らす">−</button><output id="todaySummaryPreventive" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="preventive" aria-label="予防件数を1増やす">＋</button></div></section><section><span>健康診断件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="checkups" aria-label="健康診断件数を1減らす">−</button><output id="todaySummaryCheckups" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="checkups" aria-label="健康診断件数を1増やす">＋</button></div></section><section><span>画像検査件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="imaging" aria-label="画像検査件数を1減らす">−</button><output id="todaySummaryImaging" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="imaging" aria-label="画像検査件数を1増やす">＋</button></div></section><section><span>血液検査件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="bloodTests" aria-label="血液検査件数を1減らす">−</button><output id="todaySummaryBloodTests" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="bloodTests" aria-label="血液検査件数を1増やす">＋</button></div></section><section><span>手術件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="surgeries" aria-label="手術件数を1減らす">−</button><output id="todaySummarySurgeries" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="surgeries" aria-label="手術件数を1増やす">＋</button></div></section><section><span>トリミング件数</span><div><button type="button" data-summary-clinical-step="-1" data-metric="trimming" aria-label="トリミング件数を1減らす">−</button><output id="todaySummaryTrimming" aria-live="polite">0件</output><button type="button" data-summary-clinical-step="1" data-metric="trimming" aria-label="トリミング件数を1増やす">＋</button></div></section></div></article>
+  <article class="today-summary-card today-primary-card" id="todaySummaryCard" role="button" tabindex="0" aria-labelledby="todaySummaryTitle" aria-haspopup="dialog" aria-controls="todayEntryModal"><header><div><h2 id="todaySummaryTitle">今日の診療実績</h2><p>Today Summary</p></div><span id="todaySummaryStatus">✏ 入力</span></header><div class="today-summary-grid"><section><span>売上</span><strong id="todaySummarySales">0円</strong></section><section><span>来院件数</span><strong id="todaySummaryPatients">0件</strong></section><section><span>客単価</span><strong id="todaySummaryUnit">0円</strong></section><section><span>利益率</span><strong id="todaySummaryProfit">—</strong></section><section><span>新患数</span><strong id="todaySummaryNew">0件</strong></section><section><span>新患率</span><strong id="todaySummaryNewRate">0%</strong></section></div><div class="today-clinical-counts" aria-label="診療件数"><section><span>予防件数</span><div><output id="todaySummaryPreventive" aria-live="polite">0件</output></div></section><section><span>健康診断件数</span><div><output id="todaySummaryCheckups" aria-live="polite">0件</output></div></section><section><span>画像検査件数</span><div><output id="todaySummaryImaging" aria-live="polite">0件</output></div></section><section><span>血液検査件数</span><div><output id="todaySummaryBloodTests" aria-live="polite">0件</output></div></section><section><span>手術件数</span><div><output id="todaySummarySurgeries" aria-live="polite">0件</output></div></section><section><span>トリミング件数</span><div><output id="todaySummaryTrimming" aria-live="polite">0件</output></div></section><section><span>セカンドオピニオン件数</span><div><output id="todaySummarySecondOpinions" aria-live="polite">0件</output></div></section></div></article>
   <article class="annual-management-card today-primary-card" id="annualManagementCard" aria-labelledby="annualManagementTitle" aria-live="polite">
     <header><h2 id="annualManagementTitle">📊 年間経営状況</h2><strong id="annualManagementBadge">— データ不足</strong></header>
     <div class="annual-management-periods" aria-label="今日、今月、年間の経営状況"><span>今日 <b id="annualTodayStatus">—</b></span><i aria-hidden="true">→</i><span>今月 <b id="annualMonthStatus">—</b></span><i aria-hidden="true">→</i><span>年間 <b id="annualYearStatus">—</b></span></div>
@@ -108,8 +108,7 @@
       <button id="refreshWeather" type="button" aria-label="天気を再取得">↻</button>
     </div>
   </div>
-  <p class="lead">30秒で入力できる7項目です。</p>
-  <div class="card form">
+  <div hidden aria-hidden="true">
     <label>日付<input id="entryDate" type="date"></label>
     <label>売上（円）<input id="sales" type="number" inputmode="numeric" min="0"></label>
     <label>来院件数<input id="patients" type="number" inputmode="numeric" min="0"></label>
@@ -537,10 +536,20 @@
     <form id="todayEntryForm" novalidate>
       <div class="today-entry-fields">
         <label>売上<input id="todayEntrySales" name="sales" type="number" inputmode="numeric" min="0"></label>
-        <label>患者数<input id="todayEntryPatients" name="patients" type="number" inputmode="numeric" min="0"></label>
+        <label>来院件数<input id="todayEntryPatients" name="patients" type="number" inputmode="numeric" min="0"></label>
         <label>新患数<input id="todayEntryNewPatients" name="newPatients" type="number" inputmode="numeric" min="0"></label>
-        <label>再診数<input id="todayEntryRevisits" name="revisits" type="number" inputmode="numeric" min="0"></label>
-        <label>利益率<input id="todayEntryProfitRate" name="profitRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" aria-describedby="todayEntryProfitHint"><small id="todayEntryProfitHint">0〜100%で入力</small></label>
+        <div class="today-entry-rate"><span>新患率</span><output id="todayEntryNewPatientRate">0%</output><small>新患数 ÷ 来院件数 × 100</small></div>
+        <section class="today-entry-clinical" aria-labelledby="todayEntryClinicalTitle"><strong id="todayEntryClinicalTitle">診療件数</strong>
+          <div class="today-entry-clinical-grid">
+            <label>予防件数<span><button type="button" data-modal-clinical-step="-1" data-metric="preventive">−</button><output data-modal-clinical-output="preventive">0</output><button type="button" data-modal-clinical-step="1" data-metric="preventive">＋</button></span></label>
+            <label>健康診断件数<span><button type="button" data-modal-clinical-step="-1" data-metric="checkups">−</button><output data-modal-clinical-output="checkups">0</output><button type="button" data-modal-clinical-step="1" data-metric="checkups">＋</button></span></label>
+            <label>画像検査件数<span><button type="button" data-modal-clinical-step="-1" data-metric="imaging">−</button><output data-modal-clinical-output="imaging">0</output><button type="button" data-modal-clinical-step="1" data-metric="imaging">＋</button></span></label>
+            <label>血液検査件数<span><button type="button" data-modal-clinical-step="-1" data-metric="bloodTests">−</button><output data-modal-clinical-output="bloodTests">0</output><button type="button" data-modal-clinical-step="1" data-metric="bloodTests">＋</button></span></label>
+            <label>手術件数<span><button type="button" data-modal-clinical-step="-1" data-metric="surgeries">−</button><output data-modal-clinical-output="surgeries">0</output><button type="button" data-modal-clinical-step="1" data-metric="surgeries">＋</button></span></label>
+            <label>トリミング件数<span><button type="button" data-modal-clinical-step="-1" data-metric="trimming">−</button><output data-modal-clinical-output="trimming">0</output><button type="button" data-modal-clinical-step="1" data-metric="trimming">＋</button></span></label>
+            <label>セカンドオピニオン件数<span><button type="button" data-modal-clinical-step="-1" data-metric="secondOpinions">−</button><output data-modal-clinical-output="secondOpinions">0</output><button type="button" data-modal-clinical-step="1" data-metric="secondOpinions">＋</button></span></label>
+          </div>
+        </section>
         <section class="clinical-tag-entry today-entry-tags" id="todayModalClinicalTags" aria-labelledby="todayModalClinicalTagsTitle"><strong id="todayModalClinicalTagsTitle">今日の特徴（任意）</strong><div class="clinical-tag-groups"></div></section>
         <section class="today-entry-memo" aria-labelledby="todayEntryMemoTitle"><strong id="todayEntryMemoTitle">📝 今日のメモ（AI学習）</strong><button id="todayEntryMemoToggle" type="button" aria-expanded="false" aria-controls="todayEntryMemoPanel"><span aria-hidden="true">▼</span> メモを書く</button><div id="todayEntryMemoPanel" hidden><textarea id="todayEntryMemo" name="memo" maxlength="500" rows="6" aria-label="今日のメモ" placeholder="例）&#10;今日は皮膚科が多かった&#10;猫の腎臓病が多かった&#10;紹介患者2件&#10;画像検査が多かった"></textarea><span id="todayEntryMemoCount">0 / 500</span></div></section>
       </div>
@@ -596,10 +605,10 @@
 <script src="holiday-analysis.js?v=9500"></script>
 <script src="recent-three-month-sales.js?v=9501"></script>
 <script src="expense-year-over-year.js?v=1001"></script>
-<script src="today-clinical-counts.js?v=9501"></script>
+<script src="today-clinical-counts.js?v=9503"></script>
 <script src="finance-expenses.js?v=1"></script>
 <script src="hospital-household-balance.js?v=2"></script>
-<script src="app.js?v=9502"></script>
+<script src="app.js?v=9503"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>
 </html>
