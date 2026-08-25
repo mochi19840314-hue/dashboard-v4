@@ -32,7 +32,7 @@ test("all six increments survive storage serialization and can return to zero",(
  for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"]){assert.equal(Counts.value(restored[0],metric),1);assert.equal(Counts.update(restored,date,metric,-1).value,0);assert.equal(Counts.update(restored,date,metric,-1).value,0)}
 });
 test("summary has six uniform accessible steppers and autosaves the selected date",()=>{
- for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`TodayClinicalCounts\\.value\\(e,"${metric}"\\)`))}
+ for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`today\\.clinical\\.${metric}`))}
  assert.match(app,/const date=summaryTargetDate\(\),result=TodayClinicalCounts\.update/);
  assert.match(app,/if\(!result\)return;save\(\)/);
  assert.doesNotMatch(app,/fillClinicalForm/);
