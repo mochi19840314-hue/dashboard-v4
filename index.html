@@ -224,7 +224,7 @@
   <div class="month-update-line"><span>最終更新</span><strong id="monthLastUpdated">—</strong></div>
   <div class="month-primary-kpis">
     <article class="month-total-card"><span>総売上</span><strong id="monthSales">0円</strong><small>診療売上 ＋ EC売上</small></article>
-    <article class="month-profit-card"><span>月間利益</span><strong id="monthProfitSummary">0円</strong><small>総売上 − 月間支出</small></article>
+    <article class="month-profit-card"><span>病院キャッシュ利益</span><strong id="monthProfitSummary">0円</strong><small>総売上 − 病院実支出</small></article>
     <article class="month-rate-card"><span>利益率</span><strong id="monthProfitRate">0%</strong><small>税引前の概算</small></article>
   </div>
   <div class="month-revenue-breakdown">
@@ -391,7 +391,7 @@
   </div>
   <div class="metrics apple-metrics">
     <article class="kpi-primary"><span>年間売上</span><strong id="yearSales">0円</strong><small id="yearSalesSub">集計中</small></article>
-    <article><span>年間利益</span><strong id="yearProfit">0円</strong><small id="yearProfitSub">売上 − 支出</small></article>
+    <article><span>年間会計利益</span><strong id="yearProfit">0円</strong><small id="yearProfitSub">売上 − 病院実支出 − 減価償却費</small></article>
     <article><span>年間利益率</span><strong id="yearProfitRate">0%</strong><small id="yearProfitRateSub">概算</small></article>
     <article><span>平均月商</span><strong id="yearAvg">0円</strong><small id="yearAvgSub">データ月平均</small></article>
   </div>
@@ -436,8 +436,10 @@
   <div class="metrics finance-kpis">
     <article><span>総売上</span><strong id="financeTotalSales">0円</strong><small>診療売上 ＋ EC売上</small></article>
     <article><span>EC売上合計</span><strong id="financeEcSales">0円</strong><small>3社の月末入金</small></article>
-    <article><span>月間利益（税引前）</span><strong id="monthProfit">0円</strong><small id="profitDelta">前月比 —</small></article>
+    <article><span>病院キャッシュ利益</span><strong id="monthProfit">0円</strong><small id="profitDelta">前月比 —</small></article>
     <article><span>利益率</span><strong id="profitRate">0%</strong><small id="rateDelta">前月比 —</small></article>
+    <article><span>会計上の支出</span><strong id="accountingExpense">0円</strong><small>病院実支出 ＋ 減価償却費</small></article>
+    <article><span>会計上の利益</span><strong id="accountingProfit">0円</strong><small>総売上 − 会計上の支出</small></article>
     <article><span>実質純資産</span><strong id="netAssets">0円</strong><small id="assetDelta">口座残高 − 借入残高</small></article>
   </div>
   <article class="card hospital-balance-card" aria-labelledby="hospitalBalanceTitle">
@@ -460,8 +462,8 @@
   </article>
   <div class="card form">
     <label>口座残高（円）<input id="balance" type="number" min="0"></label>
-    <label>月間支出（円）<input id="monthlyExpense" type="number" min="0"></label>
-    <label>病院実支出（減価償却費を除く）<input id="hospitalCashExpense" type="number" min="0" inputmode="numeric"></label>
+    <label>病院実支出（円）<input id="hospitalCashExpense" type="number" min="0" inputmode="numeric"><small>実際に当月支払った病院経費。減価償却費は含みません</small></label>
+    <label>減価償却費（円）<input id="depreciationExpense" type="number" min="0" inputmode="numeric"><small>会計上の利益計算だけに使用します</small></label>
     <label>家計支出（円）<input id="householdExpense" type="number" min="0" inputmode="numeric"></label>
     <label>人件費（円）<input id="personnelExpense" type="number" min="0" inputmode="numeric"></label>
     <label>薬品・医療材料費（円）<input id="medicalExpense" type="number" min="0" inputmode="numeric"></label>
@@ -595,7 +597,8 @@
 <script src="recent-three-month-sales.js?v=9501"></script>
 <script src="expense-year-over-year.js?v=1001"></script>
 <script src="today-clinical-counts.js?v=9501"></script>
-<script src="hospital-household-balance.js?v=1"></script>
+<script src="finance-expenses.js?v=1"></script>
+<script src="hospital-household-balance.js?v=2"></script>
 <script src="app.js?v=9502"></script>
 <script src="ai-director.js?v=1046"></script>
 </body>

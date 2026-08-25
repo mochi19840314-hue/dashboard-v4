@@ -11,7 +11,8 @@
  }
  function forMonth(financeByMonth,month,clinicalSales=0){
   const saved=financeByMonth?.[month]||{};
-  return calculate({clinicalSales,hospitalCashExpense:saved.hospitalCashExpense,householdExpense:saved.householdExpense});
+  const hospitalCashExpense=typeof FinanceExpenses!=="undefined"?FinanceExpenses.resolve(saved).hospitalCashExpense:saved.hospitalCashExpense??saved.monthlyExpense;
+  return calculate({clinicalSales,hospitalCashExpense,householdExpense:saved.householdExpense});
  }
  function calculateHospital({clinicalSales=0,hospitalCashExpense=0}={}){
   const sales=amount(clinicalSales),expense=amount(hospitalCashExpense),difference=sales-expense;

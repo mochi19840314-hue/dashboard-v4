@@ -38,7 +38,7 @@
     const clinicalSales=daily.sales||Number(hist.sales)||0;
     const ecSales=['morikuboOnline','royalCanin','purina'].reduce((s,k)=>s+(Number(finance[k]??current[k])||0),0);
     const sales=clinicalSales+ecSales;
-    const expense=Number(finance.monthlyExpense??hist.expense??current.monthlyExpense)||0;
+    const expense=Number(finance.hospitalCashExpense??finance.monthlyExpense??hist.expense??current.hospitalCashExpense??current.monthlyExpense)||0;
     return {...daily,clinicalSales,ecSales,sales,expense};
   };
   const entryHasData=e=>e&&(Number(e.sales)||Number(e.patients)||Number(e.checkups)||Number(e.surgeries));

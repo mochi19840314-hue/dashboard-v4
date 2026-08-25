@@ -11,7 +11,7 @@ const day=date=>new Date(`${date}T12:00:00`).getDay();
 const month=date=>String(date).slice(0,7);
 const average=values=>values.reduce((sum,value)=>sum+value,0)/values.length;
 function profile(date,clinic={}){if((clinic.closedDates||[]).includes(date)||day(date)===1)return "closed";return day(date)===6?"half":"full"}
-function monthExpense(source,key){const monthly=source.financeByMonth?.[key];if(monthly&&Object.prototype.hasOwnProperty.call(monthly,"monthlyExpense"))return Number(monthly.monthlyExpense)||0;if(source.historical?.[key]&&Object.prototype.hasOwnProperty.call(source.historical[key],"expense"))return Number(source.historical[key].expense)||0;if(key===source.currentMonth)return Number(source.finance?.monthlyExpense)||0;return 0}
+function monthExpense(source,key){const monthly=source.financeByMonth?.[key];if(monthly&&(Object.prototype.hasOwnProperty.call(monthly,"hospitalCashExpense")||Object.prototype.hasOwnProperty.call(monthly,"monthlyExpense")))return Number(monthly.hospitalCashExpense??monthly.monthlyExpense)||0;if(source.historical?.[key]&&Object.prototype.hasOwnProperty.call(source.historical[key],"expense"))return Number(source.historical[key].expense)||0;if(key===source.currentMonth)return Number(source.finance?.hospitalCashExpense??source.finance?.monthlyExpense)||0;return 0}
 function expenseFor(entry,source,eligible){
  if(entry.expense!=null&&Number(entry.expense)>0)return Number(entry.expense);
  const key=month(entry.date),total=monthExpense(source,key);if(!total)return null;

@@ -534,7 +534,8 @@ function monthSummary(m){
   const royalCanin=Number(mf.royalCanin)||0;
   const purina=Number(mf.purina)||0;
   const ecSales=morikuboOnline+royalCanin+purina;
-  return {...daily,clinicalSales,ecSales,morikuboOnline,royalCanin,purina,sales:clinicalSales+ecSales,entries,expense:Number(mf.monthlyExpense ?? hist.expense ?? 0)||0,personnelExpense:Number(mf.personnelExpense)||0,medicalExpense:Number(mf.medicalExpense)||0,cardFee:Number(mf.cardFee)||0}
+  const costs=FinanceExpenses.resolve(mf,hist,m===monthNow()?data.finance:{});
+  return {...daily,clinicalSales,ecSales,morikuboOnline,royalCanin,purina,sales:clinicalSales+ecSales,entries,expense:costs.hospitalCashExpense,hospitalCashExpense:costs.hospitalCashExpense,depreciationExpense:costs.depreciationExpense,accountingExpense:costs.accountingExpense,personnelExpense:Number(mf.personnelExpense)||0,medicalExpense:Number(mf.medicalExpense)||0,cardFee:Number(mf.cardFee)||0}
 }
 function recent(){const t=$("recent"),rows=[...data.entries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);t.innerHTML=rows.length?rows.map(e=>`<tr><td>${e.date}</td><td>${yen(e.sales)}</td><td>${e.patients}件</td><td>${e.newPatients||0}件</td><td class="record-actions"><button class="edit-record" data-edit="${e.date}">編集</button><button data-del="${e.date}">削除</button></td></tr>`).join(""):'<tr><td colspan="5">まだ記録がありません。</td></tr>';t.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(b.dataset.edit));t.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>del(b.dataset.del))}
 
@@ -655,7 +656,7 @@ function monthDetailState(month,row){
   const entries=data.entries.filter(e=>e.date.startsWith(month)),hist=data.historical[month]||{},mf=data.financeByMonth[month]||{};
   const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key),hasEntry=entries.length>0;
   const hasEc=["morikuboOnline","royalCanin","purina"].some(k=>own(mf,k))||(month===monthNow()&&["morikuboOnline","royalCanin","purina"].some(k=>Number(data.finance[k])>0));
-  const hasSales=hasEntry||own(hist,"sales")||hasEc,hasExpense=own(mf,"monthlyExpense")||own(hist,"expense")||(month===monthNow()&&Number(data.finance.monthlyExpense)>0);
+  const hasSales=hasEntry||own(hist,"sales")||hasEc,hasExpense=own(mf,"hospitalCashExpense")||own(mf,"monthlyExpense")||own(hist,"expense")||(month===monthNow()&&(Number(data.finance.hospitalCashExpense)>0||Number(data.finance.monthlyExpense)>0));
   return {hasData:hasEntry||Object.keys(hist).length>0||Object.keys(mf).length>0||hasEc||hasExpense,hasSales,hasExpense,hasClinical:hasEntry,row};
 }
 function monthlyAiComment(state){
@@ -809,7 +810,7 @@ function renderMonthlyProfitForecast(){
 }
 
 function annualForecastSource(y=String(new Date().getFullYear())){
-  const rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`)),total=rows.reduce((a,r)=>({sales:a.sales+(Number(r.sales)||0),expense:a.expense+(Number(r.expense)||0)}),{sales:0,expense:0}),active=rows.filter(r=>r.sales>0||r.expense>0).length;
+  const rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`)),total=rows.reduce((a,r)=>({sales:a.sales+(Number(r.sales)||0),expense:a.expense+(Number(r.accountingExpense)||0)}),{sales:0,expense:0}),active=rows.filter(r=>r.sales>0||r.expense>0).length;
   const latestIndex=rows.reduce((last,row,index)=>row.sales>0||row.expense>0?index:last,-1),latestMonth=latestIndex>=0?`${y}-${String(latestIndex+1).padStart(2,"0")}`:null;
   const recentMonths=[...new Set([...Object.keys(data.historical||{}),...data.entries.map(entry=>entry.date.slice(0,7))])].filter(month=>!latestMonth||month<=latestMonth).sort().map(month=>monthSummary(month)).filter(row=>row.sales>0);
   const recordedDays=latestMonth?new Set(data.entries.filter(entry=>entry.date.startsWith(latestMonth)).map(entry=>entry.date)).size:0,businessDays=latestMonth&&latestMonth<monthNow()?21:recordedDays;
@@ -819,7 +820,7 @@ function renderAnnualManagementStatus(){
   if(typeof AnnualManagementStatus==="undefined"||!$("annualManagementCard"))return;
   const today=iso(),yearValue=today.slice(0,4),month=monthNow(),monthIndex=Number(month.slice(5)),todayEntry=data.entries.find(entry=>entry.date===today),current=monthSummary(month);
   const rows=Array.from({length:12},(_,index)=>monthSummary(`${yearValue}-${String(index+1).padStart(2,"0")}`));
-  const total=rows.reduce((value,row)=>({sales:value.sales+row.sales,expense:value.expense+row.expense}),{sales:0,expense:0}),activeMonths=rows.filter(row=>row.sales>0||row.expense>0).length;
+  const total=rows.reduce((value,row)=>({sales:value.sales+row.sales,expense:value.expense+row.accountingExpense}),{sales:0,expense:0}),activeMonths=rows.filter(row=>row.sales>0||row.expense>0).length;
   const monthTarget=Number(data.settings[month]?.target)||MONTHLY_TARGET,annualTarget=Array.from({length:12},(_,index)=>Number(data.settings[`${yearValue}-${String(index+1).padStart(2,"0")}`]?.target)||MONTHLY_TARGET).reduce((value,target)=>value+target,0);
   const monthDays=Math.max(1,Number(data.settings[month]?.businessDays)||expectedBusinessDays(month)),done=new Set(operatingEntries(current.entries.filter(entry=>entry.date<=today)).map(entry=>entry.date)).size,monthForecast=done?current.sales/done*monthDays:current.sales;
   const previousYear=String(Number(yearValue)-1),priorCompleted=Array.from({length:monthIndex-1},(_,index)=>`${previousYear}-${String(index+1).padStart(2,"0")}`),hasStoredMonth=value=>Object.prototype.hasOwnProperty.call(data.historical||{},value)||data.entries.some(entry=>entry.date.startsWith(`${value}-`));
@@ -838,7 +839,7 @@ function renderAnnualManagementStatus(){
 }
 function year(){
   const y=$("yearPicker").value||String(new Date().getFullYear()),rows=Array.from({length:12},(_,i)=>monthSummary(`${y}-${String(i+1).padStart(2,"0")}`));
-  const total=rows.reduce((a,r)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=Number(r[k])||0);a.expense+=Number(r.expense)||0;return a},{sales:0,expense:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0});
+  const total=rows.reduce((a,r)=>{["sales","patients","newPatients","surgeries","checkups","trimmings","secondOpinions"].forEach(k=>a[k]+=Number(r[k])||0);a.expense+=Number(r.accountingExpense)||0;return a},{sales:0,expense:0,patients:0,newPatients:0,surgeries:0,checkups:0,trimmings:0,secondOpinions:0});
   const activeRows=rows.filter(r=>r.sales>0||r.expense>0),active=activeRows.length,profit=total.sales-total.expense,rate=total.sales?profit/total.sales*100:0;
   const annualFactor=active?12/active:0,salesForecast=total.sales*annualFactor,profitForecast=profit*annualFactor;
   const forecastContext=AnnualProfitForecast.calculate(annualForecastSource(y));
@@ -928,11 +929,11 @@ function renderBrandScore(s,m){
   $("brandComment").textContent=comment;
 }
 function finance(){
-  const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},expense=Number(mf.monthlyExpense ?? hist.expense ?? (m===monthNow()?f.monthlyExpense:0))||0;
-  const snap=financeSnapshot(m);$("balance").value=snap.balance||"";$("monthlyExpense").value=expense||"";$("hospitalCashExpense").value=Number(mf.hospitalCashExpense)||"";$("householdExpense").value=Number(mf.householdExpense)||"";$("personnelExpense").value=Number(mf.personnelExpense ?? (m===monthNow()?f.personnelExpense:0))||"";$("medicalExpense").value=Number(mf.medicalExpense ?? (m===monthNow()?f.medicalExpense:0))||"";$("cardFee").value=Number(mf.cardFee ?? (m===monthNow()?f.cardFee:0))||"";$("loan").value=snap.loan||"";$("repayment").value=snap.repayment||"";$("incomeTarget").value=f.incomeTarget||"";
+  const m=$("monthPicker").value||monthNow(),f=data.finance,mf=data.financeByMonth[m]||{},hist=data.historical[m]||{},costs=FinanceExpenses.resolve(mf,hist,m===monthNow()?f:{}),expense=costs.hospitalCashExpense;
+  const snap=financeSnapshot(m);$("balance").value=snap.balance||"";$("hospitalCashExpense").value=expense||"";$("depreciationExpense").value=costs.depreciationExpense||"";$("householdExpense").value=Number(mf.householdExpense)||"";$("personnelExpense").value=Number(mf.personnelExpense ?? (m===monthNow()?f.personnelExpense:0))||"";$("medicalExpense").value=Number(mf.medicalExpense ?? (m===monthNow()?f.medicalExpense:0))||"";$("cardFee").value=Number(mf.cardFee ?? (m===monthNow()?f.cardFee:0))||"";$("loan").value=snap.loan||"";$("repayment").value=snap.repayment||"";$("incomeTarget").value=f.incomeTarget||"";
   const s=monthSummary(m);$("morikuboOnline").value=s.morikuboOnline||"";$("royalCanin").value=s.royalCanin||"";$("purina").value=s.purina||"";
   const profit=s.sales-expense,rate=s.sales?profit/s.sales*100:0,prevM=monthShift(m,-1),prevS=monthSummary(prevM),prevProfit=prevS.sales-prevS.expense,prevRate=prevS.sales?prevProfit/prevS.sales*100:0;
-  renderBrandScore(s,m);$("financeTotalSales").textContent=yen(s.sales);$("financeEcSales").textContent=yen(s.ecSales);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("netAssets").textContent=yen(snap.balance-snap.loan);
+  renderBrandScore(s,m);$("financeTotalSales").textContent=yen(s.sales);$("financeEcSales").textContent=yen(s.ecSales);$("monthProfit").textContent=yen(profit);$("profitRate").textContent=pct(rate);$("accountingExpense").textContent=yen(s.accountingExpense);$("accountingProfit").textContent=yen(s.sales-s.accountingExpense);$("netAssets").textContent=yen(snap.balance-snap.loan);
   const pd=profit-prevProfit,rd=rate-prevRate;$("profitDelta").textContent=prevS.sales?`前月比 ${pd>=0?"+":"−"}${yen(Math.abs(pd))}`:"前月比 —";$("rateDelta").textContent=prevS.sales?`前月比 ${rd>=0?"+":"−"}${Math.abs(rd).toFixed(1)}pt`:"前月比 —";
   $("profitDelta").className=pd>0?"positive":pd<0?"negative":"";$("rateDelta").className=rd>0?"positive":rd<0?"negative":"";
   const household=HospitalHouseholdBalance.forMonth(data.financeByMonth,m,s.clinicalSales),signed=value=>`${value>=0?"＋":"−"}${yen(Math.abs(value))}`;
@@ -950,8 +951,7 @@ function renderExpenseYearOverYear(m,currentFinance){
  $("expenseYoyIncreases").innerHTML=result.increases.length?result.increases.slice(0,3).map((item,index)=>`<p><b>${index+1}. ${item.label}</b><span>${signed(item.difference)}</span></p>`).join(""):"<p class=\"empty\">比較可能な内訳データがありません</p>";$("expenseYoyDecreases").innerHTML=result.decreases.length?result.decreases.slice(0,3).map(item=>`<p><b>${item.label}</b><span>${signed(item.difference)}</span></p>`).join(""):"<p class=\"empty\">比較可能な減少項目はありません</p>";
  $("expenseYoyRatios").textContent="比較データ：人件費は2025年「給与総合」、薬品・医療材料費は「薬品合計」の同じ入力済み月と比較しています。未入力月は除外し、カード決済手数料は前年データなしのため比較しません。";$("expenseYoyComment").textContent=result.includedMonths.length?`AIコメント：支出は前年同期より${yen(Math.abs(result.cumulative.difference))}${result.cumulative.difference>=0?"増加":"減少"}しています。比較可能な内訳と売上・診療内容の関係も確認してください。`:"AIコメント：入力済み月がないため、総支出の前年同期比較を保留しています。";
 }
-function saveFinance(){const m=$("monthPicker").value||monthNow(),household={hospitalCashExpense:num("hospitalCashExpense"),householdExpense:num("householdExpense")};if(m!==monthNow()){data.financeByMonth[m]={...(data.financeByMonth[m]||{}),...household};save();finance();return toast(`${m}の病院＋家計 収支を保存しました`)}const ec={morikuboOnline:num("morikuboOnline"),royalCanin:num("royalCanin"),purina:num("purina")},expenses={personnelExpense:num("personnelExpense"),medicalExpense:num("medicalExpense"),cardFee:num("cardFee")},entered={monthlyExpense:$("monthlyExpense").value.trim()!=="",personnelExpense:$("personnelExpense").value.trim()!=="",medicalExpense:$("medicalExpense").value.trim()!=="",cardFee:$("cardFee").value.trim()!==""};data.finance={...data.finance,balance:num("balance"),monthlyExpense:num("monthlyExpense"),loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget"),...ec,...expenses};data.financeByMonth[m]={...(data.financeByMonth[m]||{}),monthlyExpense:num("monthlyExpense"),balance:num("balance"),loan:num("loan"),repayment:num("repayment"),...ec,...expenses,...household,entered};save();finance();month();renderMonthlyReport();year();toast(`${m}の財務・EC売上・病院＋家計 収支を保存しました`)}
-
+function saveFinance(){const m=$("monthPicker").value||monthNow(),hospitalCashExpense=num("hospitalCashExpense"),depreciationExpense=num("depreciationExpense"),household={hospitalCashExpense,depreciationExpense,householdExpense:num("householdExpense")},expenses={personnelExpense:num("personnelExpense"),medicalExpense:num("medicalExpense"),cardFee:num("cardFee")},entered={hospitalCashExpense:$("hospitalCashExpense").value.trim()!=="",depreciationExpense:$("depreciationExpense").value.trim()!=="",personnelExpense:$("personnelExpense").value.trim()!=="",medicalExpense:$("medicalExpense").value.trim()!=="",cardFee:$("cardFee").value.trim()!==""};if(m!==monthNow()){data.financeByMonth[m]={...(data.financeByMonth[m]||{}),...household,...expenses,entered:{...(data.financeByMonth[m]?.entered||{}),...entered}};save();finance();return toast(`${m}の病院支出を保存しました`)}const ec={morikuboOnline:num("morikuboOnline"),royalCanin:num("royalCanin"),purina:num("purina")};data.finance={...data.finance,balance:num("balance"),hospitalCashExpense,loan:num("loan"),repayment:num("repayment"),incomeTarget:num("incomeTarget"),...ec,...expenses};data.financeByMonth[m]={...(data.financeByMonth[m]||{}),balance:num("balance"),loan:num("loan"),repayment:num("repayment"),...ec,...expenses,...household,entered};save();finance();month();renderMonthlyReport();year();toast(`${m}の財務・EC売上・病院＋家計 収支を保存しました`)}
 function reportMonth(){return $("reportMonthPicker")?.value||$("monthPicker").value||monthNow()}
 function monthLabel(m){const [y,mo]=m.split("-").map(Number);return `${y}年${mo}月`}
 function expenseItem(label,current,previous,reason){
