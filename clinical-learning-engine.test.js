@@ -25,3 +25,9 @@ test("保存済みsnapshotは変更せず表示時の診療経営スコアを解
  assert.equal(Engine.evaluateSuccessDay(legacy,82),false);
  assert.equal(JSON.stringify(legacy),before);
 });
+
+test("診療負荷は保存済みの診療活動を等しい活動単位で考慮する",()=>{
+ const base=Engine.calculateWorkload({patients:10});
+ const detailed=Engine.calculateWorkload({patients:10,newPatients:1,bloodTests:1,imaging:1,healthChecks:1,vaccines:1,trimming:1,secondOpinions:1});
+ assert.equal(detailed-base,7);
+});
