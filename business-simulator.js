@@ -31,7 +31,7 @@
     const entries=(source.entries||[]).filter(e=>monthOf(e.date)===selected),hasData=entries.length>0,totals=aggregate(entries);
     const current=selected===currentMonth,configured=number(source.settings?.[selected]?.businessDays),scheduled=Math.max(entries.length,configured||number(source.scheduledBusinessDays)||entries.length),elapsed=entries.length,projection=current&&elapsed>0&&scheduled>elapsed?scheduled/elapsed:1;
     const count=(value,key)=>hasData&&totals.recorded[key]?Math.round(value*projection):null;
-    const expenseRecord=source.financeByMonth?.[selected],expense=number(expenseRecord?.monthlyExpense??source.finance?.monthlyExpense),actualProfit=totals.sales-expense,monthlyProfit=hasData?(current?totals.sales*projection-expense:actualProfit):null;
+    const expenseRecord=source.financeByMonth?.[selected],expense=number(expenseRecord?.hospitalCashExpense??expenseRecord?.monthlyExpense??source.finance?.hospitalCashExpense??source.finance?.monthlyExpense),actualProfit=totals.sales-expense,monthlyProfit=hasData?(current?totals.sales*projection-expense:actualProfit):null;
     return {month:selected,isCurrentMonth:current,hasData,label:current?"月末予測":"実績",elapsedBusinessDays:elapsed,scheduledBusinessDays:scheduled,
       unitPrice:hasData&&totals.recorded.sales&&totals.recorded.patients&&totals.patients?totals.sales/totals.patients:null,revisitRate:hasData&&totals.recorded.newPatients&&totals.patients?clamp((totals.patients-totals.newPatients)/totals.patients*100,0,100):null,
       newPatients:count(totals.newPatients,"newPatients"),imagingRate:hasData&&totals.recorded.imaging&&totals.patients?clamp((totals.xrays+totals.ultrasounds)/totals.patients*100,0,100):null,

@@ -25,8 +25,8 @@
  const itemBaselineTotal=(key,endMonth=12)=>key==="medicalExpense"&&MEDICAL_CONTROL_TOTALS[endMonth]!=null?MEDICAL_CONTROL_TOTALS[endMonth]:ITEM_BASELINE_2025[key]?.slice(0,endMonth).reduce((sum,value)=>sum+value,0)??null;
  function analyze({selectedMonth,financeByMonth={},currentFinance={}}){
   const [year,month]=String(selectedMonth).split("-").map(Number),baselineMonth=BASELINE_2025[`2025-${String(month).padStart(2,"0")}`],record={...(currentFinance||{}),...(financeByMonth[selectedMonth]||{})},included=[];
-  if(year===2026)for(let index=1;index<=month;index++){const key=`2026-${String(index).padStart(2,"0")}`,row=financeByMonth[key]||(key===selectedMonth?currentFinance:null);if(row&&Object.prototype.hasOwnProperty.call(row,"monthlyExpense")&&(amount(row.monthlyExpense)>0||row.entered?.monthlyExpense===true))included.push(index)}
-  const currentTotal=included.reduce((sum,index)=>sum+amount((financeByMonth[`2026-${String(index).padStart(2,"0")}`]||(index===month?currentFinance:{})).monthlyExpense),0),previousTotal=included.reduce((sum,index)=>sum+(BASELINE_2025[`2025-${String(index).padStart(2,"0")}`]?.total||0),0);
+  if(year===2026)for(let index=1;index<=month;index++){const key=`2026-${String(index).padStart(2,"0")}`,row=financeByMonth[key]||(key===selectedMonth?currentFinance:null);if(row&&(own(row,"hospitalCashExpense")||own(row,"monthlyExpense"))&&(amount(row.hospitalCashExpense??row.monthlyExpense)>0||row.entered?.hospitalCashExpense===true||row.entered?.monthlyExpense===true))included.push(index)}
+  const currentTotal=included.reduce((sum,index)=>sum+amount((financeByMonth[`2026-${String(index).padStart(2,"0")}`]||(index===month?currentFinance:{})).hospitalCashExpense??(financeByMonth[`2026-${String(index).padStart(2,"0")}`]||(index===month?currentFinance:{})).monthlyExpense),0),previousTotal=included.reduce((sum,index)=>sum+(BASELINE_2025[`2025-${String(index).padStart(2,"0")}`]?.total||0),0);
   const items=ITEMS.map(item=>{
    if(!item.comparable)return {...item,status:"前年データなし",monthly:null,cumulative:null};
    const baseline=ITEM_BASELINE_2025[item.key],months=[];
@@ -41,7 +41,7 @@
   // 内訳は、今年保存された月と前年の同じ月だけを累計比較する。
   // 未入力項目や前年基準のない項目を、0円の減少として扱わない。
   const compared=items.filter(item=>item.comparable&&item.cumulative.enteredCount>0).map(item=>({...item,difference:item.cumulative.difference}));
-  return {available:year===2026&&Boolean(baselineMonth),monthly:difference(record.monthlyExpense,baselineMonth?.total),cumulative:difference(currentTotal,previousTotal),includedMonths:included,items,increases:compared.filter(item=>item.difference>0).sort((a,b)=>b.difference-a.difference),decreases:compared.filter(item=>item.difference<0).sort((a,b)=>a.difference-b.difference)};
+  return {available:year===2026&&Boolean(baselineMonth),monthly:difference(record.hospitalCashExpense??record.monthlyExpense,baselineMonth?.total),cumulative:difference(currentTotal,previousTotal),includedMonths:included,items,increases:compared.filter(item=>item.difference>0).sort((a,b)=>b.difference-a.difference),decreases:compared.filter(item=>item.difference<0).sort((a,b)=>a.difference-b.difference)};
  }
  return {BASELINE_2025,ITEM_BASELINE_2025,MEDICAL_CONTROL_TOTALS,ITEMS,baselineTotal,itemBaselineTotal,difference,savedValue,analyze};
 });
