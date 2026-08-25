@@ -3,22 +3,12 @@
 const RULES={
  unitPrice:{metric:"客単価",direction:"low",warning:10,danger:20,format:"yen"},
  patients:{metric:"来院件数",direction:"low",warning:15,danger:30,format:"count"},
- sales:{metric:"日商",direction:"low",warning:15,danger:25,format:"yen"},
- profitRate:{metric:"利益率",direction:"points",warning:5,danger:10,format:"percent"},
- expense:{metric:"総支出",direction:"high",warning:10,danger:20,format:"yen"}
+ sales:{metric:"日商",direction:"low",warning:15,danger:25,format:"yen"}
 };
 const day=date=>new Date(`${date}T12:00:00`).getDay();
-const month=date=>String(date).slice(0,7);
 const average=values=>values.reduce((sum,value)=>sum+value,0)/values.length;
 function profile(date,clinic={}){if((clinic.closedDates||[]).includes(date)||day(date)===1)return "closed";return day(date)===6?"half":"full"}
-function monthExpense(source,key){const monthly=source.financeByMonth?.[key];if(monthly&&(Object.prototype.hasOwnProperty.call(monthly,"hospitalCashExpense")||Object.prototype.hasOwnProperty.call(monthly,"monthlyExpense")))return Number(monthly.hospitalCashExpense??monthly.monthlyExpense)||0;if(source.historical?.[key]&&Object.prototype.hasOwnProperty.call(source.historical[key],"expense"))return Number(source.historical[key].expense)||0;if(key===source.currentMonth)return Number(source.finance?.hospitalCashExpense??source.finance?.monthlyExpense)||0;return 0}
-function expenseFor(entry,source,eligible){
- if(entry.expense!=null&&Number(entry.expense)>0)return Number(entry.expense);
- const key=month(entry.date),total=monthExpense(source,key);if(!total)return null;
- const recorded=eligible.filter(item=>month(item.date)===key).length;
- return recorded?total/recorded:null;
-}
-function values(entry,source,eligible){const sales=Number(entry.sales),patients=Number(entry.patients),expense=expenseFor(entry,source,eligible);return {sales,patients,unitPrice:patients>0?sales/patients:null,expense,profitRate:sales>0&&expense!=null?(sales-expense)/sales*100:null}}
+function values(entry){const sales=Number(entry.sales),patients=Number(entry.patients);return {sales,patients,unitPrice:patients>0?sales/patients:null}}
 function classify(rule,current,baseline){
  const delta=rule.direction==="points"?current-baseline:(current/baseline-1)*100;
  const adverse=rule.direction==="high"?delta:rule.direction==="points"?-delta:-delta;
@@ -36,10 +26,10 @@ function detectBusinessAnomalies(source={},options={}){
  // Fallback keeps half-day Saturdays separate from full clinic days.
  if(comparison.length<3)comparison=eligible.filter(entry=>entry.date<today&&profile(entry.date,clinic)===todayProfile).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
  if(comparison.length<3)return [];
- const currentValues=values(current,{...source,currentMonth:month(today)},eligible);
+ const currentValues=values(current);
  return Object.entries(RULES).flatMap(([key,rule])=>{
-  const samples=comparison.map(entry=>values(entry,{...source,currentMonth:month(today)},eligible)[key]).filter(value=>Number.isFinite(value)&&value>0);
-  const currentValue=currentValues[key];if(samples.length<3||!Number.isFinite(currentValue)||(key!=="profitRate"&&currentValue<0))return [];
+  const samples=comparison.map(entry=>values(entry)[key]).filter(value=>Number.isFinite(value)&&value>0);
+  const currentValue=currentValues[key];if(samples.length<3||!Number.isFinite(currentValue)||currentValue<0)return [];
   const baseline=average(samples);if(!(baseline>0))return [];
   const result=classify(rule,currentValue,baseline),amount=Math.abs(result.change),word=rule.direction==="high"?"増加":"低下";
   return [{level:result.level,metric:rule.metric,current:currentValue,baseline,changePercent:Number(result.change.toFixed(1)),format:rule.format,message:rule.direction==="points"?`${rule.metric}が通常より${Math.abs(result.change).toFixed(1)}ポイント低下しています`:`${rule.metric}が通常より${amount.toFixed(1)}%${word}しています`,sampleSize:samples.length}];
