@@ -1,12 +1,7 @@
 "use strict";
-const assert=require("node:assert/strict");const fs=require("node:fs");
+const assert=require("node:assert/strict"),fs=require("node:fs");
 const html=fs.readFileSync("index.html","utf8"),app=fs.readFileSync("app.js","utf8"),sw=fs.readFileSync("sw.js","utf8");
-assert.equal((html.match(/id="newPatients"/g)||[]).length,1);
-assert.equal((html.match(/id="surgeries"/g)||[]).length,1);
-assert.doesNotMatch(html,/id="clinicalRevisits"/);
-for(const id of ["clinicalBloodTests","clinicalXrays","clinicalUltrasounds","clinicalPreventive"])assert.match(html,new RegExp(`id="${id}"`));
-assert.equal((html.match(/data-clinical-step="1"/g)||[]).length,4);assert.equal((html.match(/data-clinical-step="-1"/g)||[]).length,4);
-assert.match(app,/function stepClinicalInput[\s\S]*?Math\.min\(99,Math\.max\(0/);assert.match(app,/raw===""\?0/);
-assert.match(app,/"newPatients","surgeries"/);
-assert.match(sw,/v9501-cash-flow/);assert.match(sw,/app\.js\?v=9501/);assert.match(html,/app\.js\?v=9501/);assert.match(html,/AI MANAGEMENT INSIGHTS/);assert.match(html,/診療データが蓄積されると/);assert.match(app,/management-insight/);
-console.log("clinical four-item stepper UI, save wiring, limits, and PWA cache tests passed");
+for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming","secondOpinions"]){assert.match(html,new RegExp(`data-modal-clinical-output="${metric}"`));assert.match(html,new RegExp(`data-modal-clinical-step="1" data-metric="${metric}"`))}
+for(const id of ["clinicalBloodTests","clinicalXrays","clinicalUltrasounds","clinicalPreventive"])assert.doesNotMatch(html,new RegExp(`id="${id}"`));
+assert.match(app,/TodayClinicalCounts\.update/);assert.match(sw,/v9506-remove-legacy-entry-dom/);assert.match(sw,/app\.js\?v=9506/);assert.match(html,/app\.js\?v=9506/);
+console.log("unified clinical stepper UI and PWA cache tests passed");

@@ -35,7 +35,7 @@ test("summary has six uniform accessible steppers and autosaves the selected dat
  for(const metric of ["preventive","checkups","imaging","bloodTests","surgeries","trimming"]){assert.match(html,new RegExp(`data-metric="${metric}"`));assert.match(app,new RegExp(`TodayClinicalCounts\\.value\\(e,"${metric}"\\)`))}
  assert.match(app,/const date=summaryTargetDate\(\),result=TodayClinicalCounts\.update/);
  assert.match(app,/if\(!result\)return;save\(\)/);
- assert.match(app,/fillClinicalForm\(result\.entry\.clinical\)/);
+ assert.doesNotMatch(app,/fillClinicalForm/);
  assert.match(app,/event\.target\.closest\("\[data-summary-clinical-step\]"\)/);
 });
 test("iPhone layout uses 48px controls, one-column rows, and no horizontal overflow",()=>{

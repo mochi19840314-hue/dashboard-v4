@@ -20,6 +20,6 @@ assert.match(css,/\.chart-animating \.annual-series\{animation:annualSeriesRevea
 assert.match(css,/@keyframes annualSeriesReveal\{from\{clip-path:inset\(0 100% 0 0\)\}/,"annual reveal starts at the left edge");
 assert.match(css,/@media\(prefers-reduced-motion:reduce\).*\.chart-animating \.annual-series.*animation:none!important/s,"reduced motion bypasses chart animation");
 assert.match(css,/@media\(prefers-reduced-motion:reduce\).*\.chart-awaiting \.annual-series\{clip-path:none\}/s,"reduced motion never hides chart data");
-assert.match(html,/style\.css\?v=9501/);assert.match(html,/report-month\.js\?v=1061/);assert.match(html,/app\.js\?v=9501/);
-assert.match(sw,/keita-dashboard-v9501-cash-flow/);assert.match(sw,/style\.css\?v=9501/);assert.match(sw,/report-month\.js\?v=1061/);assert.match(sw,/app\.js\?v=9501/);
+assert.match(html,/style\.css\?v=9506/);assert.match(html,/report-month\.js\?v=1061/);assert.match(html,/app\.js\?v=9506/);
+assert.match(sw,/keita-dashboard-v9506-remove-legacy-entry-dom/);assert.match(sw,/style\.css\?v=9506/);assert.match(sw,/report-month\.js\?v=1061/);assert.match(sw,/app\.js\?v=9506/);
 console.log("chart animation tests: 16 checks passed");
