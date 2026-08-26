@@ -5,6 +5,10 @@ const history=()=>Array.from({length:10},(_,index)=>row(index,{sales:index>=5?22
 
 test("朝の0件状態は予測せず、目標から今日の目安を逆算する",()=>{const r=Brief.build({date:"2026-08-18",hour:8,entries:history(),target:5000000,sales:2400000,remainingBusinessDays:9});assert.equal(r.mode,"morning");assert.equal(r.guide.amount,288889);assert.equal(r.guide.note,"月間目標から逆算");assert.doesNotMatch(JSON.stringify(r),/期待利益|成功率/);assert.match(r.comment,/直近|今日は/)});
 
+test("朝のAIコメントは傾向と観察に限定し、診療行為を指示しない",()=>{const r=Brief.build({date:"2026-08-18",hour:8,entries:history()});assert.match(r.comment,/記録|観察|確認/);assert.doesNotMatch(r.comment,/提案しましょう|優先しましょう|行ってください|案内しましょう|必要な診療/);assert.ok(r.comment.split("。").filter(Boolean).length<=3)});
+
+test("必要日商と直近平均の差は進捗低下と断定しない",()=>{const options={date:"2026-08-18",hour:8,entries:history(),target:6000000,sales:2000000};const normal=Brief.build({...options,remainingBusinessDays:10}),monthEnd=Brief.build({...options,remainingBusinessDays:4});assert.equal(normal.warning.label,"必要日商が上昇");assert.equal(monthEnd.warning.label,"月末目標に注意");assert.doesNotMatch(`${normal.warning.label}${monthEnd.warning.label}`,/目標達成ペース低下/)});
+
 test("通常営業日は直近平均と同曜日を比較して自然に要約する",()=>{const rows=history(),today={...row(17),date:"2026-08-18"},r=Brief.build({date:today.date,hour:17,entries:[...rows,today],todayEntry:today});assert.equal(r.mode,"review");assert.match(r.comment,/今日は20件/);assert.ok(r.comment.split("。").filter(Boolean).length<=3);assert.equal(r.warning.label,"特になし")});
 
 test("高客単価日は患者数でなく診療構成の可能性を示す",()=>{const rows=history(),today={...row(17),date:"2026-08-18",sales:400000,patients:20,clinical:{bloodTests:4,xrays:2,ultrasounds:1}},r=Brief.build({date:today.date,entries:[...rows,today],todayEntry:today});assert.match(r.comment,/客単価.*高く/);assert.match(r.comment,/診療構成が売上を支えた可能性/);assert.doesNotMatch(r.priority.reason,/増や/) });
