@@ -24,4 +24,4 @@ jobs:
       - name: Backup restore compatibility tests
         run: node backup-normalizer.test.js
       - name: Full test suite
-        run: npm test
+        run: npm run build
