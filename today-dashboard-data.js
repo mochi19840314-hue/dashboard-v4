@@ -8,8 +8,8 @@
  return {build};
 });
 
-// v10.2.1: sequential, cache-busted bootstrap. No observers or background AI calls.
+// v10.2.2: sequential, cache-busted bootstrap. No observers or background AI calls.
 if(typeof document!=="undefined"&&typeof window!=="undefined"){
  const load=(src,next)=>{if(document.querySelector(`script[data-today-module="${src}"]`)){next?.();return}const script=document.createElement("script");script.src=src;script.dataset.todayModule=src;script.onload=()=>next?.();script.onerror=()=>console.warn("today module load failed",src);document.head.appendChild(script)};
- load("./today-one-action.js?v=1021",()=>load("./kagemusha-intelligence.js?v=1021",()=>load("./today-one-action-ui.js?v=1021")));
+ load("./today-one-action.js?v=1021",()=>load("./kagemusha-intelligence.js?v=1022",()=>load("./today-one-action-ui.js?v=1021",()=>load("./evaluation-role-ui.js?v=1022"))));
 }
