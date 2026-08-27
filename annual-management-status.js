@@ -33,3 +33,13 @@
   }
   return {build,LABELS,ANNUAL_PACE_THRESHOLDS};
 });
+
+if(typeof document!=="undefined"){
+  const loadScript=(src,id)=>new Promise((resolve,reject)=>{
+    if(globalThis.TodayOneAction&&id==="today-one-action-engine")return resolve();
+    if(document.getElementById(id))return resolve();
+    const script=document.createElement("script");script.id=id;script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script);
+  });
+  const boot=()=>loadScript("./today-one-action.js?v=1010","today-one-action-engine").then(()=>loadScript("./today-one-action-ui.js?v=1010","today-one-action-ui")).catch(error=>console.error("Today One Action load failed",error));
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
+}
