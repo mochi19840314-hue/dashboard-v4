@@ -6,6 +6,13 @@
   "use strict";
   const isObject=value=>Boolean(value)&&typeof value==="object"&&!Array.isArray(value);
   const definedObject=value=>isObject(value)?Object.fromEntries(Object.entries(value).filter(([,item])=>item!==undefined)):{};
+  const cleanArray=value=>Array.isArray(value)?value.filter(isObject):[];
+  const cleanDatedArray=value=>cleanArray(value).filter(item=>typeof item.date==="string"&&item.date.trim()).map(item=>({...definedObject(item),date:item.date.trim()}));
+  const cleanObjectMap=value=>Object.fromEntries(Object.entries(definedObject(value)).filter(([,item])=>isObject(item)).map(([key,item])=>[key,definedObject(item)]));
+  const mergeObjectMap=(defaults,value)=>{
+    const fallback=cleanObjectMap(defaults),source=cleanObjectMap(value);
+    return Object.fromEntries([...new Set([...Object.keys(fallback),...Object.keys(source)])].map(key=>[key,{...definedObject(fallback[key]),...definedObject(source[key])}]));
+  };
   function unwrapBackup(raw,storageKey){
     if(Array.isArray(raw))return {entries:raw};
     if(!isObject(raw))throw new Error("invalid backup");
@@ -21,14 +28,66 @@
   }
   function normalizeBackup(raw,defaults,storageKey){
     const source=unwrapBackup(raw,storageKey),outer=isObject(raw)?raw:{};
-    const entries=([source.entries,source.records,source.dailyEntries,source.dailyRecords].find(Array.isArray)||[]).map(entry=>({...definedObject(entry),memo:String(entry?.memo??entry?.note??"")}));
+    const entrySource=[source.entries,source.records,source.dailyEntries,source.dailyRecords].find(Array.isArray)||[];
+    const entries=cleanArray(entrySource).map(entry=>({...definedObject(entry),memo:String(entry.memo??entry.note??"")}));
     const financeDefaults=definedObject(defaults.finance);
-    const financeByMonth=Object.fromEntries(Object.entries(definedObject(source.financeByMonth)).map(([month,value])=>[month,{...financeDefaults,...definedObject(value)}]));
+    const financeByMonth=Object.fromEntries(Object.entries(cleanObjectMap(source.financeByMonth)).map(([month,value])=>[month,{...financeDefaults,...value}]));
     const clinicSource=definedObject(source.clinic);
-    const clinic={...definedObject(defaults.clinic),...clinicSource,closedDates:Array.isArray(clinicSource.closedDates)?clinicSource.closedDates:[...(defaults.clinic?.closedDates||[])]};
-    const kagemushaDiary=[source.kagemushaDiary,outer.kagemushaDiary].find(Array.isArray)||[];
-    const strategySource=definedObject(source.strategyMap),strategyMap={updated:typeof strategySource.updated==="string"?strategySource.updated:null,themes:Array.isArray(strategySource.themes)?strategySource.themes:[],priorities:Array.isArray(strategySource.priorities)?strategySource.priorities:[],monthlyHistory:Array.isArray(strategySource.monthlyHistory)?strategySource.monthlyHistory:[]};
-    const data={...definedObject(defaults),...definedObject(source),entries,memoLearningHistory:Array.isArray(source.memoLearningHistory)?source.memoLearningHistory:[],memoKnowledge:definedObject(source.memoKnowledge),memoTrends:Array.isArray(source.memoTrends)?source.memoTrends:[],aiRecommendationHistory:Array.isArray(source.aiRecommendationHistory)?source.aiRecommendationHistory:[],successRateHistory:Array.isArray(source.successRateHistory)?source.successRateHistory:[],businessHealthScore:Number(source.businessHealthScore)||0,businessHealthHistory:Array.isArray(source.businessHealthHistory)?source.businessHealthHistory:[],learningHistory:Array.isArray(source.learningHistory)?source.learningHistory:[],weeklyLearningHistory:Array.isArray(source.weeklyLearningHistory)?source.weeklyLearningHistory:[],successLibrary:Array.isArray(source.successLibrary)?source.successLibrary:[],clinicalSnapshots:Array.isArray(source.clinicalSnapshots)?source.clinicalSnapshots:[],successPatterns:Array.isArray(source.successPatterns)?source.successPatterns:[],failurePatterns:Array.isArray(source.failurePatterns)?source.failurePatterns:[],workloadHistory:Array.isArray(source.workloadHistory)?source.workloadHistory:[],efficiencyHistory:Array.isArray(source.efficiencyHistory)?source.efficiencyHistory:[],dailyLearning:definedObject(source.dailyLearning),successScoreHistory:Array.isArray(source.successScoreHistory)?source.successScoreHistory:[],strategyMap,seasonLearning:Array.isArray(source.seasonLearning)?{patterns:[...source.seasonLearning]}:definedObject(source.seasonLearning),seasonForecast:definedObject(source.seasonForecast),forecastHistory:Array.isArray(source.forecastHistory)?source.forecastHistory:[],forecastModel:definedObject(source.forecastModel),optimizer:definedObject(source.optimizer),optimizerHistory:Array.isArray(source.optimizerHistory)?source.optimizerHistory:[],dailyRecommendation:definedObject(source.dailyRecommendation),optimizerScore:definedObject(source.optimizerScore),coachHistory:Array.isArray(source.coachHistory)?source.coachHistory:[],finance:{...financeDefaults,...definedObject(source.finance)},financeByMonth,monthlyReports:{...definedObject(defaults.monthlyReports),...definedObject(source.monthlyReports)},clinic,weatherCache:source.weatherCache===undefined?defaults.weatherCache:source.weatherCache,historical:{...definedObject(defaults.historical),...definedObject(source.historical)},settings:{...definedObject(defaults.settings),...definedObject(source.settings)},businessSimulator:{...definedObject(defaults.businessSimulator),...definedObject(source.businessSimulator),changes:definedObject(source.businessSimulator?.changes)},simulationHistory:Array.isArray(source.simulationHistory)?source.simulationHistory:[],goalPlanner:{...definedObject(defaults.goalPlanner),...definedObject(source.goalPlanner)},improvementModels:definedObject(source.improvementModels),memo:source.memo===undefined?defaults.memo:source.memo};
+    const clinic={...definedObject(defaults.clinic),...clinicSource,closedDates:Array.isArray(clinicSource.closedDates)?clinicSource.closedDates.filter(value=>typeof value==="string"):[...(defaults.clinic?.closedDates||[])]};
+    const kagemushaDiary=cleanDatedArray([source.kagemushaDiary,outer.kagemushaDiary].find(Array.isArray)||[]);
+    const strategySource=definedObject(source.strategyMap),strategyMap={updated:typeof strategySource.updated==="string"?strategySource.updated:null,themes:cleanArray(strategySource.themes),priorities:cleanArray(strategySource.priorities),monthlyHistory:cleanArray(strategySource.monthlyHistory)};
+    const businessSimulatorSource=definedObject(source.businessSimulator),goalPlannerSource=definedObject(source.goalPlanner);
+    const data={
+      ...definedObject(defaults),
+      ...definedObject(source),
+      entries,
+      aiFeedback:definedObject(source.aiFeedback),
+      memoLearningHistory:cleanArray(source.memoLearningHistory),
+      memoKnowledge:definedObject(source.memoKnowledge),
+      memoTrends:cleanArray(source.memoTrends),
+      aiRecommendationHistory:cleanArray(source.aiRecommendationHistory),
+      successRateHistory:cleanArray(source.successRateHistory),
+      businessHealthScore:Number(source.businessHealthScore)||0,
+      businessHealthHistory:cleanArray(source.businessHealthHistory),
+      learningHistory:cleanArray(source.learningHistory),
+      weeklyLearningHistory:cleanArray(source.weeklyLearningHistory),
+      successLibrary:cleanArray(source.successLibrary),
+      clinicalSnapshots:cleanArray(source.clinicalSnapshots),
+      successPatterns:cleanArray(source.successPatterns),
+      failurePatterns:cleanArray(source.failurePatterns),
+      workloadHistory:cleanArray(source.workloadHistory),
+      efficiencyHistory:cleanArray(source.efficiencyHistory),
+      dailyLearning:definedObject(source.dailyLearning),
+      successScoreHistory:cleanArray(source.successScoreHistory),
+      aiCompassLearning:cleanArray(source.aiCompassLearning),
+      meetingBrief:definedObject(source.meetingBrief),
+      meetingHistory:cleanArray(source.meetingHistory),
+      strategyMap,
+      seasonLearning:Array.isArray(source.seasonLearning)?{patterns:cleanArray(source.seasonLearning)}:definedObject(source.seasonLearning),
+      seasonForecast:definedObject(source.seasonForecast),
+      forecastHistory:cleanArray(source.forecastHistory),
+      forecastModel:definedObject(source.forecastModel),
+      optimizer:definedObject(source.optimizer),
+      optimizerHistory:cleanArray(source.optimizerHistory),
+      dailyRecommendation:definedObject(source.dailyRecommendation),
+      optimizerScore:definedObject(source.optimizerScore),
+      coachHistory:cleanArray(source.coachHistory),
+      finance:{...financeDefaults,...definedObject(source.finance)},
+      financeByMonth,
+      cardReceiptsByMonth:mergeObjectMap(defaults.cardReceiptsByMonth,source.cardReceiptsByMonth),
+      monthlyReports:mergeObjectMap(defaults.monthlyReports,source.monthlyReports),
+      clinic,
+      weatherCache:source.weatherCache===undefined?defaults.weatherCache:(isObject(source.weatherCache)||source.weatherCache===null?source.weatherCache:defaults.weatherCache),
+      historical:mergeObjectMap(defaults.historical,source.historical),
+      settings:mergeObjectMap(defaults.settings,source.settings),
+      uiState:{...definedObject(defaults.uiState),...definedObject(source.uiState)},
+      meta:{...definedObject(defaults.meta),...definedObject(source.meta)},
+      businessSimulator:{...definedObject(defaults.businessSimulator),...businessSimulatorSource,changes:definedObject(businessSimulatorSource.changes)},
+      simulationHistory:cleanArray(source.simulationHistory),
+      goalPlanner:{...definedObject(defaults.goalPlanner),...goalPlannerSource},
+      improvementModels:definedObject(source.improvementModels),
+      memo:source.memo===undefined?defaults.memo:String(source.memo??"")
+    };
     delete data.kagemushaDiary;
     return {data,kagemushaDiary};
   }

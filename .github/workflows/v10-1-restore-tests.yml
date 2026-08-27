@@ -1,0 +1,27 @@
+name: v10.1 Restore Stability
+
+on:
+  push:
+    branches:
+      - v10.1-restore-stability
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check backup normalizer
+        run: node --check backup-normalizer.js
+      - name: Backup restore compatibility tests
+        run: node backup-normalizer.test.js
+      - name: Full test suite
+        run: npm run build
