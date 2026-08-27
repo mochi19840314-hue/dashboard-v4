@@ -25,3 +25,9 @@ if(typeof document!=="undefined"&&typeof window!=="undefined"){
  const load=(src,next)=>{if(document.querySelector(`script[data-v101-cause="${src}"]`)){next?.();return}const script=document.createElement("script");script.src=src;script.dataset.v101Cause=src;script.onload=()=>next?.();script.onerror=()=>console.warn("monthly cause analysis load failed",src);document.head.appendChild(script)};
  load("./monthly-cause-analysis.js?v=1010",()=>load("./monthly-cause-analysis-ui.js?v=1010"));
 }
+
+// v10.1 Phase 3: 既存のClinicalLearningEngineの負荷計算を利用し、月間の売上/負荷ptを独立表示する。
+if(typeof document!=="undefined"&&typeof window!=="undefined"){
+ const load=(src,next)=>{if(document.querySelector(`script[data-v101-workload="${src}"]`)){next?.();return}const script=document.createElement("script");script.src=src;script.dataset.v101Workload=src;script.onload=()=>next?.();script.onerror=()=>console.warn("workload efficiency analysis load failed",src);document.head.appendChild(script)};
+ load("./workload-efficiency-analysis.js?v=1011",()=>load("./workload-efficiency-analysis-ui.js?v=1011"));
+}
