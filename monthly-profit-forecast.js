@@ -19,3 +19,9 @@
  }
  return{weights,confidence,commentForDays,calculate};
 });
+
+// v10.1: 月間原因分解は独立モジュールとして追加し、既存の月次予測ロジックと描画を変更しない。
+if(typeof document!=="undefined"&&typeof window!=="undefined"){
+ const load=(src,next)=>{if(document.querySelector(`script[data-v101-cause="${src}"]`)){next?.();return}const script=document.createElement("script");script.src=src;script.dataset.v101Cause=src;script.onload=()=>next?.();script.onerror=()=>console.warn("monthly cause analysis load failed",src);document.head.appendChild(script)};
+ load("./monthly-cause-analysis.js?v=1010",()=>load("./monthly-cause-analysis-ui.js?v=1010"));
+}
