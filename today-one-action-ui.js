@@ -1,49 +1,15 @@
 (()=>{
   "use strict";
-  const STORAGE_KEY="keitaDashboardSimpleV1";
-  const MONTHLY_TARGET=5000000;
+  const STORAGE_KEY="keitaDashboardSimpleV1",MONTHLY_TARGET=5000000;
   const iso=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
   const read=()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")||{}}catch{return {}}};
   const businessDay=(date,clinic={})=>{const d=new Date(`${date}T12:00:00`),day=d.getDay();return day!==1&&!(Array.isArray(clinic.closedDates)&&clinic.closedDates.includes(date))};
   const remainingBusinessDays=(today,clinic={})=>{const d=new Date(`${today}T12:00:00`),last=new Date(d.getFullYear(),d.getMonth()+1,0,12);let count=0;for(const cursor=new Date(d);cursor<=last;cursor.setDate(cursor.getDate()+1)){const key=`${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,"0")}-${String(cursor.getDate()).padStart(2,"0")}`;if(businessDay(key,clinic))count++}return count};
-  const monthSales=(data,month)=>{
-    const entries=Array.isArray(data.entries)?data.entries:[];
-    const daily=entries.filter(e=>String(e?.date||"").startsWith(month)).reduce((sum,e)=>sum+(Number(e.sales)||0),0);
-    const hist=Number(data.historical?.[month]?.sales)||0;
-    const finance=data.financeByMonth?.[month]||{};
-    const current=month===iso().slice(0,7)?data.finance||{}:{};
-    const ec=["morikuboOnline","royalCanin","purina"].reduce((sum,key)=>sum+(Number(finance[key]??current[key])||0),0);
-    return (daily||hist)+ec;
-  };
-  const build=()=>{
-    const data=read(),today=iso(),month=today.slice(0,7),target=Number(data.settings?.[month]?.target)||MONTHLY_TARGET;
-    return globalThis.TodayOneAction?.build({today,hour:new Date().getHours(),entries:Array.isArray(data.entries)?data.entries:[],monthlyTarget:target,monthSales:monthSales(data,month),remainingBusinessDays:remainingBusinessDays(today,data.clinic||{})});
-  };
+  const monthSales=(data,month)=>{const entries=Array.isArray(data.entries)?data.entries:[],daily=entries.filter(e=>String(e?.date||"").startsWith(month)).reduce((sum,e)=>sum+(Number(e.sales)||0),0),hist=Number(data.historical?.[month]?.sales)||0,finance=data.financeByMonth?.[month]||{},current=month===iso().slice(0,7)?data.finance||{}:{},ec=["morikuboOnline","royalCanin","purina"].reduce((sum,key)=>sum+(Number(finance[key]??current[key])||0),0);return (daily||hist)+ec};
+  const workloadFor=entry=>{if(!entry)return null;const patients=Math.max(0,Number(entry.patients)||0);let score=patients*3;score+=(Number(entry.surgeries??entry.clinical?.surgeries)||0)*12;score+=(Number(entry.icuCases??entry.icu)||0)*10;score+=(Number(entry.inpatients??entry.hospitalized)||0)*8;score+=(Number(entry.afterHours??entry.emergency)||0)*8;score+=(Number(entry.newPatients??entry.newCases)||0)*3;score+=(Number(entry.bloodTests??entry.clinical?.bloodTests)||0)*2;score+=(Number(entry.imaging??entry.clinical?.imaging)||0)*2;score+=(Number(entry.healthChecks??entry.clinical?.checkups)||0)*2;return Math.round(score)};
+  const build=()=>{const data=read(),today=iso(),month=today.slice(0,7),entries=Array.isArray(data.entries)?data.entries:[],target=Number(data.settings?.[month]?.target)||MONTHLY_TARGET,remaining=remainingBusinessDays(today,data.clinic||{}),sales=monthSales(data,month),base=globalThis.TodayOneAction?.build({today,hour:new Date().getHours(),entries,monthlyTarget:target,monthSales:sales,remainingBusinessDays:remaining});if(!base)return null;const phase=base.phase;if(phase==="morning"||!globalThis.KagemushaIntelligence)return base;const entry=entries.find(e=>e?.date===today),intel=globalThis.KagemushaIntelligence.analyze({entries,today,monthlyTarget:target,monthSales:sales,remainingBusinessDays:remaining,workload:workloadFor(entry)});if(!intel?.ready||!intel.primary)return base;return {...base,action:intel.action,reason:intel.reason,evidence:{metric:"kagemushaIntelligence",primary:intel.primary,signals:intel.signals,baseline:intel.baseline}}};
   let applying=false,lastRender=0;
-  const render=(force=false)=>{
-    const now=Date.now();
-    if(applying||!globalThis.TodayOneAction||(!force&&now-lastRender<750))return;
-    const text=document.getElementById("todayInsightText"),action=document.getElementById("todayInsightAction"),shadowTitle=document.getElementById("compassShadowTitle"),shadow=document.getElementById("compassShadowComment");
-    if(!text||!action)return;
-    const result=build();if(!result)return;
-    applying=true;lastRender=now;
-    try{
-      const card=text.closest(".today-insight-widget"),heading=card?.querySelector("h2");if(heading&&heading.textContent!=="今日の一手")heading.textContent="今日の一手";
-      if(text.textContent!==result.reason)text.textContent=result.reason;
-      const next=`→ ${result.action}`;if(action.textContent!==next)action.textContent=next;
-      if(card&&card.dataset.actionPhase!==(result.phase||"unknown"))card.dataset.actionPhase=result.phase||"unknown";
-      if(shadowTitle&&shadowTitle.textContent!==result.shadowTitle)shadowTitle.textContent=result.shadowTitle||"影武者｜今日の方針";
-      if(shadow){const nextShadow=`${result.shadowLead||""} ${result.reason} 今日の一手は「${result.action}」です。`.trim();if(shadow.textContent!==nextShadow)shadow.textContent=nextShadow}
-      const shadowCard=shadow?.closest(".compass-shadow");if(shadowCard&&shadowCard.dataset.actionPhase!==(result.phase||"unknown"))shadowCard.dataset.actionPhase=result.phase||"unknown";
-    }finally{applying=false}
-  };
-  const start=()=>{
-    render(true);
-    document.addEventListener("visibilitychange",()=>{if(!document.hidden)render(true)});
-    window.addEventListener("focus",()=>render());
-    window.addEventListener("storage",()=>render(true));
-    // Keep time-of-day changes fresh without observing every DOM mutation.
-    setInterval(()=>{if(!document.hidden)render(true)},5*60*1000);
-  };
+  const render=(force=false)=>{const now=Date.now();if(applying||!globalThis.TodayOneAction||(!force&&now-lastRender<750))return;const text=document.getElementById("todayInsightText"),action=document.getElementById("todayInsightAction"),shadowTitle=document.getElementById("compassShadowTitle"),shadow=document.getElementById("compassShadowComment");if(!text||!action)return;const result=build();if(!result)return;applying=true;lastRender=now;try{const card=text.closest(".today-insight-widget"),heading=card?.querySelector("h2");if(heading&&heading.textContent!=="今日の一手")heading.textContent="今日の一手";if(text.textContent!==result.reason)text.textContent=result.reason;const next=`→ ${result.action}`;if(action.textContent!==next)action.textContent=next;if(card&&card.dataset.actionPhase!==(result.phase||"unknown"))card.dataset.actionPhase=result.phase||"unknown";if(shadowTitle&&shadowTitle.textContent!==result.shadowTitle)shadowTitle.textContent=result.shadowTitle||"影武者｜今日の方針";if(shadow){const nextShadow=`${result.shadowLead||""} ${result.reason} 今日の一手は「${result.action}」です。`.trim();if(shadow.textContent!==nextShadow)shadow.textContent=nextShadow}const shadowCard=shadow?.closest(".compass-shadow");if(shadowCard&&shadowCard.dataset.actionPhase!==(result.phase||"unknown"))shadowCard.dataset.actionPhase=result.phase||"unknown"}finally{applying=false}};
+  const start=()=>{render(true);document.addEventListener("visibilitychange",()=>{if(!document.hidden)render(true)});window.addEventListener("focus",()=>render());window.addEventListener("storage",()=>render(true));setInterval(()=>{if(!document.hidden)render(true)},5*60*1000)};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
