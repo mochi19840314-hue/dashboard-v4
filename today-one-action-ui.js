@@ -22,22 +22,28 @@
   let applying=false;
   const render=()=>{
     if(applying||!globalThis.TodayOneAction)return;
-    const text=document.getElementById("todayInsightText"),action=document.getElementById("todayInsightAction");
+    const text=document.getElementById("todayInsightText"),action=document.getElementById("todayInsightAction"),shadowTitle=document.getElementById("compassShadowTitle"),shadow=document.getElementById("compassShadowComment");
     if(!text||!action)return;
     const result=build();if(!result)return;
     applying=true;
     try{
-      const card=text.closest(".today-insight-widget");const heading=card?.querySelector("h2");if(heading)heading.textContent="今日の一手";
+      const card=text.closest(".today-insight-widget"),heading=card?.querySelector("h2");if(heading)heading.textContent="今日の一手";
       if(text.textContent!==result.reason)text.textContent=result.reason;
       const next=`→ ${result.action}`;if(action.textContent!==next)action.textContent=next;
       if(card)card.dataset.actionPhase=result.phase||"unknown";
+      if(shadowTitle&&shadowTitle.textContent!==result.shadowTitle)shadowTitle.textContent=result.shadowTitle||"影武者｜今日の方針";
+      if(shadow){const nextShadow=`${result.shadowLead||""} ${result.reason} 今日の一手は「${result.action}」です。`.trim();if(shadow.textContent!==nextShadow)shadow.textContent=nextShadow}
+      const shadowCard=shadow?.closest(".compass-shadow");if(shadowCard)shadowCard.dataset.actionPhase=result.phase||"unknown";
     }finally{applying=false}
   };
+  const observe=(target)=>{if(target&&typeof MutationObserver!=="undefined")new MutationObserver(()=>render()).observe(target,{childList:true,subtree:true,characterData:true})};
   const start=()=>{
     render();
-    const card=document.querySelector(".today-insight-widget");if(card&&typeof MutationObserver!=="undefined")new MutationObserver(()=>render()).observe(card,{childList:true,subtree:true,characterData:true});
+    observe(document.querySelector(".today-insight-widget"));
+    observe(document.querySelector(".compass-shadow"));
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
     window.addEventListener("focus",render);
+    window.addEventListener("storage",render);
     setInterval(render,5*60*1000);
   };
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
