@@ -11,9 +11,8 @@
  return {build};
 });
 
-// v10.1 Phase 4: Today One Action は既存Todayデータモジュールから安全に起動する。
-// index.html の巨大な既存構造を直接変更せず、読み込み漏れをここで補完する。
+// v10.1 lightweight hotfix: load the non-observing UI revision.
 if(typeof document!=="undefined"&&typeof window!=="undefined"){
  const load=(src,next)=>{if(document.querySelector(`script[data-v101-one-action="${src}"]`)){next?.();return}const script=document.createElement("script");script.src=src;script.dataset.v101OneAction=src;script.onload=()=>next?.();script.onerror=()=>console.warn("today one action load failed",src);document.head.appendChild(script)};
- load("./today-one-action.js?v=1012",()=>load("./today-one-action-ui.js?v=1012"));
+ load("./today-one-action.js?v=1014",()=>load("./today-one-action-ui.js?v=1014"));
 }
