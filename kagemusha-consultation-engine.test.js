@@ -1,0 +1,17 @@
+"use strict";
+const assert=require("node:assert/strict");
+const K=require("./kagemusha-consultation-engine.js");
+const entries=[];
+for(let i=1;i<=10;i++)entries.push({date:`2026-08-${String(i).padStart(2,"0")}`,sales:200000,patients:20,bloodTests:3,imaging:2,checkups:1,preventive:2,surgeries:0,trimming:1});
+const base={entries,settings:{"2026-08":{target:5000000,businessDays:26}},finance:{monthlyExpense:3000000,balance:6000000,loan:1000000,personnelExpense:800000,medicalExpense:500000}};
+let r=K.answer("今日の売上が低いのはなぜ？",{...base,entries:[...entries,{date:"2026-08-28",sales:140000,patients:14,bloodTests:2,imaging:1,checkups:1}]},{today:"2026-08-28"});
+assert.equal(r.intent,"salesCause");assert.equal(r.handled,true);assert.match(r.conclusion,/来院数/);assert.match(r.reasons.join(" "),/直近10営業日平均/);
+r=K.answer("今日の客単価どう？",{...base,entries:[...entries,{date:"2026-08-28",sales:240000,patients:16}]},{today:"2026-08-28"});assert.equal(r.intent,"volumeUnit");assert.equal(r.handled,true);
+r=K.answer("血液検査と健診は少ない？",{...base,entries:[...entries,{date:"2026-08-28",sales:200000,patients:20,bloodTests:1,checkups:0}]},{today:"2026-08-28"});assert.equal(r.intent,"clinicalMix");assert.equal(r.handled,true);assert.match(r.next,/1日だけ/);
+r=K.answer("今月の利益率は？",base,{today:"2026-08-28"});assert.equal(r.intent,"profit");assert.equal(r.handled,true);
+r=K.answer("看護師を採用できる？",base,{today:"2026-08-28"});assert.equal(r.intent,"hiring");
+r=K.answer("内視鏡を導入できる？",base,{today:"2026-08-28"});assert.equal(r.intent,"investment");
+r=K.answer("GLC買える？",base,{today:"2026-08-28"});assert.equal(r.intent,"vehicle");
+r=K.answer("今月どう？",base,{today:"2026-08-28"});assert.equal(r.intent,"month");
+r=K.answer("スタッフの好きな食べ物は？",base,{today:"2026-08-28"});assert.equal(r.intent,"unknown");assert.equal(r.handled,false);assert.match(r.conclusion,/判断できません/);
+console.log("kagemusha consultation engine: 9 scenarios passed");
