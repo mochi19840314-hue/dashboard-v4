@@ -23,4 +23,6 @@
   injectStyle();submit.disabled=true;submit.textContent="Dashboardを分析中…";
   try{const result=globalThis.KagemushaConsultationEngine.answer(input.value,read());render(output,result);output.scrollIntoView({behavior:"smooth",block:"nearest"})}finally{submit.disabled=false;submit.textContent="相談する"}
  },true);
+ const loadAnnualTrend=()=>{if(globalThis.AnnualManagementTrend||document.querySelector('script[data-annual-management-trend]'))return;const s=document.createElement("script");s.src="./annual-management-trend.js?v=1031";s.dataset.annualManagementTrend="1";document.head.appendChild(s)};
+ loadAnnualTrend();
 })();
