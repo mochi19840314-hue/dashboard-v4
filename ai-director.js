@@ -149,7 +149,7 @@
       m.sales?`来院1件あたりの売上目安は${yen(m.patients?m.clinicalSales/m.patients:0)}です。`:'売上データを入力すると、集客効果を詳しく確認できます。'
     ],'広告媒体ごとの新患数を記録し、Googleマップ・口コミ・既存患者からの紹介を優先して改善しましょう。');
     if(/GLC|車/i.test(text))return answer('glc',m);
-    return block('ご相談ありがとうございます。現在は試験版のため対応できる内容は限られていますが、今後さらに賢くなります。','「売上」「利益」「スタッフ」など、気になる言葉を含めて相談できます。','別の言葉でも相談してみてください。');
+    return block('ご相談ありがとうございます。現在のデータだけでは十分に判断できない内容です。','「売上」「利益」「スタッフ」など、気になる言葉を含めて相談できます。','別の言葉でも相談してみてください。');
   };
   // 将来はこの関数の中をOpenAI API呼び出しに置き換える。
   const requestConsultationResponse=async message=>consultationAnswer(message,metrics());
@@ -253,7 +253,7 @@
       <div id="aiDirectorMessage" class="aiDirectorMessage">相談項目を選んでください。</div>
       <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="glb">🚙 GLBなら？</button><button type="button" data-ai-question="endoscopy">🔬 内視鏡導入できる？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
       <section class="aiDirectorConsultation" aria-labelledby="aiDirectorConsultationTitle">
-        <h3 id="aiDirectorConsultationTitle">🥷 影武者に相談（β）</h3>
+        <h3 id="aiDirectorConsultationTitle">🥷 影武者に相談</h3>
         <form id="aiDirectorConsultationForm"><label class="sr-only" for="aiDirectorConsultationInput">今日の出来事や相談</label><textarea id="aiDirectorConsultationInput" placeholder="今日の出来事や相談を書いてください" required></textarea><button class="aiDirectorConsultationSubmit" type="submit">相談する</button></form>
         <div id="aiDirectorConsultationAnswer" class="aiDirectorMessage aiDirectorConsultationAnswer" aria-live="polite"></div>
       </section>
