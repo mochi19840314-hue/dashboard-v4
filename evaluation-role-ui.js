@@ -7,6 +7,8 @@
     .phase1-director-heading .evaluation-role-note{display:block;margin-top:.2rem;font-size:.72rem;line-height:1.4;color:#6f7f7d;font-weight:600}
     .phase1-director-heading h3{line-height:1.25}
   `;document.head.appendChild(style)};
+  const load=(src,next)=>{if(document.querySelector(`script[data-v103="${src}"]`)){next?.();return}const s=document.createElement("script");s.src=src;s.dataset.v103=src;s.onload=()=>next?.();s.onerror=()=>console.warn("v10.3 module load failed",src);document.head.appendChild(s)};
+  const loadConsultation=()=>load("./kagemusha-consultation-engine.js?v=1030",()=>load("./kagemusha-consultation-ui.js?v=1030"));
   const apply=()=>{
     addStyles();
     const scoreWrap=document.querySelector(".today-hero-score");
@@ -19,6 +21,7 @@
     }
     const directorTitle=document.getElementById("phase1DirectorTitle");
     if(directorTitle){directorTitle.textContent="本日の変動（直近比較）";const heading=directorTitle.parentElement;if(heading&&!heading.querySelector(".evaluation-role-note")){const note=document.createElement("small");note.className="evaluation-role-note";note.textContent="直近10営業日平均との比較";heading.appendChild(note)}}
+    loadConsultation();
   };
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",apply,{once:true});else apply();
 })();
