@@ -1,0 +1,57 @@
+"use strict";
+(function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;else root.KagemushaConsultationEngine=api;})(typeof globalThis!=="undefined"?globalThis:this,function(){
+ const n=v=>Number.isFinite(Number(v))?Number(v):0;
+ const pos=v=>Math.max(0,n(v));
+ const avg=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0;
+ const yen=v=>`${Math.round(n(v)).toLocaleString("ja-JP")}円`;
+ const pct=v=>`${n(v).toFixed(1)}%`;
+ const iso=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
+ const monthOf=d=>String(d||"").slice(0,7);
+ const clinical=(e,...keys)=>keys.reduce((s,k)=>s+pos(e?.[k]??e?.clinical?.[k]),0);
+ const valid=e=>e&&/^\d{4}-\d{2}-\d{2}$/.test(String(e.date||""))&&(pos(e.sales)>0||pos(e.patients)>0);
+ const unit=e=>pos(e?.patients)?pos(e?.sales)/pos(e?.patients):0;
+ const delta=(value,base)=>base?((value/base)-1)*100:null;
+ const phrase=(label,value,base,suffix="")=>{const d=delta(value,base);if(d==null)return `${label} ${value}${suffix}`;return `${label} ${value}${suffix}（直近10営業日平均 ${Math.round(base)}${suffix}、${d>=0?"+":""}${Math.round(d)}%）`;};
+ function classify(message){
+  const t=String(message||"").trim();
+  const tests=[
+   ["investment",/(内視鏡|ICU|機器|設備|導入|投資)/],
+   ["vehicle",/(GLC|GLB|車|自動車|リース)/i],
+   ["hiring",/(採用|看護師|スタッフ|人員|増員|雇用)/],
+   ["profit",/(利益|利益率|支出|経費|コスト|赤字|黒字)/],
+   ["clinicalMix",/(血液|画像|レントゲン|エコー|健診|健康診断|予防|手術|トリミング|診療構成|検査)/],
+   ["volumeUnit",/(来院|患者|件数|客単価|単価)/],
+   ["salesCause",/(なぜ|原因|理由|低い|少ない|落ち|下が|伸びない|高い|増え).*売上|売上.*(なぜ|原因|理由|低い|少ない|落ち|下が|伸びない|高い|増え)/],
+   ["month",/(今月|月末|目標|進捗|達成|月商|売上)/]
+  ];
+  for(const [intent,re] of tests)if(re.test(t))return {intent,confidence:"high"};
+  return {intent:"unknown",confidence:"low"};
+ }
+ function snapshot(data={},today=iso()){
+  const entries=(Array.isArray(data.entries)?data.entries:[]).filter(valid).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const current=entries.find(e=>e.date===today)||null;
+  const recent=entries.filter(e=>e.date<today).slice(-10);
+  const baseline={sampleSize:recent.length,sales:avg(recent.map(e=>pos(e.sales))),patients:avg(recent.map(e=>pos(e.patients))),unitPrice:avg(recent.map(unit).filter(Boolean)),bloodTests:avg(recent.map(e=>clinical(e,"bloodTests"))),imaging:avg(recent.map(e=>clinical(e,"imaging","xrays","ultrasounds"))),checkups:avg(recent.map(e=>clinical(e,"checkups","healthChecks","healthCheck"))),preventive:avg(recent.map(e=>clinical(e,"preventive"))),surgeries:avg(recent.map(e=>clinical(e,"surgeries"))),trimming:avg(recent.map(e=>clinical(e,"trimming","trimmings")))};
+  const mk=today.slice(0,7),monthEntries=entries.filter(e=>monthOf(e.date)===mk),finance=data.financeByMonth?.[mk]||data.finance||{},hist=data.historical?.[mk]||{};
+  const clinicalSales=monthEntries.reduce((s,e)=>s+pos(e.sales),0)||pos(hist.sales),ecSales=["morikuboOnline","royalCanin","purina"].reduce((s,k)=>s+pos(finance[k]),0),monthSales=clinicalSales+ecSales;
+  const expense=pos(finance.hospitalCashExpense??finance.monthlyExpense??hist.expense),profit=expense?monthSales-expense:null,margin=expense&&monthSales?profit/monthSales*100:null;
+  const target=pos(data.settings?.[mk]?.target)||5000000,businessDays=pos(data.settings?.[mk]?.businessDays)||26,activeDays=new Set(monthEntries.map(e=>e.date)).size,remaining=Math.max(0,businessDays-activeDays),forecast=activeDays?monthSales/activeDays*businessDays:monthSales;
+  return {today,current,recent,baseline,month:{key:mk,sales:monthSales,clinicalSales,ecSales,expense,profit,margin,target,activeDays,businessDays,remaining,forecast,patients:monthEntries.reduce((s,e)=>s+pos(e.patients),0)},finance:{balance:pos(finance.balance),loan:pos(finance.loan),personnelExpense:pos(finance.personnelExpense),medicalExpense:pos(finance.medicalExpense)}};
+ }
+ function currentEvidence(s){const e=s.current,b=s.baseline;if(!e)return null;return {sales:pos(e.sales),patients:pos(e.patients),unitPrice:unit(e),bloodTests:clinical(e,"bloodTests"),imaging:clinical(e,"imaging","xrays","ultrasounds"),checkups:clinical(e,"checkups","healthChecks","healthCheck"),preventive:clinical(e,"preventive"),surgeries:clinical(e,"surgeries"),trimming:clinical(e,"trimming","trimmings"),baseline:b};}
+ function answerSalesCause(s){
+  const c=currentEvidence(s);if(!c)return {handled:false,conclusion:"今日の原因分析はまだできません。",reasons:["今日の売上・来院データがDashboardにありません。"],next:"今日の診療実績を保存してから、もう一度聞いてください。"};
+  if(s.baseline.sampleSize<3)return {handled:false,conclusion:"比較データがまだ不足しています。",reasons:[`比較可能な過去データは${s.baseline.sampleSize}営業日です。`],next:"3営業日以上たまると、来院数と客単価を分けて原因分析できます。"};
+  const ds=delta(c.sales,s.baseline.sales),dp=delta(c.patients,s.baseline.patients),du=delta(c.unitPrice,s.baseline.unitPrice);let cause="大きな偏りは確認できません";
+  if(dp!=null&&du!=null){if(dp<=-10&&du>-10)cause="主因は来院数の低下です";else if(du<=-10&&dp>-10)cause="主因は客単価の低下です";else if(dp<=-10&&du<=-10)cause="来院数と客単価の両方が下がっています";else if(ds>=10)cause="売上は通常より高く、低下要因はありません";}
+  return {handled:true,conclusion:cause,reasons:[phrase("売上",Math.round(c.sales),s.baseline.sales,"円"),phrase("来院",Math.round(c.patients),s.baseline.patients,"件"),phrase("客単価",Math.round(c.unitPrice),s.baseline.unitPrice,"円")],next:"売上額そのものではなく、来院数と客単価のどちらが動いたかを優先して見ます。",evidence:c};
+ }
+ function answerMonth(s){const m=s.month;if(!m.sales)return {handled:false,conclusion:"今月はまだ評価できません。",reasons:["今月の売上データがありません。"],next:"日次売上を入力すると月末着地を計算できます。"};const rate=m.target?m.sales/m.target*100:0;return {handled:true,conclusion:m.forecast>=m.target?"今月は目標達成ペースです。":"今月は目標未達ペースです。",reasons:[`売上 ${yen(m.sales)}／目標 ${yen(m.target)}（達成率 ${pct(rate)}）`,`月末予測 ${yen(m.forecast)}、残り ${m.remaining}営業日`],next:m.forecast>=m.target?"無理に件数を追わず、診療品質を維持してください。":m.remaining?`目標まで${yen(Math.max(0,m.target-m.sales))}です。必要日商は${yen(Math.max(0,m.target-m.sales)/m.remaining)}です。`:"翌月の来院数・客単価・診療構成を分けて見直してください。"};}
+ function answerProfit(s){const m=s.month;if(!m.expense)return {handled:false,conclusion:"利益はまだ確定できません。",reasons:[`売上 ${yen(m.sales)}は確認できますが、支出が未入力です。`],next:"財務ページの支出を入力してください。"};return {handled:true,conclusion:m.margin>=30?"利益率は良好です。":m.margin>=20?"利益率は安定圏です。":"利益率には改善余地があります。",reasons:[`利益 ${yen(m.profit)}・利益率 ${pct(m.margin)}`,`支出 ${yen(m.expense)}・売上 ${yen(m.sales)}`],next:m.margin<20?"まず人件費・医療材料費など支出内訳の増減を確認してください。":"利益率だけでなく、手元資金と継続性も確認してください。"};}
+ function answerVolumeUnit(s){const c=currentEvidence(s);if(!c||s.baseline.sampleSize<3)return {handled:false,conclusion:"来院数・客単価の比較材料が不足しています。",reasons:[`比較可能データ ${s.baseline.sampleSize}営業日`],next:"今日の診療実績と過去3営業日以上が必要です。"};return {handled:true,conclusion:"今日の来院数と客単価を直近10営業日と比較しました。",reasons:[phrase("来院",Math.round(c.patients),s.baseline.patients,"件"),phrase("客単価",Math.round(c.unitPrice),s.baseline.unitPrice,"円")],next:"両方を分けて見ることで、件数不足と診療構成の違いを混同しません。",evidence:c};}
+ function answerClinical(s){const c=currentEvidence(s);if(!c||s.baseline.sampleSize<3)return {handled:false,conclusion:"診療構成の比較材料が不足しています。",reasons:[`比較可能データ ${s.baseline.sampleSize}営業日`],next:"今日の診療件数と過去3営業日以上が必要です。"};const rows=[["血液",c.bloodTests,s.baseline.bloodTests],["画像",c.imaging,s.baseline.imaging],["健診",c.checkups,s.baseline.checkups],["予防",c.preventive,s.baseline.preventive],["手術",c.surgeries,s.baseline.surgeries],["トリミング",c.trimming,s.baseline.trimming]].filter(([,v,b])=>v>0||b>0);return {handled:true,conclusion:"今日の診療構成を直近10営業日と比較しました。",reasons:rows.slice(0,5).map(([l,v,b])=>phrase(l,Math.round(v),b,"件")),next:"少ない項目があっても、症例構成による可能性があるため1日だけで提案漏れとは判断しません。",evidence:c};}
+ function answerHiring(s){const m=s.month;if(!m.expense)return {handled:false,conclusion:"採用余力はまだ判断できません。",reasons:["支出が未入力のため、採用後の固定費を評価できません。"],next:"月間支出と人件費を入力してください。"};const safe=m.profit>=1000000&&m.margin>=20;return {handled:true,conclusion:safe?"採用を検討できる利益水準です。":"採用は慎重に進める水準です。",reasons:[`月間利益 ${yen(m.profit)}・利益率 ${pct(m.margin)}`,s.finance.personnelExpense?`人件費 ${yen(s.finance.personnelExpense)}`:"人件費内訳は未入力です。"],next:"最終判断では、増員で増やせる診療キャパシティと月額人件費を並べて確認してください。"};}
+ function answerInvestment(s,intent){const m=s.month;if(!m.expense)return {handled:false,conclusion:"投資余力はまだ判断できません。",reasons:["支出が未入力です。"],next:"月間支出と口座残高を入力してください。"};const net=s.finance.balance-s.finance.loan,strong=m.profit>=1500000&&m.margin>=25&&net>=3000000;return {handled:true,conclusion:strong?"投資を前向きに検討できる水準です。":"現時点では条件確認を優先してください。",reasons:[`月間利益 ${yen(m.profit)}・利益率 ${pct(m.margin)}`,s.finance.balance?`現預金 ${yen(s.finance.balance)}・借入差引 ${yen(net)}`:"口座残高は未入力です。"],next:intent==="vehicle"?"頭金・リース料・保険・維持費を含む月額負担で最終判断してください。":"導入総額と月間症例数から回収期間を試算してください。"};}
+ function answer(message,data={},options={}){const c=classify(message),s=snapshot(data,options.today||iso());let r;if(c.intent==="salesCause")r=answerSalesCause(s);else if(c.intent==="month")r=answerMonth(s);else if(c.intent==="profit")r=answerProfit(s);else if(c.intent==="volumeUnit")r=answerVolumeUnit(s);else if(c.intent==="clinicalMix")r=answerClinical(s);else if(c.intent==="hiring")r=answerHiring(s);else if(c.intent==="investment"||c.intent==="vehicle")r=answerInvestment(s,c.intent);else r={handled:false,conclusion:"この質問はDashboard内のデータだけではまだ判断できません。",reasons:["質問内容に対応する分析項目を特定できませんでした。"],next:"「今月の売上」「今日の売上が低い理由」「利益率」「来院数」「健診・検査」「採用」「設備投資」などを含めて聞いてください。"};return {...r,intent:c.intent,confidence:c.confidence,question:String(message||"").trim()};}
+ return {classify,snapshot,answer};
+});
