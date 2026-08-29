@@ -9,7 +9,7 @@
   `;document.head.appendChild(style)};
   const load=(src,next)=>{if(document.querySelector(`script[data-v103="${src}"]`)){next?.();return}const s=document.createElement("script");s.src=src;s.dataset.v103=src;s.onload=()=>next?.();s.onerror=()=>console.warn("v10.3 module load failed",src);document.head.appendChild(s)};
   const loadConsultation=()=>load("./kagemusha-consultation-engine.js?v=1030",()=>load("./kagemusha-consultation-ui.js?v=1030"));
-  const loadPastSalesEditor=()=>load("./past-sales-editor.js?v=1032");
+  const loadPastSalesEditor=()=>load("./past-sales-editor.js?v=1033");
   const apply=()=>{
     addStyles();
     const scoreWrap=document.querySelector(".today-hero-score");
