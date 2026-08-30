@@ -30,5 +30,12 @@ if(typeof document!=="undefined"&&!document.querySelector('script[data-vet-recru
  const script=document.createElement("script");
  script.src="./vet-recruitment-signal.js?v=9600";
  script.dataset.vetRecruitmentSignal="1";
+ script.onload=()=>{
+  if(document.querySelector('script[data-vet-recruitment-director]'))return;
+  const bridge=document.createElement("script");
+  bridge.src="./vet-recruitment-director-bridge.js?v=9600";
+  bridge.dataset.vetRecruitmentDirector="1";
+  document.head.appendChild(bridge);
+ };
  document.head.appendChild(script);
 }
