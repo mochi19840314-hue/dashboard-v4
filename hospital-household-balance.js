@@ -46,3 +46,10 @@ if(typeof document!=="undefined"&&!document.querySelector('script[data-dashboard
  focus.dataset.dashboardFocusMode="1";
  document.head.appendChild(focus);
 }
+
+if(typeof document!=="undefined"&&!document.querySelector('script[data-director-condition]')){
+ const condition=document.createElement("script");
+ condition.src="./director-condition.js?v=9602";
+ condition.dataset.directorCondition="1";
+ document.head.appendChild(condition);
+}
