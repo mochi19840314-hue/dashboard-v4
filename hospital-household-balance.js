@@ -25,3 +25,10 @@
  }
  return {calculate,forMonth,calculateHospital,isMonthInProgress};
 });
+
+if(typeof document!=="undefined"&&!document.querySelector('script[data-vet-recruitment-signal]')){
+ const script=document.createElement("script");
+ script.src="./vet-recruitment-signal.js?v=9600";
+ script.dataset.vetRecruitmentSignal="1";
+ document.head.appendChild(script);
+}
