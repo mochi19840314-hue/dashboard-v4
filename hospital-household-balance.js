@@ -39,3 +39,10 @@ if(typeof document!=="undefined"&&!document.querySelector('script[data-vet-recru
  };
  document.head.appendChild(script);
 }
+
+if(typeof document!=="undefined"&&!document.querySelector('script[data-dashboard-focus-mode]')){
+ const focus=document.createElement("script");
+ focus.src="./dashboard-focus-mode.js?v=9601";
+ focus.dataset.dashboardFocusMode="1";
+ document.head.appendChild(focus);
+}
