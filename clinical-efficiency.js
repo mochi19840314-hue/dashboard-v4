@@ -40,3 +40,41 @@
   }
   return {evaluate,patientScore};
 });
+
+(function(root){
+  "use strict";
+  if(!root||!root.TodayDashboardData||!root.BusinessHealthScore||!root.CapacityIntelligence)return;
+
+  const originalBuild=root.TodayDashboardData.build;
+  const originalCalculate=root.BusinessHealthScore.calculate;
+  let pendingCapacity=null;
+
+  function capacityFromToday(today){
+    const entry=today?.entry||{};
+    const clinical=today?.clinical||{};
+    return root.CapacityIntelligence.evaluate({
+      patients:Number(entry.patients)||0,
+      bloodTests:Number(clinical.bloodTests)||0,
+      imaging:Number(clinical.imaging)||0,
+      checkups:Number(clinical.checkups)||0,
+      secondOpinions:Number(clinical.secondOpinions)||0,
+      surgeries:Number(clinical.surgeries)||0,
+      trimming:Number(clinical.trimming)||0,
+      preventive:Number(clinical.preventive)||0
+    });
+  }
+
+  root.TodayDashboardData.build=function(input){
+    const result=originalBuild.call(this,input);
+    try{pendingCapacity=capacityFromToday(result)}catch(error){pendingCapacity=null;console.warn("[Capacity v1] evaluation failed",error)}
+    return result;
+  };
+
+  root.BusinessHealthScore.calculate=function(input={}){
+    const capacity=pendingCapacity;
+    pendingCapacity=null;
+    const result=originalCalculate.call(this,{...input,doctorWorkload:capacity?.percent??input.doctorWorkload});
+    if(capacity)result.capacity=capacity;
+    return result;
+  };
+})(typeof globalThis!=="undefined"?globalThis:this);
