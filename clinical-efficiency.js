@@ -40,3 +40,11 @@
   }
   return {evaluate,patientScore};
 });
+
+// Capacity v1 is a display-only pilot. Load it in browsers without changing Business Health or Kagemusha scoring.
+if(typeof document!=="undefined"&&typeof globalThis!=="undefined"&&!globalThis.CapacityIntelligence){
+  const script=document.createElement("script");
+  script.src="./capacity-intelligence.js?v=1";
+  script.async=true;
+  document.head.appendChild(script);
+}
