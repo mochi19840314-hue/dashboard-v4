@@ -73,3 +73,64 @@
 
   return {DEFAULT_WEIGHTS,DEFAULT_CAPACITY_POINTS,normalizeInput,statusFor,evaluate};
 });
+
+(function(root){
+  "use strict";
+  if(typeof document==="undefined"||!root?.CapacityIntelligence)return;
+  const STORAGE_KEY="keitaDashboardSimpleV1";
+  const METRICS=["bloodTests","imaging","checkups","secondOpinions","surgeries","trimming","preventive"];
+
+  function localDate(){
+    const d=new Date();
+    return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+
+  function readData(){
+    try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")}
+    catch{return {}}
+  }
+
+  function metricValue(entry,metric){
+    if(root.TodayClinicalCounts?.value)return root.TodayClinicalCounts.value(entry,metric);
+    const clinical=entry?.clinical||{};
+    if(metric==="imaging")return Math.max(0,Number(clinical.xrays)||0)+Math.max(0,Number(clinical.ultrasounds)||0);
+    if(["surgeries","trimming","checkups","secondOpinions"].includes(metric))return Math.max(0,Number(entry?.[metric])||0);
+    return Math.max(0,Number(clinical[metric])||0);
+  }
+
+  function evaluateToday(){
+    const data=readData(),date=localDate(),entry=Array.isArray(data.entries)?data.entries.find(item=>item?.date===date):null;
+    if(!entry)return null;
+    const input={patients:Math.max(0,Number(entry.patients)||0)};
+    METRICS.forEach(metric=>input[metric]=metricValue(entry,metric));
+    return root.CapacityIntelligence.evaluate(input);
+  }
+
+  function render(){
+    const valueEl=document.getElementById("todayWidgetWorkload"),labelEl=document.getElementById("todayWidgetWorkloadLabel");
+    if(!valueEl||!labelEl)return;
+    const result=evaluateToday();
+    if(!result){valueEl.textContent="—";labelEl.textContent="算出中";valueEl.removeAttribute("title");return}
+    valueEl.textContent=`${result.percent}%`;
+    labelEl.textContent=result.status.label;
+    valueEl.title=`負荷ポイント ${result.points} / ${result.capacityPoints}`;
+    valueEl.dataset.capacityStatus=result.status.key;
+  }
+
+  function setup(){
+    render();
+    const form=document.getElementById("todayEntryForm");
+    if(form&&!form.dataset.capacityBound){
+      form.dataset.capacityBound="1";
+      form.addEventListener("submit",()=>setTimeout(render,0));
+    }
+    document.querySelector('[data-page="today"]')?.addEventListener("click",()=>setTimeout(render,0));
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
+    window.addEventListener("focus",render);
+    root.CapacityIntelligence.renderToday=render;
+    root.CapacityIntelligence.evaluateToday=evaluateToday;
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",setup,{once:true});
+  else setup();
+})(typeof globalThis!=="undefined"?globalThis:this);
