@@ -43,15 +43,32 @@
 
 (function(root){
   "use strict";
-  if(!root||!root.TodayDashboardData||!root.BusinessHealthScore||!root.CapacityIntelligence)return;
+  if(!root)return;
+  if(!root.CapacityIntelligence){
+    const DEFAULT_WEIGHTS={patients:1,bloodTests:.25,imaging:.35,checkups:.5,secondOpinions:.5,surgeries:2,trimming:.35,preventive:.1};
+    const DEFAULT_CAPACITY_POINTS=22;
+    const value=v=>Math.max(0,Number(v)||0);
+    const statusFor=percent=>{const p=value(percent);if(p<55)return {key:"spare",label:"余力あり"};if(p<80)return {key:"appropriate",label:"適正"};if(p<100)return {key:"high",label:"やや高負荷"};return {key:"over",label:"高負荷"}};
+    root.CapacityIntelligence={
+      DEFAULT_WEIGHTS,DEFAULT_CAPACITY_POINTS,statusFor,
+      evaluate(input={},options={}){
+        const weights={...DEFAULT_WEIGHTS,...(options.weights||{})},capacityPoints=Math.max(1,value(options.capacityPoints)||DEFAULT_CAPACITY_POINTS),metrics={};
+        Object.keys(DEFAULT_WEIGHTS).forEach(key=>metrics[key]=value(input[key]));
+        const contributions={};let points=0;
+        Object.keys(DEFAULT_WEIGHTS).forEach(key=>{const contribution=metrics[key]*value(weights[key]);contributions[key]=Number(contribution.toFixed(2));points+=contribution});
+        points=Number(points.toFixed(2));const percent=Math.round(points/capacityPoints*100),status=statusFor(percent),ranked=Object.entries(contributions).map(([key,contribution])=>({key,contribution})).filter(item=>item.contribution>0).sort((a,b)=>b.contribution-a.contribution);
+        return {points,percent,boundedPercent:Math.max(0,Math.min(200,percent)),status,capacityPoints,contributions,dominantFactors:ranked.slice(0,3),metrics,weights};
+      }
+    };
+  }
 
+  if(!root.TodayDashboardData||!root.BusinessHealthScore)return;
   const originalBuild=root.TodayDashboardData.build;
   const originalCalculate=root.BusinessHealthScore.calculate;
   let pendingCapacity=null;
 
   function capacityFromToday(today){
-    const entry=today?.entry||{};
-    const clinical=today?.clinical||{};
+    const entry=today?.entry||{},clinical=today?.clinical||{};
     return root.CapacityIntelligence.evaluate({
       patients:Number(entry.patients)||0,
       bloodTests:Number(clinical.bloodTests)||0,
@@ -71,8 +88,7 @@
   };
 
   root.BusinessHealthScore.calculate=function(input={}){
-    const capacity=pendingCapacity;
-    pendingCapacity=null;
+    const capacity=pendingCapacity;pendingCapacity=null;
     const result=originalCalculate.call(this,{...input,doctorWorkload:capacity?.percent??input.doctorWorkload});
     if(capacity)result.capacity=capacity;
     return result;
