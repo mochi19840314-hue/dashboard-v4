@@ -8,4 +8,5 @@ assert.equal(summarize({entries:[],financeByMonth:{"2026-09":{hospitalCashExpens
 assert.equal(summarize({entries:[{date:"2026-09-01",sales:0}]},"2026-09").hasExpense,false);
 assert.equal(summarize({entries:[{date:"2026-09-01",sales:100}],financeByMonth:{"2026-09":{hospitalCashExpense:0,monthlyExpense:900}}},"2026-09").expense,0);
 assert.equal(summarize({entries:[{date:"2026-09-01",sales:100}]}, "invalid"),null);
+assert.equal(summarize({entries:[{date:"2026-09-01",sales:100}],financeByMonth:{"2026-09":{hospitalCashExpense:0,entered:{hospitalCashExpense:false}}}},"2026-09").hasExpense,false);
 console.log("monthly cashflow tests passed");
