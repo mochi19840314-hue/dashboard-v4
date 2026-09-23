@@ -1,0 +1,23 @@
+name: Monthly Cashflow Chart
+
+on:
+  pull_request:
+    paths:
+      - 'monthly-cashflow-chart.js'
+      - 'monthly-cashflow-chart.test.js'
+      - 'index.html'
+      - '.github/workflows/monthly-cashflow-chart.yml'
+  workflow_dispatch:
+
+jobs:
+  cashflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: node --check monthly-cashflow-chart.js
+      - name: Monthly cashflow tests
+        run: node monthly-cashflow-chart.test.js
