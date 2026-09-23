@@ -16,7 +16,7 @@
     const clinicalSales=dailySales||amount(hist.sales);
     const sales=clinicalSales+amount(mf.morikuboOnline)+amount(mf.royalCanin)+amount(mf.purina);
     const current=new Date().toLocaleDateString("sv-SE").slice(0,7)===month?data.finance||{}:{};
-    const hasExpense=own(mf,"hospitalCashExpense")||own(mf,"monthlyExpense")||own(hist,"expense")||own(current,"hospitalCashExpense")||own(current,"monthlyExpense");
+    const hasExpense=own(mf,"hospitalCashExpense")?(mf.entered?.hospitalCashExpense!==false):own(mf,"monthlyExpense")?true:own(hist,"expense")?true:amount(current.hospitalCashExpense)>0||amount(current.monthlyExpense)>0;
     const expense=own(mf,"hospitalCashExpense")?amount(mf.hospitalCashExpense):own(mf,"monthlyExpense")?amount(mf.monthlyExpense):own(hist,"expense")?amount(hist.expense):amount(own(current,"hospitalCashExpense")?current.hospitalCashExpense:current.monthlyExpense);
     return {month,sales,expense,balance:sales-expense,hasSales:entries.length>0||own(hist,"sales")||sales>0,hasExpense};
   }
@@ -62,7 +62,7 @@
     document.head.appendChild(css);render();
     const rerender=()=>requestAnimationFrame(()=>requestAnimationFrame(render));
     document.getElementById("monthPicker")?.addEventListener("change",rerender);
-    ["prevMonth","nextMonth","saveSettings"].forEach(id=>document.getElementById(id)?.addEventListener("click",rerender));
+    ["prevMonth","nextMonth","saveSettings","saveFinance"].forEach(id=>document.getElementById(id)?.addEventListener("click",rerender));
     document.querySelector('[data-page="month"]')?.addEventListener("click",rerender);
     window.addEventListener("storage",event=>{if(event.key===KEY)render()});
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
