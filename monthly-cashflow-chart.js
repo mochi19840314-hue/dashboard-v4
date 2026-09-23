@@ -9,7 +9,7 @@
   const own=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
   const yen=n=>Math.round(n).toLocaleString("ja-JP")+"円";
   function summarize(data,month){
-    if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(month))return null;
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return null;
     const entries=(Array.isArray(data.entries)?data.entries:[]).filter(e=>e&&typeof e.date==="string"&&e.date.slice(0,7)===month);
     const dailySales=entries.reduce((sum,e)=>sum+amount(e.sales),0);
     const hist=data.historical?.[month]||{},mf=data.financeByMonth?.[month]||{};
