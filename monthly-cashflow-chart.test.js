@@ -1,0 +1,11 @@
+const assert=require("node:assert/strict");
+const {summarize}=require("./monthly-cashflow-chart.js");
+const base={entries:[{date:"2026-09-01",sales:100000},{date:"2026-09-02",sales:200000}],financeByMonth:{"2026-09":{hospitalCashExpense:180000,morikuboOnline:20000}}};
+assert.deepEqual(summarize(base,"2026-09"),{month:"2026-09",sales:320000,expense:180000,balance:140000,hasSales:true,hasExpense:true});
+assert.equal(summarize({...base,financeByMonth:{"2026-09":{hospitalCashExpense:400000}}},"2026-09").balance,-100000);
+assert.equal(summarize({historical:{"2026-08":{sales:450000,expense:380000}}},"2026-08").balance,70000);
+assert.equal(summarize({entries:[],financeByMonth:{"2026-09":{hospitalCashExpense:0}}},"2026-09").hasSales,false);
+assert.equal(summarize({entries:[{date:"2026-09-01",sales:0}]},"2026-09").hasExpense,false);
+assert.equal(summarize({entries:[{date:"2026-09-01",sales:100}],financeByMonth:{"2026-09":{hospitalCashExpense:0,monthlyExpense:900}}},"2026-09").expense,0);
+assert.equal(summarize({entries:[{date:"2026-09-01",sales:100}]}, "invalid"),null);
+console.log("monthly cashflow tests passed");
