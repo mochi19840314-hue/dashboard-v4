@@ -1,0 +1,22 @@
+name: Finance Cashflow Bars
+on:
+  pull_request:
+    paths:
+      - 'finance-cashflow-bars.js'
+      - 'finance-cashflow-bars.test.js'
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/finance-cashflow-bars.yml'
+  workflow_dispatch:
+jobs:
+  chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax checks
+        run: node --check finance-cashflow-bars.js && node --check app.js
+      - name: Finance chart tests
+        run: node finance-cashflow-bars.test.js
