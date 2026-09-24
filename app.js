@@ -933,6 +933,7 @@ function finance(){
   $("hospitalPersonnelExpense").textContent=detail(Number(mf.personnelExpense)||0);$("hospitalMedicalExpense").textContent=detail(Number(mf.medicalExpense)||0);$("hospitalRepayment").textContent=detail(snap.repayment);$("hospitalCardExpense").textContent=detail(Number(mf.cardFee)||0);$("hospitalOtherExpense").textContent=detail(Math.max(0,hospital.hospitalCashExpense-knownExpense));
   $("householdClinicalSales").textContent=yen(household.clinicalSales);$("householdTotalExpense").textContent=yen(household.totalExpense);$("householdDifference").textContent=signed(household.difference);$("householdHospitalBreakdown").textContent=yen(household.hospitalCashExpense);$("householdExpenseBreakdown").textContent=yen(household.householdExpense);document.querySelector(".hospital-household-card").classList.toggle("is-positive",household.difference>=0);document.querySelector(".hospital-household-card").classList.toggle("is-negative",household.difference<0);
   renderExpenseYearOverYear(m,{...mf,monthlyExpense:expense});
+  if(typeof FinanceCashflowBars!=="undefined")FinanceCashflowBars.render();
 }
 function renderExpenseYearOverYear(m,currentFinance){
  const result=ExpenseYearOverYear.analyze({selectedMonth:m,financeByMonth:data.financeByMonth,currentFinance}),signed=value=>`${value>0?"+":value<0?"−":"±"}${yen(Math.abs(value))}`,formatRate=value=>value==null?"—":`${value>0?"+":""}${value.toFixed(1)}%`,tone=value=>value<0?"is-decrease":value>500000?"is-large-increase":value>0?"is-increase":"";
