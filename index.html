@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9506">
+<link rel="stylesheet" href="style.css?v=9507">
 </head>
 <body>
 <header class="app-header">
@@ -26,10 +26,15 @@
   <button class="tab" data-page="report">レポート</button>
   <button class="tab" data-page="year">年間</button>
   <button class="tab" data-page="finance">財務</button>
-  <button class="tab" data-page="simulator">📈 シミュレーター</button>
-  <button class="tab" data-page="memo">メモ</button>
-  <button class="tab" data-page="settings">病院設定</button>
-  <button class="tab" data-page="data">データ</button>
+  <details class="tab-more">
+    <summary>その他</summary>
+    <div class="tab-more-menu">
+      <button class="tab" data-page="simulator">📈 シミュレーター</button>
+      <button class="tab" data-page="memo">メモ</button>
+      <button class="tab" data-page="settings">病院設定</button>
+      <button class="tab" data-page="data">データ</button>
+    </div>
+  </details>
 </nav>
 <div id="pageIndicator" class="page-indicator" aria-label="ページ位置"></div>
 
