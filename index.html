@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=9507">
+<link rel="stylesheet" href="style.css?v=9508">
 </head>
 <body>
 <header class="app-header">
@@ -36,6 +36,12 @@
     </div>
   </details>
 </nav>
+<script>
+document.addEventListener("click",function(e){
+  var tab=e.target.closest(".tab-more-menu .tab");
+  if(tab){var more=tab.closest(".tab-more");if(more)more.open=false}
+});
+</script>
 <div id="pageIndicator" class="page-indicator" aria-label="ページ位置"></div>
 
 <main id="pageContainer">
