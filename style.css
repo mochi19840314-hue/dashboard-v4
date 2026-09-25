@@ -537,3 +537,8 @@ body.today-entry-open{overflow:hidden}
 
 /* KPI-first navigation: keep rarely used tools available without crowding daily management. */
 .tab-more{position:relative;flex:0 0 auto}.tab-more>summary{list-style:none;cursor:pointer;white-space:nowrap;padding:10px 13px;border-radius:12px;font-weight:700;color:var(--muted);user-select:none}.tab-more>summary::-webkit-details-marker{display:none}.tab-more[open]>summary{background:rgba(0,159,145,.10);color:#087e74}.tab-more-menu{position:absolute;z-index:30;right:0;top:calc(100% + 6px);min-width:190px;padding:8px;background:var(--card,#fff);border:1px solid rgba(70,100,105,.14);border-radius:14px;box-shadow:0 12px 30px rgba(30,55,60,.16);display:grid;gap:4px}.tab-more-menu .tab{width:100%;text-align:left;justify-content:flex-start;white-space:nowrap}@media(max-width:700px){.tab-more-menu{position:fixed;right:12px;top:112px;left:auto;max-width:calc(100vw - 24px)}}
+
+/* Mobile scroll safety for secondary navigation */
+html,body{min-height:100%;height:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+#pageContainer,.page.active{height:auto!important;max-height:none!important;overflow-y:visible!important;touch-action:pan-y}
+.tab-more-menu{touch-action:manipulation}
