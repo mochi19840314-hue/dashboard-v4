@@ -196,6 +196,11 @@
     <article class="month-profit-card"><span>病院キャッシュ利益</span><strong id="monthProfitSummary">0円</strong><small>総売上 − 病院実支出</small></article>
     <article class="month-rate-card"><span>利益率</span><strong id="monthProfitRate">0%</strong><small>税引前の概算</small></article>
   </div>
+  <article class="card profit-waterfall-card" id="profitWaterfallCard">
+    <div class="intelligence-heading"><div><span class="eyebrow">PROFIT BRIDGE</span><h3>粗利から残る現金</h3></div><span id="profitWaterfallMonth" class="sample-badge">—</span></div>
+    <div id="profitWaterfall" class="profit-waterfall"></div>
+    <p class="profit-waterfall-note">薬品・医療材料費は粗利計算で差し引き済みのため、下段では二重計上しません。</p>
+  </article>
   <div class="month-revenue-breakdown">
     <article><span>診療売上</span><strong id="monthClinicalSales">0円</strong></article>
     <article><span>EC売上</span><strong id="monthEcSales">0円</strong><small id="monthEcBreakdown">森久保 0円・ロイヤルカナン 0円・ピュリナ 0円</small></article>
@@ -580,7 +585,7 @@
 <script src="today-dashboard-data.js?v=9507"></script>
 <script src="finance-expenses.js?v=1"></script>
 <script src="hospital-household-balance.js?v=2"></script>
-<script src="app.js?v=9506"></script>\n<script src="gross-profit-kpi.js?v=1"></script>
+<script src="app.js?v=9506"></script>\n<script src="gross-profit-kpi.js?v=2"></script>\n<script src="profit-waterfall.js?v=1"></script>
 <script src="monthly-cashflow-chart.js?v=1"></script>
 <script src="finance-cashflow-bars.js?v=1"></script>
 <script src="ai-director.js?v=1046"></script>
