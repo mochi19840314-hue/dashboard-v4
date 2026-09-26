@@ -542,3 +542,13 @@ body.today-entry-open{overflow:hidden}
 html,body{min-height:100%;height:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 #pageContainer,.page.active{height:auto!important;max-height:none!important;overflow-y:visible!important;touch-action:pan-y}
 .tab-more-menu{touch-action:manipulation}
+
+/* iOS Safari: simulator must always hand vertical gestures to the document scroller. */
+#simulator,#simulator *{touch-action:auto!important}
+#simulator input[type="range"]{touch-action:pan-y!important}
+#simulator.page.active{display:block!important;overflow:visible!important;overscroll-behavior:auto!important;-webkit-overflow-scrolling:touch}
+@supports (-webkit-touch-callout:none){
+  html{overflow-x:hidden!important;overflow-y:scroll!important;height:auto!important}
+  body{position:static!important;overflow-x:hidden!important;overflow-y:visible!important;height:auto!important;min-height:100vh!important}
+  #pageContainer{position:static!important;overflow:visible!important;height:auto!important;min-height:100vh!important}
+}
