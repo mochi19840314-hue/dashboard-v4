@@ -33,7 +33,6 @@
   document.getElementById("cashFlowOpening").value=m.opening??"";
   document.getElementById("cashFlowClosing").value=m.closing??"";document.getElementById("cashFlowEstimate").value=m.estimate??"";
   document.getElementById("cashFlowResults").innerHTML='<p>月間預金増減：<strong>'+(m.actual===null?"未入力":(m.actual>=0?"+":"")+yen(m.actual))+'</strong></p><p>現在の病院預金：<strong>'+(m.closing===null?"未入力":yen(m.closing))+'</strong></p><p>目標まで：<strong>'+(m.gap===null?"確認できません":yen(m.gap))+'</strong></p><p>達成率：<strong>'+(m.progress===null?"確認できません":m.progress.toFixed(1)+"%")+'</strong></p><p>病院キャッシュ利益（推計）：<strong>'+(m.estimate===null?"未入力":yen(m.estimate))+'</strong></p><p>預金増減との差額（未照合）：<strong>'+(m.difference===null?"確認できません":yen(m.difference))+'</strong></p><p>到達予測：<strong>算出不可（継続的な実績が必要）</strong></p><p id="cashFlowAdvice"></p>';
- }
   const advice=document.getElementById("cashFlowAdvice");if(advice)advice.textContent=advise(r);
  }
  function save(){
