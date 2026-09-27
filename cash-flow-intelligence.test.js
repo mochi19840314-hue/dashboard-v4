@@ -7,3 +7,6 @@ test("target is capped at 100 percent",()=>{assert.equal(TARGET,10000000);assert
 
 test("reconciliation keeps signed difference",()=>{const x=calculate({opening:3000000,closing:3200000,estimate:250000});assert.equal(x.difference,-50000)});
 test("zero estimate is valid but absent estimate is not",()=>{assert.equal(calculate({opening:0,closing:100,estimate:0}).difference,100);assert.equal(calculate({opening:0,closing:100}).difference,null)});
+
+test("advice requests missing balances without guessing",()=>{const {advise}=require("./cash-flow-intelligence.js");assert.match(advise({}),/月初と月末/)});
+test("advice flags unreconciled difference",()=>{const {advise}=require("./cash-flow-intelligence.js");assert.match(advise({opening:100,closing:200,estimate:80}),/差額/)});
