@@ -4,3 +4,6 @@ test("actual bank movement and goal",()=>{const x=calculate({opening:3000000,clo
 test("negative movement is preserved",()=>assert.equal(calculate({opening:4000000,closing:3000000}).actual,-1000000));
 test("invalid inputs are missing",()=>assert.equal(calculate({opening:-1,closing:""}).actual,null));
 test("target is capped at 100 percent",()=>{assert.equal(TARGET,10000000);assert.equal(calculate({closing:11000000}).progress,100)});
+
+test("reconciliation keeps signed difference",()=>{const x=calculate({opening:3000000,closing:3200000,estimate:250000});assert.equal(x.difference,-50000)});
+test("zero estimate is valid but absent estimate is not",()=>{assert.equal(calculate({opening:0,closing:100,estimate:0}).difference,100);assert.equal(calculate({opening:0,closing:100}).difference,null)});
