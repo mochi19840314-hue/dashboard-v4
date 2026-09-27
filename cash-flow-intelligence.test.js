@@ -1,0 +1,6 @@
+const {test}=require("node:test");const assert=require("node:assert/strict");const {calculate,TARGET}=require("./cash-flow-intelligence.js");
+test("missing balances are not zero",()=>{const x=calculate({});assert.equal(x.actual,null);assert.equal(x.gap,null);assert.equal(x.progress,null)});
+test("actual bank movement and goal",()=>{const x=calculate({opening:3000000,closing:3200000});assert.equal(x.actual,200000);assert.equal(x.gap,6800000);assert.equal(x.progress,32)});
+test("negative movement is preserved",()=>assert.equal(calculate({opening:4000000,closing:3000000}).actual,-1000000));
+test("invalid inputs are missing",()=>assert.equal(calculate({opening:-1,closing:""}).actual,null));
+test("target is capped at 100 percent",()=>{assert.equal(TARGET,10000000);assert.equal(calculate({closing:11000000}).progress,100)});
