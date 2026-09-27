@@ -26,3 +26,19 @@ Tracking: #185. This document is a specification, not a deployed feature.
 - Record baseline CI failures separately from regressions.
 - Verify iPhone Safari vertical scrolling, saving, reload and PWA resume.
 - Do not merge or deploy until tests and actual-device review.
+
+## CI triage — 2026-09-27
+- Isolated v10.4 workflow succeeded: syntax checks, cash-flow unit tests, and integration wiring.
+- Full suite: 344 passed / 9 failed. Failures: two Business Health Score boundary assertions; chart-animation.test.js; clinical-intelligence.test.js; clinical-ui.test.js; daily-memo-edit.test.js; legacy-today-form-removal cache release assertion; score-ring-animation.test.js; today-v9-ui.test.js.
+- The cache-release assertion expects v9506 but sw.js currently identifies v9602. These failures require separate baseline comparison and must not be described as verified pre-existing until compared against main at the same test revision.
+- No production merge or deployment is authorized by this result.
+
+## iPhone Safari / PWA acceptance checklist (pending real device)
+1. Back up the current Dashboard data before opening a preview; do not test against the production URL.
+2. On the preview, open Finance and verify the new card is visible, legible, and scrollable without horizontal clipping or frozen vertical scrolling.
+3. Save a test month with opening 3,000,000, closing 3,200,000, estimated cash profit 250,000; verify +200,000 movement, 6,800,000 remaining, 32.0% progress, and -50,000 unclassified difference.
+4. Reload Safari and resume the PWA; verify saved values persist. Switch months and verify records remain isolated.
+5. Clear test-month fields and confirm missing balances display as missing, not zero; confirm negative estimated profit is allowed but negative bank balance is rejected.
+6. Open Kagemusha, select 「現金は増えた？」 and ask 「預金1000万円まで？」; verify the answers agree with Finance and never approve investment based solely on a balance.
+7. Confirm existing Today, Finance, input, and backup flows remain usable. Record screenshots and device/iOS/browser version.
+8. Only after review, decide separately whether to merge; no automatic deployment.
