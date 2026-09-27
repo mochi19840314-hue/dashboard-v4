@@ -1,0 +1,28 @@
+name: v10.4 Cash Flow Isolated Checks
+on:
+  push:
+    branches: [feature/v10-4-cash-flow-intelligence]
+  pull_request:
+    paths:
+      - 'cash-flow-intelligence.js'
+      - 'cash-flow-intelligence.test.js'
+      - 'ai-director.js'
+      - 'index.html'
+      - '.github/workflows/v10-4-cash-flow.yml'
+jobs:
+  cash-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check cash-flow-intelligence.js
+          node --check ai-director.js
+      - name: Cash flow unit tests
+        run: node --test cash-flow-intelligence.test.js
+      - name: Integration wiring
+        run: |
+          node -e "const fs=require('fs');const assert=require('assert');const h=fs.readFileSync('index.html','utf8');const a=fs.readFileSync('ai-director.js','utf8');assert.match(h,/cash-flow-intelligence\\.js\\?v=1040/);assert.match(a,/data-ai-question=\"cash\"/);assert.match(a,/keitaDashboardCashFlowV104/)"
