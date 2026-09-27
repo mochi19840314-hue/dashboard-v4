@@ -218,6 +218,8 @@
     const style=document.createElement('style');
     style.textContent=`
       #aiDirectorFab{position:fixed;right:18px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:9000;border:0;border-radius:999px;padding:13px 17px;background:#087f6b;color:#fff;font-weight:800;font-size:15px;box-shadow:0 10px 26px rgba(0,0,0,.22);-webkit-tap-highlight-color:transparent}
+      /* Finance has a full-width cash-flow form: do not cover its values or save control. */
+      body:has(#finance.page.active) #aiDirectorFab{display:none}
       #aiDirectorOverlay{position:fixed;inset:0;z-index:9998;background:rgba(13,27,25,.45);display:none;align-items:flex-end;justify-content:center;padding:18px 14px calc(18px + env(safe-area-inset-bottom));box-sizing:border-box}
       #aiDirectorOverlay.is-open{display:flex}
       #aiDirectorPanel{width:min(100%,520px);max-height:84vh;overflow:auto;background:#f7faf9;border-radius:24px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.28);box-sizing:border-box}
