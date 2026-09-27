@@ -15,6 +15,7 @@
   const actual=opening===null||closing===null?null:closing-opening;
   return {opening,closing,estimate,actual,difference:actual===null||estimate===null?null:actual-estimate,gap:closing===null?null:Math.max(0,TARGET-closing),progress:closing===null?null:Math.min(100,closing/TARGET*100)};
  }
+ function advise(record={}){const m=calculate(record);if(m.actual===null)return "影武者・現金チェック：月初と月末の病院口座残高を入力すると、実際の現金増減を確認できます。";if(m.estimate===null)return "影武者・現金チェック：預金増減は確認できました。病院キャッシュ利益を入力すると差額を照合できます。";if(m.difference!==0)return "影武者・現金チェック：推計利益と預金増減に差額があります。カード入金日、税金、借入返済、設備投資、事業主貸借を確認してください。原因が分かるまでは余剰資金とみなしません。";return "影武者・現金チェック：入力された推計利益と預金増減は一致しています。ただし今後の税金・支払予定も確認してください。"}
  function read(){try{const x=JSON.parse(localStorage.getItem(KEY)||"{}");return x&&typeof x==="object"&&!Array.isArray(x)?x:{}}catch{return {}}}
  function month(){return document.getElementById("monthPicker")?.value||new Date().toLocaleDateString("sv-SE").slice(0,7)}
  function ensure(){
@@ -31,7 +32,9 @@
   const r=read()[month()]||{},m=calculate(r);
   document.getElementById("cashFlowOpening").value=m.opening??"";
   document.getElementById("cashFlowClosing").value=m.closing??"";document.getElementById("cashFlowEstimate").value=m.estimate??"";
-  document.getElementById("cashFlowResults").innerHTML='<p>月間預金増減：<strong>'+(m.actual===null?"未入力":(m.actual>=0?"+":"")+yen(m.actual))+'</strong></p><p>現在の病院預金：<strong>'+(m.closing===null?"未入力":yen(m.closing))+'</strong></p><p>目標まで：<strong>'+(m.gap===null?"確認できません":yen(m.gap))+'</strong></p><p>達成率：<strong>'+(m.progress===null?"確認できません":m.progress.toFixed(1)+"%")+'</strong></p><p>病院キャッシュ利益（推計）：<strong>'+(m.estimate===null?"未入力":yen(m.estimate))+'</strong></p><p>預金増減との差額（未照合）：<strong>'+(m.difference===null?"確認できません":yen(m.difference))+'</strong></p><p>到達予測：<strong>算出不可（継続的な実績が必要）</strong></p>';
+  document.getElementById("cashFlowResults").innerHTML='<p>月間預金増減：<strong>'+(m.actual===null?"未入力":(m.actual>=0?"+":"")+yen(m.actual))+'</strong></p><p>現在の病院預金：<strong>'+(m.closing===null?"未入力":yen(m.closing))+'</strong></p><p>目標まで：<strong>'+(m.gap===null?"確認できません":yen(m.gap))+'</strong></p><p>達成率：<strong>'+(m.progress===null?"確認できません":m.progress.toFixed(1)+"%")+'</strong></p><p>病院キャッシュ利益（推計）：<strong>'+(m.estimate===null?"未入力":yen(m.estimate))+'</strong></p><p>預金増減との差額（未照合）：<strong>'+(m.difference===null?"確認できません":yen(m.difference))+'</strong></p><p>到達予測：<strong>算出不可（継続的な実績が必要）</strong></p><p id="cashFlowAdvice"></p>';
+ }
+  const advice=document.getElementById("cashFlowAdvice");if(advice)advice.textContent=advise(r);
  }
  function save(){
   const a=document.getElementById("cashFlowOpening").value,b=document.getElementById("cashFlowClosing").value,c=document.getElementById("cashFlowEstimate").value;
@@ -48,5 +51,5 @@
   window.addEventListener("storage",e=>{if(e.key===KEY)render()});
  }
  if(typeof document!=="undefined"){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",setup,{once:true});else setup()}
- return {calculate,TARGET};
+ return {calculate,advise,TARGET};
 });
