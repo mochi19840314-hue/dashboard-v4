@@ -75,7 +75,9 @@
     return {...cur,profit,margin,target,businessDays,activeDays,remaining,forecast,balance,loan,netAssets:balance-loan,personnelExpense,medicalExpense,prev,previousEntry,previousUnit,dailyTarget,targetGap,requiredDaily};
   };
   const block=(conclusion,reasons,next)=>({conclusion,reasons:Array.isArray(reasons)?reasons:[reasons],next});
+  const cashAnswer=()=>{const api=window.CashFlowIntelligence;if(!api)return block('現金データを確認できません。','現金管理モジュールが読み込まれていません。','財務ページを確認してください。');let saved={};try{saved=JSON.parse(localStorage.getItem('keitaDashboardCashFlowV104')||'{}')||{}}catch{}const x=api.calculate(saved[monthKey()]||{});return block(x.actual===null?'預金増減はまだ確認できません。':`今月の預金増減は${x.actual>=0?'+':''}${yen(x.actual)}です。`,[x.closing===null?'月末残高は未入力です。':`入力された月末残高 ${yen(x.closing)}、目標まで ${yen(x.gap)}`,x.difference===null?'推計利益との差額は未照合です。':`推計利益と預金増減の差額 ${yen(x.difference)}`],api.advise(saved[monthKey()]||{}));};
   const answer=(kind,m)=>{
+    if(kind==='cash')return cashAnswer();
     if(kind==='month'){
       if(!m.sales)return block('まだ評価できません','今月の売上データが未入力です。','1日分入力すると、目標達成率と月末予測を表示できます。');
       const rate=m.target?m.sales/m.target*100:0;
@@ -152,7 +154,7 @@
     return block('ご相談ありがとうございます。現在のデータだけでは十分に判断できない内容です。','「売上」「利益」「スタッフ」など、気になる言葉を含めて相談できます。','別の言葉でも相談してみてください。');
   };
   // 将来はこの関数の中をOpenAI API呼び出しに置き換える。
-  const requestConsultationResponse=async message=>consultationAnswer(message,metrics());
+  const requestConsultationResponse=async message=>/(預金|現金|キャッシュフロー|資金繰り|1000万円|1,000万円)/.test(message)?cashAnswer():consultationAnswer(message,metrics());
   const recommendation=m=>{
     const e=m.previousEntry;
     if(e){
@@ -251,7 +253,7 @@
       <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📅 昨日の振り返り</h3><div id="aiDirectorPreviousDay"></div></section>
       <section class="aiDirectorSection"><h3 class="aiDirectorSectionTitle">📈 月目標ナビ</h3><div id="aiDirectorTargetNavigator"></div></section>
       <div id="aiDirectorMessage" class="aiDirectorMessage">相談項目を選んでください。</div>
-      <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="glb">🚙 GLBなら？</button><button type="button" data-ai-question="endoscopy">🔬 内視鏡導入できる？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button></div>
+      <div class="aiDirectorQuick"><button type="button" data-ai-question="glc">🚗 GLC買える？</button><button type="button" data-ai-question="glb">🚙 GLBなら？</button><button type="button" data-ai-question="endoscopy">🔬 内視鏡導入できる？</button><button type="button" data-ai-question="hire">👩‍⚕️ 看護師採用できる？</button><button type="button" data-ai-question="month">📈 今月どう？</button><button type="button" data-ai-question="margin">💰 利益率は？</button><button type="button" data-ai-question="cash">🏦 現金は増えた？</button></div>
       <section class="aiDirectorConsultation" aria-labelledby="aiDirectorConsultationTitle">
         <h3 id="aiDirectorConsultationTitle">🥷 影武者に相談</h3>
         <form id="aiDirectorConsultationForm"><label class="sr-only" for="aiDirectorConsultationInput">今日の出来事や相談</label><textarea id="aiDirectorConsultationInput" placeholder="今日の出来事や相談を書いてください" required></textarea><button class="aiDirectorConsultationSubmit" type="submit">相談する</button></form>

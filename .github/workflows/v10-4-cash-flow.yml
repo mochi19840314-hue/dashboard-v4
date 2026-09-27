@@ -1,0 +1,50 @@
+name: v10.4 Cash Flow Isolated Checks
+on:
+  push:
+    branches: [feature/v10-4-cash-flow-intelligence]
+  pull_request:
+    paths:
+      - 'cash-flow-intelligence.js'
+      - 'cash-flow-intelligence.test.js'
+      - 'ai-director.js'
+      - 'index.html'
+      - '.github/workflows/v10-4-cash-flow.yml'
+jobs:
+  cash-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check cash-flow-intelligence.js
+          node --check ai-director.js
+      - name: Cash flow unit tests
+        run: node --test cash-flow-intelligence.test.js
+      - name: Integration wiring
+        run: |
+          node -e "const fs=require('fs');const assert=require('assert');const h=fs.readFileSync('index.html','utf8');const a=fs.readFileSync('ai-director.js','utf8');assert.match(h,/cash-flow-intelligence\\.js\\?v=1040/);assert.match(a,/data-ai-question=\"cash\"/);assert.match(a,/keitaDashboardCashFlowV104/)"
+  main-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run unmodified main test suite and preserve log
+        shell: bash
+        run: |
+          set +e
+          node --test *.test.js > main-baseline.log 2>&1
+          status=$?
+          grep -E '^not ok |^# (tests|pass|fail) ' main-baseline.log || true
+          echo "main_baseline_exit=$status" >> "$GITHUB_STEP_SUMMARY"
+          echo "Main baseline is diagnostic only; a failure is not silently treated as a pass." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: main-baseline-test-log
+          path: main-baseline.log
