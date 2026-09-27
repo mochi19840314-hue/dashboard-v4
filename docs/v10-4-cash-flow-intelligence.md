@@ -42,3 +42,9 @@ Tracking: #185. This document is a specification, not a deployed feature.
 6. Open Kagemusha, select 「現金は増えた？」 and ask 「預金1000万円まで？」; verify the answers agree with Finance and never approve investment based solely on a balance.
 7. Confirm existing Today, Finance, input, and backup flows remain usable. Record screenshots and device/iOS/browser version.
 8. Only after review, decide separately whether to merge; no automatic deployment.
+
+## Verified main baseline comparison — 2026-09-27
+- Run 36298151307 checked out unmodified main under Node 22: 344 tests, 335 pass, 9 fail.
+- v10.4 branch full suite: 353 tests, 344 pass, 9 fail. The nine failure names match main; no additional failing test was observed.
+- Isolated v10.4 job passed in the same run. This is a baseline comparison, not a waiver of the nine existing failures or real-device acceptance.
+- Main baseline log is retained as the workflow artifact. PR remains draft; no merge/deployment.
