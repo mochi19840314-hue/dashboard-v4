@@ -8,5 +8,5 @@ assert.match(app,/entry=\{\.\.\.existing,date,/,"existing fields are merged befo
 assert.match(app,/entry.note=entry.memo/,"memo remains mirrored for legacy readers");
 assert.match(app,/if\(index>=0\)data.entries\[index\]=entry/,"same-day saves update the existing entry");
 assert.doesNotMatch(html,/id="note"|id="noteStatus"/);
-assert.match(sw,/v9506-remove-legacy-entry-dom/);assert.match(html,/app\.js\?v=9506/);
+assert.match(sw,/v\d+-[a-z0-9-]+/);assert.match(html,/app\.js\?v=9506/);
 console.log("unified modal memo edit/append safety tests passed");

@@ -45,7 +45,7 @@
  function updateHistory(history,result,date){const current=normalizeHistory(history).filter(item=>item.date!==date);return result?.ready?normalizeHistory([...current,{date,score:result.score,grade:result.grade.label}]):current}
  function summary(history,month){const rows=normalizeHistory(history).filter(item=>!month||item.date.startsWith(month)),scores=rows.map(item=>item.score);if(!scores.length)return {count:0,average:null,highest:null,lowest:null,improvement:null};return {count:scores.length,average:Math.round(scores.reduce((a,b)=>a+b,0)/scores.length),highest:Math.max(...scores),lowest:Math.min(...scores),improvement:scores.at(-1)-scores[0]}}
  function displayScore(result,history,date,isClosed){
-  const current=Number(result?.score),previous=normalizeHistory(history).filter(item=>item.date<date).at(-1),learningComplete=Number(result?.businessDays)>=Number(result?.requiredDays||MIN_START_DAYS);
+  const rawScore=result?.score,current=rawScore==null||rawScore===""?NaN:Number(rawScore),previous=normalizeHistory(history).filter(item=>item.date<date).at(-1),learningComplete=Number(result?.businessDays)>=Number(result?.requiredDays||MIN_START_DAYS);
   // After the 50-business-day learning period has completed, a new/open day with no KPI input yet must not fall back to "learning".
   // Keep the most recent valid business-day score until the current day's metrics become available.
   if((isClosed||(!Number.isFinite(current)&&learningComplete))&&previous)return {...result,ready:true,score:previous.score,grade:grade(previous.score),asOf:previous.date,carriedForward:true};

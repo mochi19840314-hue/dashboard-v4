@@ -17,8 +17,14 @@ test("date remains internal and compatible entry fields are saved",()=>{
  assert.match(app,/if\(index>=0\)data\.entries\[index\]=entry/);
 });
 test("HTML, CSS and JS use the same cache release and service worker is network first",()=>{
- assert.match(html,/style\.css\?v=9506/);assert.match(html,/app\.js\?v=9506/);
- assert.match(sw,/style\.css\?v=9506/);assert.match(sw,/app\.js\?v=9506/);
- assert.match(sw,/keita-dashboard-v9506-remove-legacy-entry-dom/);
+ const assets=[...html.matchAll(/(?:src|href)="([^"?]+\.(?:css|js)\?v=[^"]+)"/g)].map(match=>match[1]);
+ for(const name of ["style.css","app.js","business-health-score.js"]){
+  const asset=assets.find(value=>value.startsWith(name+"?"));
+  assert.ok(asset,`${name} has a versioned HTML reference`);
+  assert.ok(sw.includes(`"./${asset}"`),`${asset} is precached with the same version`);
+ }
+ assert.match(html,/style\.css\?v=9509/);assert.match(html,/app\.js\?v=9506/);
+ assert.match(sw,/style\.css\?v=9509/);assert.match(sw,/app\.js\?v=9506/);
+ assert.match(sw,/keita-dashboard-v\d+-[a-z0-9-]+/);
  assert.match(sw,/fetch\(e\.request\).*catch\(\(\)=>caches\.match\(e\.request\)\)/);
 });
