@@ -26,6 +26,7 @@
   <button class="tab" data-page="report">レポート</button>
   <button class="tab" data-page="year">年間</button>
   <button class="tab" data-page="finance">財務</button>
+  <button class="tab" data-page="finalCash">最終収支</button>
   <details class="tab-more">
     <summary>その他</summary>
     <div class="tab-more-menu">
@@ -468,6 +469,27 @@ document.addEventListener("click",function(e){
   </div></details>
 </section>
 
+<section id="finalCash" class="page">
+  <h2>最終収支｜病院＋家庭</h2>
+  <p class="lead">売上・病院利益・実際に増えた現金を確認します。病院から家庭への振替は二重計上しません。</p>
+  <div class="card" style="margin-bottom:12px">
+    <label>対象月 <input type="month" id="finalCashMonth"></label>
+    <div id="finalCashKpis" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px"></div>
+    <p id="finalCashStatus" style="font-size:12px;margin-top:12px"></p>
+  </div>
+  <div class="card">
+    <h3>家庭の現預金（すべての口座の合計）</h3>
+    <p style="font-size:12px">現金・普通預金・貯蓄口座を含みます。病院の口座は含めません。父への返済は現金が減った分として反映されます。</p>
+    <div style="display:grid;gap:10px">
+      <label>家庭の月初残高（円）<input id="finalCashHomeOpening" type="number" min="0" inputmode="numeric" placeholder="未入力"></label>
+      <label>家庭の月末残高（円）<input id="finalCashHomeClosing" type="number" min="0" inputmode="numeric" placeholder="未入力"></label>
+      <button id="finalCashSave" type="button" class="primary">家庭の残高を保存</button>
+    </div>
+  </div>
+  <div class="card"><h3>影武者｜現金の評価</h3><p id="finalCashAdvice">月初・月末残高を入力すると評価します。</p></div>
+  <details class="card"><summary style="cursor:pointer;font-weight:bold">計算方法・詳細</summary><p>最終現金増減＝（病院月末＋家庭月末）−（病院月初＋家庭月初）。売上と病院キャッシュ利益は既存の月間集計から取得します。借入・資産売却などの一時的な入金は利益とは区別してください。</p><p>病院残高は「財務」の預金入力欄で管理します。月初・月末の両方が未入力の場合は最終増減を計算しません。</p></details>
+</section>
+
 <section id="simulator" class="page simulator-page">
   <div class="simulator-title"><div><span class="eyebrow">KNOWLEDGE CORE</span><h2>📈 AI経営シミュレーター</h2><p>病院データから「何を改善すると利益がどれだけ変わるか」を即時計算します。</p></div><span id="simDataStatus" class="sim-status">学習データを確認中</span></div>
   <article class="card sim-period-card"><label>対象月<select id="simMonth" aria-label="シミュレーション対象月"></select></label><div class="sim-mode" role="radiogroup" aria-label="年間利益への反映方法"><label><input type="radio" name="simAnnualMode" value="oneMonth"><span>今月だけ</span></label><label><input type="radio" name="simAnnualMode" value="recurring" checked><span>継続改善</span></label></div><small id="simAnnualNote"></small></article>
@@ -606,5 +628,6 @@ document.addEventListener("click",function(e){
 <script src="savings-kpi-v105.js?v=1050"></script>
 
 <script src="ai-director.js?v=1047"></script>
+<script src="final-cash-page.js?v=1"></script>
 </body>
 </html>
